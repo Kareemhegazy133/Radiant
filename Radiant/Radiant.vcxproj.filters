@@ -27,9 +27,15 @@
     <ClInclude Include="src\Radiant\EntryPoint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Radiant\Log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Radiant\Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Radiant\Log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

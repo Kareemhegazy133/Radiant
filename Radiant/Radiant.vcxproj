@@ -11,12 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Radiant\Log.h" />
     <ClInclude Include="src\Radiant.h" />
     <ClInclude Include="src\Radiant\Application.h" />
     <ClInclude Include="src\Radiant\Core.h" />
     <ClInclude Include="src\Radiant\EntryPoint.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Radiant\Log.cpp" />
     <ClCompile Include="src\Radiant\Application.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -66,7 +68,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>RD_PLATFORM_WINDOWS;RD_BUILD_DLL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Radiant\vendor\spdlog\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -81,7 +84,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>RD_PLATFORM_WINDOWS;RD_BUILD_DLL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Radiant\vendor\spdlog\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -13,6 +13,6 @@ namespace Radiant {
 		void Run();
 	};
 
-	// To be define in CLIENT
+	// To be defined in CLIENT
 	Application* CreateApplication();
 }
