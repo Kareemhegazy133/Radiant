@@ -18,6 +18,9 @@ project "Radiant"
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin/" .. outputdir .. "/%{prj.name}")
 	
+	pchheader "rdpch.h"
+	pchsource "Radiant/src/rdpch.cpp"
+	
 	files
 	{
 		"%{prj.name}/src/**.h",

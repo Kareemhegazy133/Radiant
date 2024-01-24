@@ -2,8 +2,6 @@
 
 #include "Event.h"
 
-#include <sstream>
-
 namespace Radiant {
 
 	class RADIANT_API MouseMovedEvent : public Event

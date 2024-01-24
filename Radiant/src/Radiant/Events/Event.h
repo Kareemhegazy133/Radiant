@@ -3,8 +3,6 @@
 
 #include "Radiant/Core.h"
 
-#include <string>
-#include <functional>
 
 namespace Radiant {
 

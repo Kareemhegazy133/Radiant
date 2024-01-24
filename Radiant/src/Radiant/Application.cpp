@@ -1,3 +1,4 @@
+#include "rdpch.h"
 #include "Application.h"
 
 #include "Radiant/Events/ApplicationEvent.h"
