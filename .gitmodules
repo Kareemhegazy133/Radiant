@@ -1,3 +1,9 @@
 [submodule "Radiant/vendor/spdlog"]
 	path = Radiant/vendor/spdlog
 	url = https://github.com/gabime/spdlog
+[submodule "Radiant/vender/GLFW"]
+	path = Radiant/vender/GLFW
+	url = https://github.com/TheCherno/GLFW
+[submodule "Radiant/vendor/GLFW"]
+	path = Radiant/vendor/GLFW
+	url = https://github.com/TheCherno/GLFW
