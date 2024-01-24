@@ -4,6 +4,9 @@
     <Filter Include="Radiant">
       <UniqueIdentifier>{A8497895-1429-F730-1D41-8207899F5D92}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Radiant\Events">
+      <UniqueIdentifier>{8C88D55A-7856-C960-61EA-39874D57A5C5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Radiant.h" />
@@ -15,6 +18,18 @@
     </ClInclude>
     <ClInclude Include="src\Radiant\EntryPoint.h">
       <Filter>Radiant</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Radiant\Events\ApplicationEvent.h">
+      <Filter>Radiant\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Radiant\Events\Event.h">
+      <Filter>Radiant\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Radiant\Events\KeyEvent.h">
+      <Filter>Radiant\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Radiant\Events\MouseEvent.h">
+      <Filter>Radiant\Events</Filter>
     </ClInclude>
     <ClInclude Include="src\Radiant\Log.h">
       <Filter>Radiant</Filter>

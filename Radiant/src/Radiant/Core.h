@@ -9,3 +9,5 @@
 #else
 	#error Radiant only supports the Windows platform!
 #endif
+
+#define BIT(x) (1 << x)
