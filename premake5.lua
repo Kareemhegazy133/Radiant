@@ -13,8 +13,10 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 -- Include directories relative to root folder (solution directory)
 IncludeDir = {}
 IncludeDir["GLFW"] = "Radiant/vendor/GLFW/include"
+IncludeDir["Glad"] = "Radiant/vendor/Glad/include"
 
 include "Radiant/vendor/GLFW"
+include "Radiant/vendor/Glad"
 
 project "Radiant"
 	location "Radiant"
@@ -37,12 +39,14 @@ project "Radiant"
 	{
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/spdlog/include",
-		"%{IncludeDir.GLFW}"
+		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.Glad}"
 	}
 	
 	links
 	{
 		"GLFW",
+		"Glad",
 		"opengl32.lib",
 		"dwmapi.lib"
 	}
@@ -55,7 +59,8 @@ project "Radiant"
 		defines
 		{
 			"RD_PLATFORM_WINDOWS",
-			"RD_BUILD_DLL"
+			"RD_BUILD_DLL",
+			"GLFW_INCLUDE_NONE"
 		}
 		
 		postbuildcommands
