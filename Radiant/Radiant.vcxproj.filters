@@ -40,6 +40,12 @@
     <ClInclude Include="src\Radiant\Events\MouseEvent.h">
       <Filter>Radiant\Events</Filter>
     </ClInclude>
+    <ClInclude Include="src\Radiant\Layer.h">
+      <Filter>Radiant</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Radiant\LayerStack.h">
+      <Filter>Radiant</Filter>
+    </ClInclude>
     <ClInclude Include="src\Radiant\Log.h">
       <Filter>Radiant</Filter>
     </ClInclude>
@@ -53,6 +59,12 @@
       <Filter>Platform\Windows</Filter>
     </ClCompile>
     <ClCompile Include="src\Radiant\Application.cpp">
+      <Filter>Radiant</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Radiant\Layer.cpp">
+      <Filter>Radiant</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Radiant\LayerStack.cpp">
       <Filter>Radiant</Filter>
     </ClCompile>
     <ClCompile Include="src\Radiant\Log.cpp">

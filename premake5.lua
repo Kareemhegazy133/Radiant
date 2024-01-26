@@ -65,14 +65,17 @@ project "Radiant"
 		
 	filter "configurations:Debug"
 		defines "RD_DEBUG"
+		buildoptions "/MDd"
 		symbols "On"
 	
 	filter "configurations:Release"
 		defines "RD_RELEASE"
+		buildoptions "/MD"
 		optimize "On"
 		
 	filter "configurations:Dist"
 		defines "RD_DIST"
+		buildoptions "/MD"
 		optimize "On"
 
 project "Sandbox"
@@ -112,12 +115,15 @@ project "Sandbox"
 		
 	filter "configurations:Debug"
 		defines "RD_DEBUG"
+		buildoptions "/MDd"
 		symbols "On"
 	
 	filter "configurations:Release"
 		defines "RD_RELEASE"
+		buildoptions "/MD"
 		optimize "On"
 		
 	filter "configurations:Dist"
 		defines "RD_DIST"
+		buildoptions "/MD"
 		optimize "On"
