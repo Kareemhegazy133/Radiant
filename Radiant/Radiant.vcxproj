@@ -168,9 +168,11 @@
     <ClInclude Include="src\Radiant\Events\MouseEvent.h" />
     <ClInclude Include="src\Radiant\ImGui\ImGuiLayer.h" />
     <ClInclude Include="src\Radiant\Input.h" />
+    <ClInclude Include="src\Radiant\KeyCodes.h" />
     <ClInclude Include="src\Radiant\Layer.h" />
     <ClInclude Include="src\Radiant\LayerStack.h" />
     <ClInclude Include="src\Radiant\Log.h" />
+    <ClInclude Include="src\Radiant\MouseButtonCodes.h" />
     <ClInclude Include="src\Radiant\Window.h" />
     <ClInclude Include="src\rdpch.h" />
   </ItemGroup>
