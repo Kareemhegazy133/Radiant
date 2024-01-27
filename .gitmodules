@@ -9,4 +9,5 @@
 	url = https://github.com/TheCherno/GLFW
 [submodule "Radiant/vendor/imgui"]
 	path = Radiant/vendor/imgui
-	url = https://github.com/TheCherno/Imgui
+	url = https://github.com/TheCherno/imgui.git
+	branch = master
