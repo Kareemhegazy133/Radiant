@@ -111,6 +111,7 @@ project "Sandbox"
 	{
 		"Radiant/vendor/spdlog/include",
 		"Radiant/src",
+		"Radiant/vendor",
 		"%{IncludeDir.glm}"
 	}
 	

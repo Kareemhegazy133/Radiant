@@ -7,6 +7,8 @@
 #include "Radiant/Events/Event.h"
 #include "Radiant/Events/ApplicationEvent.h"
 
+#include "Radiant/ImGui/ImGuiLayer.h"
+
 namespace Radiant {
 
 	class RADIANT_API Application
@@ -29,6 +31,7 @@ namespace Radiant {
 
 		bool OnWindowClose(WindowCloseEvent& e);
 		std::unique_ptr<Window> m_Window;
+		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;
 		LayerStack m_LayerStack;
 
