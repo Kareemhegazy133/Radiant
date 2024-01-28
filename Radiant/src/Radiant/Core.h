@@ -1,11 +1,15 @@
 #pragma once
 
 #ifdef RD_PLATFORM_WINDOWS
+#if RD_DYNAMIC_LINK
 	#ifdef RD_BUILD_DLL
 		#define RADIANT_API __declspec(dllexport)
 	#else
 		#define RADIANT_API __declspec(dllimport)
 	#endif
+#else
+	#define RADIANT_API
+#endif
 #else
 	#error Radiant only supports the Windows platform!
 #endif
