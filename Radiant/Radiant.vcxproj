@@ -162,6 +162,7 @@
     <ClInclude Include="src\Radiant\Log.h" />
     <ClInclude Include="src\Radiant\MouseButtonCodes.h" />
     <ClInclude Include="src\Radiant\Renderer\GraphicsContext.h" />
+    <ClInclude Include="src\Radiant\Renderer\Shader.h" />
     <ClInclude Include="src\Radiant\Window.h" />
     <ClInclude Include="src\rdpch.h" />
     <ClInclude Include="vendor\glm\glm\common.hpp" />
@@ -590,6 +591,7 @@
     <ClCompile Include="src\Radiant\Layer.cpp" />
     <ClCompile Include="src\Radiant\LayerStack.cpp" />
     <ClCompile Include="src\Radiant\Log.cpp" />
+    <ClCompile Include="src\Radiant\Renderer\Shader.cpp" />
     <ClCompile Include="src\rdpch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

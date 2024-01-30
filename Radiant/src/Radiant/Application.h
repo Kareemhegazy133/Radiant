@@ -9,6 +9,8 @@
 
 #include "Radiant/ImGui/ImGuiLayer.h"
 
+#include "Radiant/Renderer/Shader.h"
+
 namespace Radiant {
 
 	class RADIANT_API Application
@@ -36,6 +38,7 @@ namespace Radiant {
 		LayerStack m_LayerStack;
 
 		unsigned int m_VertexArray, m_VertexBuffer, m_IndexBuffer;
+		std::unique_ptr<Shader> m_Shader;
 
 	private:
 		static Application* s_Instance;
