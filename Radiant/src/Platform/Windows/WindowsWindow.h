@@ -4,6 +4,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include "Radiant/Renderer/GraphicsContext.h"
+
 namespace Radiant {
 
 	class WindowsWindow : public Window
@@ -28,6 +30,7 @@ namespace Radiant {
 		virtual void Shutdown();
 	private:
 		GLFWwindow* m_Window;
+		GraphicsContext* m_Context;
 
 		struct WindowData
 		{
