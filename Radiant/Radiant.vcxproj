@@ -143,6 +143,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Platform\OpenGL\OpenGLBuffer.h" />
     <ClInclude Include="src\Platform\OpenGL\OpenGLContext.h" />
     <ClInclude Include="src\Platform\Windows\WindowsInput.h" />
     <ClInclude Include="src\Platform\Windows\WindowsWindow.h" />
@@ -161,7 +162,9 @@
     <ClInclude Include="src\Radiant\LayerStack.h" />
     <ClInclude Include="src\Radiant\Log.h" />
     <ClInclude Include="src\Radiant\MouseButtonCodes.h" />
+    <ClInclude Include="src\Radiant\Renderer\Buffer.h" />
     <ClInclude Include="src\Radiant\Renderer\GraphicsContext.h" />
+    <ClInclude Include="src\Radiant\Renderer\Renderer.h" />
     <ClInclude Include="src\Radiant\Renderer\Shader.h" />
     <ClInclude Include="src\Radiant\Window.h" />
     <ClInclude Include="src\rdpch.h" />
@@ -582,6 +585,7 @@
     <ClInclude Include="vendor\glm\glm\vector_relational.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Platform\OpenGL\OpenGLBuffer.cpp" />
     <ClCompile Include="src\Platform\OpenGL\OpenGLContext.cpp" />
     <ClCompile Include="src\Platform\Windows\WindowsInput.cpp" />
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp" />
@@ -591,6 +595,8 @@
     <ClCompile Include="src\Radiant\Layer.cpp" />
     <ClCompile Include="src\Radiant\LayerStack.cpp" />
     <ClCompile Include="src\Radiant\Log.cpp" />
+    <ClCompile Include="src\Radiant\Renderer\Buffer.cpp" />
+    <ClCompile Include="src\Radiant\Renderer\Renderer.cpp" />
     <ClCompile Include="src\Radiant\Renderer\Shader.cpp" />
     <ClCompile Include="src\rdpch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
