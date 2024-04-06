@@ -5,9 +5,11 @@ workspace "TheReaper"
 
    -- Workspace-wide build options for MSVC
    filter "system:windows"
+      defines { "_CRT_SECURE_NO_WARNINGS" }
+	  disablewarnings { "4996" }
       buildoptions { "/EHsc", "/Zc:preprocessor", "/Zc:__cplusplus" }
 
-OutputDir = "%{cfg.system}-%{cfg.architecture}/%{cfg.buildcfg}"
+outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 group "Engine"
 	include "Engine/Build-Engine.lua"
