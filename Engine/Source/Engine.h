@@ -1,7 +1,6 @@
 #pragma once
 
 // For use by Game applications
-
 #include "Core/GameApplication.h"
 #include "Core/Log.h"
 
