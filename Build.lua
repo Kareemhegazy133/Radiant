@@ -11,8 +11,150 @@ workspace "TheReaper"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
-group "Engine"
-	include "Engine/Build-Engine.lua"
-group ""
+project "Engine"
+	location "Engine"
+	kind "StaticLib"
+	language "C++"
+	cppdialect "C++17"
+	staticruntime "on"
 
-include "Game/Build-Game.lua"
+	pchheader "%{prj.name}pch.h"
+	pchsource "%{prj.name}/Source/%{prj.name}pch.cpp"
+
+	files
+	{
+		"%{prj.name}/Source/**.h",
+		"%{prj.name}/Source/**.hpp",
+		"%{prj.name}/Source/**.cpp"
+	}
+
+	includedirs
+	{
+		"%{prj.name}/Source",
+		"%{prj.name}/Vendor/spdlog/include",
+		"%{prj.name}/Vendor/sfml/include"
+	}
+
+	libdirs
+	{
+		"%{prj.name}/Vendor/sfml/lib"
+	}
+
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	filter "system:windows"
+	systemversion "latest"
+
+	filter "configurations:Debug"
+		defines { "DEBUG" }
+		runtime "Debug"
+		symbols "on"
+
+	filter "configurations:Release"
+		defines { "RELEASE" }
+		runtime "Release"
+		optimize "on"
+
+	filter "configurations:Dist"
+		defines { "DIST" }
+		runtime "Release"
+		optimize "on"
+
+project "Game"
+	location "Game"
+	kind "ConsoleApp"
+	language "C++"
+	cppdialect "C++17"
+	staticruntime "On"
+
+	files
+	{
+		"%{prj.name}/Source/**.h",
+		"%{prj.name}/Source/**.hpp",
+		"%{prj.name}/Source/**.cpp"
+	}
+
+	includedirs
+	{
+		"%{prj.name}/Source",
+
+		-- Include Engine
+		"Engine/Source",
+		"Engine/Vendor/spdlog/include",
+		"Engine/Vendor/sfml/include"
+	}
+
+	libdirs
+	{
+		"Engine/Vendor/sfml/lib"
+	}
+
+	links
+	{
+		"Engine"
+	}
+
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	filter "system:windows"
+		systemversion "latest"
+		defines { "WINDOWS" }
+
+	filter "configurations:Debug"
+		defines { "DEBUG" }
+		runtime "Debug"
+		symbols "on"
+		
+		links
+		{
+			"sfml-audio-d.lib",
+			"sfml-graphics-d.lib",
+			"sfml-network-d.lib",
+			"sfml-system-d.lib",
+			"sfml-window-d.lib"
+		}
+		
+		postbuildcommands
+		{
+			"{COPY} %{prj.location}/../Engine/Vendor/sfml/bin/Debug/*.dll %{cfg.targetdir}"
+        }
+
+	filter "configurations:Release"
+		defines { "RELEASE" }
+		runtime "Release"
+		optimize "on"
+
+		links
+		{
+			"sfml-audio.lib",
+			"sfml-graphics.lib",
+			"sfml-network.lib",
+			"sfml-system.lib",
+			"sfml-window.lib"
+		}
+		
+		postbuildcommands
+		{
+			"{COPY} %{prj.location}/../Engine/Vendor/sfml/bin/Release/*.dll %{cfg.targetdir}"
+        }
+
+	filter "configurations:Dist"
+		defines { "DIST" }
+		runtime "Release"
+		optimize "on"
+
+		links
+		{
+			"sfml-audio.lib",
+			"sfml-graphics.lib",
+			"sfml-network.lib",
+			"sfml-system.lib",
+			"sfml-window.lib"
+		}
+		
+		postbuildcommands
+		{
+			"{COPY} %{prj.location}/../Engine/Vendor/sfml/bin/Release/*.dll %{cfg.targetdir}"
+        }
