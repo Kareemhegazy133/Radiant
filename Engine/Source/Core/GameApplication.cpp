@@ -9,7 +9,7 @@ namespace Engine {
 	{
 		ENGINE_ASSERT(!s_Instance, "GameApplication already exists!");
 		s_Instance = this;
-		m_Window = std::make_unique<sf::Window>(sf::VideoMode(windowWidth, windowHeight), windowTitle);
+		m_Window = std::make_unique<sf::RenderWindow>(sf::VideoMode(windowWidth, windowHeight), windowTitle);
 	}
 
 	GameApplication::~GameApplication()

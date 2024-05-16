@@ -29,8 +29,16 @@ public:
 				{
 					m_Window->close();
 				}
-
 			}
+
+			// clear the window with black color
+			m_Window->clear(sf::Color::Black);
+
+			// draw everything here...
+			// window.draw(...);
+
+			// end the current frame
+			m_Window->display();
 		}
 	}
 };

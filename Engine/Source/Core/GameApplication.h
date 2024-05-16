@@ -2,7 +2,7 @@
 
 #include "Core/Core.h"
 
-#include "SFML/Window.hpp"
+#include "SFML/Graphics.hpp"
 
 namespace Engine {
 
@@ -14,11 +14,11 @@ namespace Engine {
 
 		virtual void Run() = 0;
 
-		inline sf::Window& GetWindow() { return *m_Window; }
+		inline sf::RenderWindow& GetWindow() { return *m_Window; }
 
 		inline static GameApplication& Get() { return *s_Instance; }
 	protected:
-		std::unique_ptr<sf::Window> m_Window;
+		std::unique_ptr<sf::RenderWindow> m_Window;
 
 	private:
 		static GameApplication* s_Instance;
