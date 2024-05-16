@@ -118,7 +118,7 @@ project "Game"
 		
 		postbuildcommands
 		{
-			"{COPY} %{prj.location}/../Engine/Vendor/sfml/bin/Debug/*.dll %{cfg.targetdir}"
+			"{COPY} %{prj.location}/../Engine/Vendor/sfml/dlls/Debug/*.dll %{cfg.targetdir}"
         }
 
 	filter "configurations:Release"
@@ -137,7 +137,7 @@ project "Game"
 		
 		postbuildcommands
 		{
-			"{COPY} %{prj.location}/../Engine/Vendor/sfml/bin/Release/*.dll %{cfg.targetdir}"
+			"{COPY} %{prj.location}/../Engine/Vendor/sfml/dlls/Release/*.dll %{cfg.targetdir}"
         }
 
 	filter "configurations:Dist"
@@ -156,5 +156,5 @@ project "Game"
 		
 		postbuildcommands
 		{
-			"{COPY} %{prj.location}/../Engine/Vendor/sfml/bin/Release/*.dll %{cfg.targetdir}"
+			"{COPY} %{prj.location}/../Engine/Vendor/sfml/dlls/Release/*.dll %{cfg.targetdir}"
         }
