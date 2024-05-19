@@ -11,6 +11,12 @@ workspace "TheReaper"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+-- Include directories relative to root folder (solution directory)
+IncludeDir = {}
+IncludeDir["spdlog"] = "Engine/Vendor/spdlog/include"
+IncludeDir["sfml"] = "Engine/Vendor/sfml/include"
+IncludeDir["entt"] = "Engine/Vendor/entt/include"
+
 project "Engine"
 	location "Engine"
 	kind "StaticLib"
@@ -31,8 +37,9 @@ project "Engine"
 	includedirs
 	{
 		"%{prj.name}/Source",
-		"%{prj.name}/Vendor/spdlog/include",
-		"%{prj.name}/Vendor/sfml/include"
+		"%{IncludeDir.spdlog}",
+		"%{IncludeDir.sfml}",
+		"%{IncludeDir.entt}"
 	}
 
 	libdirs
@@ -81,8 +88,9 @@ project "Game"
 
 		-- Include Engine
 		"Engine/Source",
-		"Engine/Vendor/spdlog/include",
-		"Engine/Vendor/sfml/include"
+		"%{IncludeDir.spdlog}",
+		"%{IncludeDir.sfml}",
+		"%{IncludeDir.entt}"
 	}
 
 	libdirs
