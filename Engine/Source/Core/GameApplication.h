@@ -3,6 +3,11 @@
 #include "Core/Log.h"
 #include "Core/Assert.h"
 
+#include "Window.h"
+#include "Core/LayerStack.h"
+#include "Events/Event.h"
+#include "Events/ApplicationEvent.h"
+
 #include "Core/Timestep.h"
 
 #include "SFML/Graphics.hpp"
@@ -14,10 +19,15 @@ namespace Engine {
 	class GameApplication
 	{
 	public:
-		GameApplication(unsigned int windowWidth, unsigned int windowHeight, const std::string windowTitle);
+		GameApplication();
 		virtual ~GameApplication();
 
-		inline sf::RenderWindow& GetWindow() { return *m_Window; }
+		void OnEvent(Event& e);
+
+		void PushLayer(Layer* layer);
+		void PushOverlay(Layer* layer);
+
+		inline Window& GetWindow() { return *m_Window; }
 		inline float sfmlGetTime() { return clock.getElapsedTime().asSeconds(); }
 
 		inline static GameApplication& Get() { return *s_Instance; }
@@ -25,7 +35,9 @@ namespace Engine {
 	private:
 		void Run();
 	private:
-		std::unique_ptr<sf::RenderWindow> m_Window;
+		bool OnWindowClose(WindowCloseEvent& e);
+		std::unique_ptr<Window> m_Window;
+		LayerStack m_LayerStack;
 		sf::Clock clock;
 		float m_LastFrameTime = 0.0f;
 	private:

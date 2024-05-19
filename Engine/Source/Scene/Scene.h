@@ -2,7 +2,6 @@
 
 #include "entt.hpp"
 
-#include <SFML/System/String.hpp>
 #include "Core/Timestep.h"
 
 namespace Engine {
@@ -15,7 +14,7 @@ namespace Engine {
 		Scene();
 		~Scene();
 
-		Entity CreateEntity(const sf::String& name = sf::String());
+		Entity CreateEntity(const std::string& name = std::string());
 		void OnUpdate(Timestep ts);
 
 	private:

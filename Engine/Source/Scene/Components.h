@@ -1,17 +1,16 @@
 #pragma once
 
-#include <SFML/System/String.hpp>
 #include "SFML/Graphics/Sprite.hpp"
 
 namespace Engine {
 
     struct TagComponent
     {
-        sf::String Tag;
+        std::string Tag;
 
         TagComponent() = default;
         TagComponent(const TagComponent&) = default;
-        TagComponent(const sf::String& tag) : Tag(tag) {}
+        TagComponent(const std::string& tag) : Tag(tag) {}
     };
 
     struct TransformComponent

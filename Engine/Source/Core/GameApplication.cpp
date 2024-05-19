@@ -5,45 +5,67 @@ namespace Engine {
 
 	GameApplication* GameApplication::s_Instance = nullptr;
 
-	GameApplication::GameApplication(unsigned int windowWidth, unsigned int windowHeight, const std::string windowTitle)
+	GameApplication::GameApplication()
 	{
 		ENGINE_ASSERT(!s_Instance, "GameApplication already exists!");
 		s_Instance = this;
-		m_Window = std::make_unique<sf::RenderWindow>(sf::VideoMode(windowWidth, windowHeight), windowTitle);
+		m_Window = std::unique_ptr<Window>(Window::Create());
+		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
 	}
 
 	GameApplication::~GameApplication()
 	{
 
 	}
+
+	void GameApplication::PushLayer(Layer* layer)
+	{
+		m_LayerStack.PushLayer(layer);
+		layer->OnAttach();
+	}
+
+	void GameApplication::PushOverlay(Layer* layer)
+	{
+		m_LayerStack.PushOverlay(layer);
+		layer->OnAttach();
+	}
+
+	void GameApplication::OnEvent(Event& e)
+	{
+		EventDispatcher dispatcher(e);
+		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
+
+		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
+		{
+			(*--it)->OnEvent(e);
+			if (e.Handled)
+				break;
+		}
+	}
+
 	void GameApplication::Run()
 	{
-		while (m_Window->isOpen())
+		while (m_Window->IsRunning())
 		{
 			//GAME_INFO("Game Running..");
 			float time = sfmlGetTime();
 			Timestep timestep = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
-			// check all the window's events that were triggered since the last iteration of the loop
-			sf::Event event;
-			while (m_Window->pollEvent(event))
-			{
-				// "close requested" event: we close the window
-				if (event.type == sf::Event::Closed)
-				{
-					m_Window->close();
-				}
-			}
-
-			// clear the window with black color
-			m_Window->clear(sf::Color::Black);
+			m_Window->OnUpdate();
 
 			// draw everything here...
-			// m_Window->draw(...);
+			for (Layer* layer : m_LayerStack)
+				layer->OnUpdate(timestep);
 
 			// end the current frame
-			m_Window->display();
+			m_Window->Display();
 		}
+	}
+
+	bool GameApplication::OnWindowClose(WindowCloseEvent& e)
+	{
+		m_Window->Shutdown();
+		return true;
 	}
 }

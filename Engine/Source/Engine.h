@@ -2,11 +2,18 @@
 
 // For use by Game applications
 
+#include "Core/Base.h"
+
 #include "Core/GameApplication.h"
+#include "Core/Layer.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
 
 #include "Core/Timestep.h"
+
+#include "Core/Input.h"
+#include "Core/MouseCodes.h"
+#include "Core/KeyCodes.h"
 
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"

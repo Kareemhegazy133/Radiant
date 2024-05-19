@@ -2,21 +2,40 @@
 #include "Core/EntryPoint.h"
 #include "GameConfig.h"
 
-namespace Engine {
 
-	class TheReaper : public GameApplication
+class ExampleLayer : public Engine::Layer
+{
+public:
+	ExampleLayer() : Layer("Example")
 	{
 
-	public:
-		TheReaper() : GameApplication(GAME_WIDTH, GAME_HEIGHT, GAME_NAME)
-		{
-		}
-
-
-	};
-
-	GameApplication* CreateGameApplication()
-	{
-		return new TheReaper();
 	}
+
+	void OnUpdate(Engine::Timestep ts) override
+	{
+		//GAME_TRACE("Delta time: {0}s ({1})ms", ts.GetSeconds(), ts.GetMilliseconds());
+	}
+
+	void OnEvent(Engine::Event& event) override
+	{
+		//GAME_TRACE(event.ToString());
+	}
+
+};
+
+class TheReaper : public  Engine::GameApplication
+{
+
+public:
+	TheReaper() : GameApplication()
+	{
+		PushLayer(new ExampleLayer());
+	}
+
+};
+
+Engine::GameApplication* Engine::CreateGameApplication()
+{
+	return new TheReaper();
 }
+
