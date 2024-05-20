@@ -5,12 +5,13 @@ namespace Engine {
 
 	GameApplication* GameApplication::s_Instance = nullptr;
 
-	GameApplication::GameApplication()
+	GameApplication::GameApplication(const std::string& name, GameApplicationCommandLineArgs args)
+		: m_CommandLineArgs(args)
 	{
 		ENGINE_ASSERT(!s_Instance, "GameApplication already exists!");
 		s_Instance = this;
-		m_Window = std::unique_ptr<Window>(Window::Create());
-		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+		m_Window = Window::Create(WindowProps(name));
+		m_Window->SetEventCallback(ENGINE_BIND_EVENT_FN(GameApplication::OnEvent));
 	}
 
 	GameApplication::~GameApplication()
@@ -33,7 +34,7 @@ namespace Engine {
 	void GameApplication::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
+		dispatcher.Dispatch<WindowCloseEvent>(ENGINE_BIND_EVENT_FN(GameApplication::OnWindowClose));
 
 		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
 		{

@@ -15,24 +15,24 @@ namespace Engine {
 
     struct TransformComponent
     {
-        sf::Transform Transform;
+        sf::Transformable Transform;
 
-        TransformComponent() : Transform() {}
+        TransformComponent() = default;
 
         void setPosition(float x, float y) {
-            Transform.translate(x, y);
+            Transform.setPosition(x, y);
         }
 
         void setRotation(float angle) {
-            Transform.rotate(angle);
+            Transform.setRotation(angle);
         }
 
         void setScale(float scaleX, float scaleY) {
-            Transform.scale(scaleX, scaleY);
+            Transform.setScale(scaleX, scaleY);
         }
 
         void reset() {
-            Transform = sf::Transform::Identity;
+            Transform = sf::Transformable();
         }
     };
 

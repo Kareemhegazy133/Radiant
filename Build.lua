@@ -54,17 +54,17 @@ project "Engine"
 	systemversion "latest"
 
 	filter "configurations:Debug"
-		defines { "DEBUG" }
+		defines { "ENGINE_DEBUG" }
 		runtime "Debug"
 		symbols "on"
 
 	filter "configurations:Release"
-		defines { "RELEASE" }
+		defines { "ENGINE_RELEASE" }
 		runtime "Release"
 		optimize "on"
 
 	filter "configurations:Dist"
-		defines { "DIST" }
+		defines { "ENGINE_DIST" }
 		runtime "Release"
 		optimize "on"
 
@@ -111,7 +111,7 @@ project "Game"
 		defines { "WINDOWS" }
 
 	filter "configurations:Debug"
-		defines { "DEBUG" }
+		defines { "GAME_DEBUG" }
 		runtime "Debug"
 		symbols "on"
 		
@@ -130,7 +130,7 @@ project "Game"
         }
 
 	filter "configurations:Release"
-		defines { "RELEASE" }
+		defines { "GAME_RELEASE" }
 		runtime "Release"
 		optimize "on"
 
@@ -149,7 +149,7 @@ project "Game"
         }
 
 	filter "configurations:Dist"
-		defines { "DIST" }
+		defines { "GAME_DIST" }
 		runtime "Release"
 		optimize "on"
 

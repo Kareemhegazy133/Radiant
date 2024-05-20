@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SFML/Graphics.hpp"
+
 #include "Core/Log.h"
 #include "Core/Assert.h"
 
@@ -10,16 +12,26 @@
 
 #include "Core/Timestep.h"
 
-#include "SFML/Graphics.hpp"
-
 int main(int argc, char** argv);
 
 namespace Engine {
 
+	struct GameApplicationCommandLineArgs
+	{
+		int Count = 0;
+		char** Args = nullptr;
+
+		const char* operator[](int index) const
+		{
+			ENGINE_ASSERT(index < Count);
+			return Args[index];
+		}
+	};
+
 	class GameApplication
 	{
 	public:
-		GameApplication();
+		GameApplication(const std::string& name = "Game App", GameApplicationCommandLineArgs args = GameApplicationCommandLineArgs());
 		virtual ~GameApplication();
 
 		void OnEvent(Event& e);
@@ -32,11 +44,13 @@ namespace Engine {
 
 		inline static GameApplication& Get() { return *s_Instance; }
 
+		GameApplicationCommandLineArgs GetCommandLineArgs() const { return m_CommandLineArgs; }
 	private:
 		void Run();
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
-		std::unique_ptr<Window> m_Window;
+		GameApplicationCommandLineArgs m_CommandLineArgs;
+		Scope<Window> m_Window;
 		LayerStack m_LayerStack;
 		sf::Clock clock;
 		float m_LastFrameTime = 0.0f;
@@ -46,5 +60,5 @@ namespace Engine {
 	};
 
 	// To be defined in GAME
-	GameApplication* CreateGameApplication();
+	GameApplication* CreateGameApplication(GameApplicationCommandLineArgs args);
 }

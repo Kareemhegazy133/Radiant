@@ -1,7 +1,7 @@
 #include "Enginepch.h"
 #include "Scene.h"
-#include "Entity.h"
 #include "Components.h"
+#include "Entity.h"
 
 namespace Engine {
 	
@@ -26,6 +26,11 @@ namespace Engine {
 		return entity;
 	}
 
+	void Scene::DestroyEntity(Entity entity)
+	{
+		m_Registry.destroy(entity);
+	}
+
 	void Scene::OnUpdate(Timestep ts)
 	{
 		auto group = m_Registry.group<TransformComponent>(entt::get<SpriteComponent>);
@@ -36,4 +41,26 @@ namespace Engine {
 			// SFML Draw Call using transform and sprite
 		}
 	}
+
+	template<typename T>
+	void Scene::OnComponentAdded(Entity entity, T& component)
+	{
+		static_assert(false);
+	}
+
+	template<>
+	void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<SpriteComponent>(Entity entity, SpriteComponent& component)
+	{
+	}
+	
 }
