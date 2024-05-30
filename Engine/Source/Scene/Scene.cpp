@@ -40,6 +40,9 @@ namespace Engine {
 		{
 			auto& [transform, sprite] = group.get<TransformComponent, SpriteComponent>(entity);
 
+			// Update the sprite's animation
+			sprite.update(ts);
+
 			// Apply the transform to the sprite
 			sprite.setPosition(transform.getPosition());
 			sprite.setRotation(transform.getRotation());
@@ -73,5 +76,12 @@ namespace Engine {
 	{
 		
 	}
-	
+
+	template<>
+	void Scene::OnComponentAdded<AnimationComponent>(Entity entity, AnimationComponent& component)
+	{
+		auto& spriteComponent = entity.GetComponent<SpriteComponent>();
+		spriteComponent.Animation = &component;
+	}
+
 }
