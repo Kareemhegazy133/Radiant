@@ -1,11 +1,13 @@
 #include "Enginepch.h"
+
 #include "Scene.h"
 #include "Components.h"
 #include "Entity.h"
 
 namespace Engine {
 	
-	Scene::Scene()
+	Scene::Scene(sf::RenderWindow* renderWindow)
+		: m_RenderWindow(renderWindow)
 	{
 
 	}
@@ -38,8 +40,15 @@ namespace Engine {
 		{
 			auto& [transform, sprite] = group.get<TransformComponent, SpriteComponent>(entity);
 
-			// SFML Draw Call using transform and sprite
+			// Apply the transform to the sprite
+			sprite.setPosition(transform.getPosition());
+			sprite.setRotation(transform.getRotation());
+			sprite.setScale(transform.getScale());
+
+			// Draw the sprite to the render window
+			m_RenderWindow->draw(sprite);
 		}
+		
 	}
 
 	template<typename T>
@@ -56,11 +65,13 @@ namespace Engine {
 	template<>
 	void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
 	{
+		
 	}
 
 	template<>
 	void Scene::OnComponentAdded<SpriteComponent>(Entity entity, SpriteComponent& component)
 	{
+		
 	}
 	
 }

@@ -12,6 +12,8 @@ namespace Engine {
 		s_Instance = this;
 		m_Window = Window::Create(WindowProps(name));
 		m_Window->SetEventCallback(ENGINE_BIND_EVENT_FN(GameApplication::OnEvent));
+
+		m_TextureManager = new TextureManager();
 	}
 
 	GameApplication::~GameApplication()
@@ -49,7 +51,7 @@ namespace Engine {
 		while (m_Window->IsRunning())
 		{
 			//GAME_INFO("Game Running..");
-			float time = sfmlGetTime();
+			float time = SFMLGetTime();
 			Timestep timestep = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 

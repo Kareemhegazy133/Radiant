@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <SFML/System/Vector2.hpp>
+
 #include "Core/Base.h"
 
 #include "Core/Log.h"

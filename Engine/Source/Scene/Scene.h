@@ -1,7 +1,7 @@
 #pragma once
 
 #include "entt.hpp"
-
+#include "SFML/Graphics/RenderWindow.hpp"
 #include "Core/Timestep.h"
 
 namespace Engine {
@@ -11,7 +11,7 @@ namespace Engine {
 	class Scene
 	{
 	public:
-		Scene();
+		Scene(sf::RenderWindow* renderWindow);
 		~Scene();
 
 		Entity CreateEntity(const std::string& name = std::string());
@@ -21,8 +21,8 @@ namespace Engine {
 		template<typename T>
 		void OnComponentAdded(Entity entity, T& component);
 	private:
+		sf::RenderWindow* m_RenderWindow;
 		entt::registry m_Registry;
-
 		friend class Entity;
 	};
 }

@@ -11,6 +11,7 @@ namespace Engine {
 	public:
 		TheReaper(GameApplicationCommandLineArgs args) : GameApplication("The Reaper", args)
 		{
+			this->GetTextureManager().loadTexture("Dice", "Assets/Dice.png");
 			PushLayer(new GameLayer());
 		}
 

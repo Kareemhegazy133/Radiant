@@ -15,6 +15,8 @@
 #include "Core/KeyCodes.h"
 #include "Core/MouseCodes.h"
 
+#include "Utils/TextureManager.h"
+
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"

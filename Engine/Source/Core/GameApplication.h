@@ -12,6 +12,8 @@
 
 #include "Core/Timestep.h"
 
+#include "Utils/TextureManager.h"
+
 int main(int argc, char** argv);
 
 namespace Engine {
@@ -40,7 +42,8 @@ namespace Engine {
 		void PushOverlay(Layer* layer);
 
 		inline Window& GetWindow() { return *m_Window; }
-		inline float sfmlGetTime() { return clock.getElapsedTime().asSeconds(); }
+		inline TextureManager& GetTextureManager() { return *m_TextureManager; }
+		inline float SFMLGetTime() { return clock.getElapsedTime().asSeconds(); }
 
 		inline static GameApplication& Get() { return *s_Instance; }
 
@@ -51,6 +54,7 @@ namespace Engine {
 		bool OnWindowClose(WindowCloseEvent& e);
 		GameApplicationCommandLineArgs m_CommandLineArgs;
 		Scope<Window> m_Window;
+		TextureManager* m_TextureManager;
 		LayerStack m_LayerStack;
 		sf::Clock clock;
 		float m_LastFrameTime = 0.0f;
