@@ -16,13 +16,19 @@ IncludeDir = {}
 IncludeDir["spdlog"] = "Engine/Vendor/spdlog/include"
 IncludeDir["sfml"] = "Engine/Vendor/sfml/include"
 IncludeDir["entt"] = "Engine/Vendor/entt/include"
+IncludeDir["box2d"] = "Engine/Vendor/box2d/include"
+
+group "Dependencies"
+	include "Engine/Vendor/box2d"
+	
+group ""
 
 project "Engine"
-	location "Engine"
 	kind "StaticLib"
+	location "Engine"
 	language "C++"
 	cppdialect "C++17"
-	staticruntime "on"
+	staticruntime "off"
 
 	pchheader "%{prj.name}pch.h"
 	pchsource "%{prj.name}/Source/%{prj.name}pch.cpp"
@@ -39,16 +45,22 @@ project "Engine"
 		"%{prj.name}/Source",
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.sfml}",
-		"%{IncludeDir.entt}"
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.box2d}"
 	}
 
 	libdirs
 	{
 		"%{prj.name}/Vendor/sfml/lib"
 	}
+	
+	links
+	{
+		"box2d"
+	}
 
-	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
 	filter "system:windows"
 	systemversion "latest"
@@ -73,7 +85,7 @@ project "Game"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
-	staticruntime "On"
+	staticruntime "off"
 
 	files
 	{
@@ -103,8 +115,8 @@ project "Game"
 		"Engine"
 	}
 
-	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
 	filter "system:windows"
 		systemversion "latest"

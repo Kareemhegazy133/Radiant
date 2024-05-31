@@ -3,6 +3,9 @@
 #include "SFML/Graphics/Sprite.hpp"
 #include "Utils/TextureManager.h"
 
+#define DEG_TO_RAD(angleInDegrees) ((angleInDegrees) * 3.14159265f / 180.0f)
+#define RAD_TO_DEG(angleInRadians) ((angleInRadians) * 180.0f / 3.14159265f)
+
 namespace Engine {
 
     struct TagComponent
@@ -21,6 +24,7 @@ namespace Engine {
         sf::Transformable Transform;
 
         TransformComponent() = default;
+        TransformComponent(const TransformComponent&) = default;
         TransformComponent(const sf::Vector2f& position) : Transform()
         {
             setPosition(position);
@@ -230,4 +234,35 @@ namespace Engine {
         }
 	};
 
+    struct Rigidbody2DComponent
+    {
+        enum class BodyType { Static = 0, Dynamic, Kinematic };
+        BodyType Type;
+        bool FixedRotation = false;
+
+        // Storage for runtime
+        void* RuntimeBody = nullptr;
+
+        Rigidbody2DComponent() = default;
+        Rigidbody2DComponent(BodyType type = BodyType::Static)
+            : Type(type) {}
+        Rigidbody2DComponent(const Rigidbody2DComponent&) = default;
+    };
+
+    struct BoxCollider2DComponent
+    {
+        sf::Vector2f Offset = { 0.0f, 0.0f };
+        sf::Vector2f Size = { 0.5f, 0.5f };
+
+        float Density = 1.0f;
+        float Friction = 0.5f;
+        float Restitution = 0.0f;
+        float RestitutionThreshold = 0.5f;
+
+        // Storage for runtime
+        void* RuntimeFixture = nullptr;
+
+        BoxCollider2DComponent() = default;
+        BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
+    };
 }
