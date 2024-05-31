@@ -181,8 +181,25 @@ namespace Engine {
             return TextureIdentifier;
         }
 
+        // Function to get the size of the texture
+        sf::Vector2f getTextureSize() const {
+            sf::Vector2i size;
+            if (Animation)
+            {
+                size = Animation->GetCurrentFrame().getSize();
+            }
+            else {
+                size = Sprite.getTextureRect().getSize();
+            }
+            return sf::Vector2f(static_cast<float>(size.x), static_cast<float>(size.y));
+        }
+
         void setTextureRect(const sf::IntRect& rectangle) {
             Sprite.setTextureRect(rectangle);
+        }
+
+        const sf::IntRect& getTextureRect() const {
+            return Sprite.getTextureRect();
         }
 
         void setPosition(const sf::Vector2f& position) {
@@ -193,16 +210,8 @@ namespace Engine {
             Sprite.setPosition(x, y);
         }
 
-        sf::Vector2f getPosition() const {
-            return Sprite.getPosition();
-        }
-
         void setRotation(float angle) {
             Sprite.setRotation(angle);
-        }
-
-        float getRotation() const {
-            return Sprite.getRotation();
         }
 
         void setScale(const sf::Vector2f& scale) {
@@ -211,18 +220,6 @@ namespace Engine {
 
         void setScale(float factorX, float factorY) {
             Sprite.setScale(factorX, factorY);
-        }
-
-        sf::Vector2f getScale() const {
-            return Sprite.getScale();
-        }
-
-        void setOrigin(float x, float y) {
-            Sprite.setOrigin(x, y);
-        }
-
-        void setColor(const sf::Color& color) {
-            Sprite.setColor(color);
         }
 
         // Update the sprite's animation
@@ -243,7 +240,6 @@ namespace Engine {
         // Storage for runtime
         void* RuntimeBody = nullptr;
 
-        Rigidbody2DComponent() = default;
         Rigidbody2DComponent(BodyType type = BodyType::Static)
             : Type(type) {}
         Rigidbody2DComponent(const Rigidbody2DComponent&) = default;
@@ -252,7 +248,6 @@ namespace Engine {
     struct BoxCollider2DComponent
     {
         sf::Vector2f Offset = { 0.0f, 0.0f };
-        sf::Vector2f Size = { 0.5f, 0.5f };
 
         float Density = 1.0f;
         float Friction = 0.5f;

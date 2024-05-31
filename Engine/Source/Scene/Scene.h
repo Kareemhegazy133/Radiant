@@ -30,4 +30,5 @@ namespace Engine {
 
 		friend class Entity;
 	};
+
 }

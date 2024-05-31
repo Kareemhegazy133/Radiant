@@ -9,20 +9,9 @@
 #include "box2d/b2_fixture.h"
 #include "box2d/b2_polygon_shape.h"
 
+#include "Physics/Physics2D.h"
+
 namespace Engine {
-
-	static b2BodyType Rigidbody2DTypeToBox2DBody(Rigidbody2DComponent::BodyType bodyType)
-	{
-		switch (bodyType)
-		{
-		case Rigidbody2DComponent::BodyType::Static:    return b2_staticBody;
-		case Rigidbody2DComponent::BodyType::Dynamic:   return b2_dynamicBody;
-		case Rigidbody2DComponent::BodyType::Kinematic: return b2_kinematicBody;
-		}
-
-		ENGINE_ASSERT(false, "Unknown body type");
-		return b2_staticBody;
-	}
 	
 	Scene::Scene(sf::RenderWindow* renderWindow)
 		: m_RenderWindow(renderWindow)
@@ -54,16 +43,26 @@ namespace Engine {
 
 	void Scene::OnUpdate(Timestep ts)
 	{
-		const int32_t velocityIterations = 6;
-		const int32_t positionIterations = 2;
-		m_PhysicsWorld->Step(ts, velocityIterations, positionIterations);
-
-		// Retrieve transform from Box2D
+		// Update Physics Bodies and Colliders of all entities
 		auto view = m_Registry.view<Rigidbody2DComponent, TransformComponent, SpriteComponent>();
 		for (auto entity : view)
 		{
 			auto& [rb2d, transform, sprite] = view.get<Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
+			UpdatePhysicsBody(rb2d, transform);
+			
+			auto& bc2d = m_Registry.get<BoxCollider2DComponent>(entity);
+			UpdateBoxColliderFixture(bc2d, transform, sprite);
+		}
 
+		// Apply Physics
+		const int32_t velocityIterations = 6;
+		const int32_t positionIterations = 2;
+		m_PhysicsWorld->Step(ts, velocityIterations, positionIterations);
+
+		// Update the transform after applying physics for sprite rendering
+		for (auto entity : view)
+		{
+			auto& [rb2d, transform, sprite] = view.get<Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
 			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
 			const auto& position = body->GetPosition();
 			transform.setPosition(position.x, position.y);
@@ -80,8 +79,8 @@ namespace Engine {
 			// Draw the sprite to the render window
 			m_RenderWindow->draw(sprite);
 		}
-		
 	}
+
 
 	template<typename T>
 	void Scene::OnComponentAdded(Entity entity, T& component)
@@ -116,34 +115,13 @@ namespace Engine {
 	template<>
 	void Scene::OnComponentAdded<Rigidbody2DComponent>(Entity entity, Rigidbody2DComponent& component)
 	{
-		auto& transform = entity.GetComponent<TransformComponent>();
-
-		b2BodyDef bodyDef;
-		bodyDef.type = Rigidbody2DTypeToBox2DBody(component.Type);
-		bodyDef.position.Set(transform.getPosition().x, transform.getPosition().y);
-		bodyDef.angle = DEG_TO_RAD(transform.getRotation());
-
-		b2Body* body = m_PhysicsWorld->CreateBody(&bodyDef);
-		body->SetFixedRotation(component.FixedRotation);
-		component.RuntimeBody = body;
+		CreatePhysicsBody(m_PhysicsWorld, entity, component);
 	}
 
 	template<>
 	void Scene::OnComponentAdded<BoxCollider2DComponent>(Entity entity, BoxCollider2DComponent& component)
 	{
-		auto& transform = entity.GetComponent<TransformComponent>();
-
-		b2PolygonShape boxShape;
-		boxShape.SetAsBox(component.Size.x * transform.getScale().x, component.Size.y * transform.getScale().y);
-
-		b2FixtureDef fixtureDef;
-		fixtureDef.shape = &boxShape;
-		fixtureDef.density = component.Density;
-		fixtureDef.friction = component.Friction;
-		fixtureDef.restitution = component.Restitution;
-		fixtureDef.restitutionThreshold = component.RestitutionThreshold;
-
-		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-		static_cast<b2Body*>(rb2d.RuntimeBody)->CreateFixture(&fixtureDef);
+		CreateBoxColliderFixture(entity, component);
 	}
+
 }
