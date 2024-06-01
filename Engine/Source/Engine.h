@@ -19,4 +19,5 @@
 
 #include "World/World.h"
 #include "World/Entity.h"
+#include "World/Character.h"
 #include "World/Components.h"

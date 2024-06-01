@@ -1,13 +1,8 @@
 #include "Level.h"
 
-using namespace Engine;
-
 Level::Level(sf::RenderWindow* renderWindow)
     : World(renderWindow)
 {
-	auto player = CreateEntity("Player");
-	player.AddComponent<SpriteComponent>("Player");
-
 	/*std::vector<sf::IntRect> idleFrames;
 	for (int i = 0; i < 18; i++)
 	{
@@ -17,14 +12,7 @@ Level::Level(sf::RenderWindow* renderWindow)
 	auto& playerAnimationComponent = player.AddComponent<AnimationComponent>();
 	playerAnimationComponent.AddAnimation("Idle", idleFrames, 0.05f);
 	playerAnimationComponent.SetAnimation("Idle");*/
-
-	auto& player_transform = player.GetComponent<TransformComponent>();
-
-
-	auto& player_rb2d = player.AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
-	player.AddComponent<BoxCollider2DComponent>();
-	player_transform.setPosition(300.f, 0.f);
-
+	
 	auto platform = CreateEntity("Platform");
 	platform.AddComponent<SpriteComponent>("Platform");
 	auto& platform_transform = platform.GetComponent<TransformComponent>();

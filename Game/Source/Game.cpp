@@ -3,25 +3,20 @@
 
 #include "GameLayer.h"
 
-namespace Engine {
+class TheReaper : public Engine::GameApplication
+{
 
-	class TheReaper : public GameApplication
+public:
+	TheReaper(GameApplicationCommandLineArgs args) : GameApplication("The Reaper", args)
 	{
-
-	public:
-		TheReaper(GameApplicationCommandLineArgs args) : GameApplication("The Reaper", args)
-		{
-			this->GetTextureManager().loadTexture("Player", "Assets/Player 2.png");
-			this->GetTextureManager().loadTexture("Platform", "Assets/Platform.png");
-			PushLayer(new GameLayer());
-		}
-
-	};
-
-	GameApplication* CreateGameApplication(GameApplicationCommandLineArgs args)
-	{
-		return new TheReaper(args);
+		this->GetTextureManager().loadTexture("Player", "Assets/Player 2.png");
+		this->GetTextureManager().loadTexture("Platform", "Assets/Platform.png");
+		PushLayer(new GameLayer());
 	}
 
-}
+};
 
+Engine::GameApplication* Engine::CreateGameApplication(GameApplicationCommandLineArgs args)
+{
+	return new TheReaper(args);
+}

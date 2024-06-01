@@ -1,7 +1,5 @@
 #include "GameLayer.h"
 
-using namespace Engine;
-
 GameLayer::GameLayer() : Layer("GameLayer")
 {
 

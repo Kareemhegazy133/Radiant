@@ -1,16 +1,22 @@
 #pragma once
 
-#include "Engine.h"
+#include <Engine.h>
 
-namespace Engine {
+#include "Player.h"
 
-    class Level : public World {
-    public:
-        Level(sf::RenderWindow* renderWindow);
-        ~Level();
+using namespace Engine;
 
-        void OnUpdate(Timestep ts) override;
-        void OnRender();
-    };
+class Level : public World
+{
 
-}
+public:
+    Level(sf::RenderWindow* renderWindow);
+    ~Level();
+
+    void OnUpdate(Timestep ts) override;
+    void OnRender();
+
+private:
+    Player m_Player;
+};
+

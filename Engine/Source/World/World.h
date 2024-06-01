@@ -20,6 +20,8 @@ namespace Engine {
 		void DestroyEntity(Entity entity);
 		virtual void OnUpdate(Timestep ts);
 
+		inline static World& GetWorld() { return *s_Instance; }
+
 	private:
 		template<typename T>
 		void OnComponentAdded(Entity entity, T& component);
@@ -28,6 +30,7 @@ namespace Engine {
 		sf::RenderWindow* m_RenderWindow;
 
 	private:
+		static World* s_Instance;
 		entt::registry m_Registry;
 
 		b2World* m_PhysicsWorld = nullptr;

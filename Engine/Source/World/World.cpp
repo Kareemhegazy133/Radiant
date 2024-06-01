@@ -12,10 +12,14 @@
 #include "Physics/Physics2D.h"
 
 namespace Engine {
-	
+
+	World* World::s_Instance = nullptr;
+
 	World::World(sf::RenderWindow* renderWindow)
 		: m_RenderWindow(renderWindow)
 	{
+		ENGINE_ASSERT(!s_Instance, "World already exists!");
+		s_Instance = this;
 		m_PhysicsWorld = new b2World({ 0.0f, 9.8f });
 	}
 
