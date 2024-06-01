@@ -10,20 +10,24 @@ namespace Engine {
 
 	class Entity;
 
-	class Scene
+	class World
 	{
 	public:
-		Scene(sf::RenderWindow* renderWindow);
-		~Scene();
+		World(sf::RenderWindow* renderWindow);
+		~World();
 
 		Entity CreateEntity(const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
-		void OnUpdate(Timestep ts);
+		virtual void OnUpdate(Timestep ts);
+
 	private:
 		template<typename T>
 		void OnComponentAdded(Entity entity, T& component);
-	private:
+
+	protected:
 		sf::RenderWindow* m_RenderWindow;
+
+	private:
 		entt::registry m_Registry;
 
 		b2World* m_PhysicsWorld = nullptr;

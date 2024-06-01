@@ -1,6 +1,6 @@
 #include "Enginepch.h"
 
-#include "Scene.h"
+#include "World.h"
 #include "Components.h"
 #include "Entity.h"
 
@@ -13,19 +13,19 @@
 
 namespace Engine {
 	
-	Scene::Scene(sf::RenderWindow* renderWindow)
+	World::World(sf::RenderWindow* renderWindow)
 		: m_RenderWindow(renderWindow)
 	{
 		m_PhysicsWorld = new b2World({ 0.0f, 9.8f });
 	}
 
-	Scene::~Scene()
+	World::~World()
 	{
 		delete m_PhysicsWorld;
 		m_PhysicsWorld = nullptr;
 	}
 
-	Entity Scene::CreateEntity(const std::string& name)
+	Entity World::CreateEntity(const std::string& name)
 	{
 		Entity entity = { m_Registry.create(), this };
 
@@ -36,12 +36,12 @@ namespace Engine {
 		return entity;
 	}
 
-	void Scene::DestroyEntity(Entity entity)
+	void World::DestroyEntity(Entity entity)
 	{
 		m_Registry.destroy(entity);
 	}
 
-	void Scene::OnUpdate(Timestep ts)
+	void World::OnUpdate(Timestep ts)
 	{
 		// Update Physics Bodies and Colliders of all entities
 		auto view = m_Registry.view<Rigidbody2DComponent, TransformComponent, SpriteComponent>();
@@ -83,43 +83,43 @@ namespace Engine {
 
 
 	template<typename T>
-	void Scene::OnComponentAdded(Entity entity, T& component)
+	void World::OnComponentAdded(Entity entity, T& component)
 	{
 		static_assert(false);
 	}
 
 	template<>
-	void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
+	void World::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
 	{
 	}
 
 	template<>
-	void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
-	{
-		
-	}
-
-	template<>
-	void Scene::OnComponentAdded<SpriteComponent>(Entity entity, SpriteComponent& component)
+	void World::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
 	{
 		
 	}
 
 	template<>
-	void Scene::OnComponentAdded<AnimationComponent>(Entity entity, AnimationComponent& component)
+	void World::OnComponentAdded<SpriteComponent>(Entity entity, SpriteComponent& component)
+	{
+		
+	}
+
+	template<>
+	void World::OnComponentAdded<AnimationComponent>(Entity entity, AnimationComponent& component)
 	{
 		auto& spriteComponent = entity.GetComponent<SpriteComponent>();
 		spriteComponent.Animation = &component;
 	}
 
 	template<>
-	void Scene::OnComponentAdded<Rigidbody2DComponent>(Entity entity, Rigidbody2DComponent& component)
+	void World::OnComponentAdded<Rigidbody2DComponent>(Entity entity, Rigidbody2DComponent& component)
 	{
 		CreatePhysicsBody(m_PhysicsWorld, entity, component);
 	}
 
 	template<>
-	void Scene::OnComponentAdded<BoxCollider2DComponent>(Entity entity, BoxCollider2DComponent& component)
+	void World::OnComponentAdded<BoxCollider2DComponent>(Entity entity, BoxCollider2DComponent& component)
 	{
 		CreateBoxColliderFixture(entity, component);
 	}

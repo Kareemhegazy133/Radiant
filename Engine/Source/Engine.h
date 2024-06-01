@@ -17,6 +17,6 @@
 
 #include "Utils/TextureManager.h"
 
-#include "Scene/Scene.h"
-#include "Scene/Entity.h"
-#include "Scene/Components.h"
+#include "World/World.h"
+#include "World/Entity.h"
+#include "World/Components.h"

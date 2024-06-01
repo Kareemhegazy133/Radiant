@@ -2,9 +2,11 @@
 
 #include "Engine.h"
 
+#include "Level.h"
+
 namespace Engine {
 
-	class GameLayer : public Engine::Layer
+	class GameLayer : public Layer
 	{
 	public:
 		GameLayer();
@@ -13,10 +15,10 @@ namespace Engine {
 		virtual void OnAttach() override;
 		virtual void OnDetach() override;
 
-		void OnUpdate(Engine::Timestep ts) override;
-		void OnEvent(Engine::Event& e) override;
+		void OnUpdate(Timestep ts) override;
+		void OnEvent(Event& e) override;
 
 	private:
-		Ref<Scene> m_ActiveScene;
+		Ref<Level> m_Level;
 	};
 }

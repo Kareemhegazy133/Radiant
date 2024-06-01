@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene/Components.h"
+#include "World/Components.h"
 #include "box2d/b2_body.h"
 
 namespace Engine {
