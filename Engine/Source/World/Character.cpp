@@ -4,10 +4,13 @@
 
 namespace Engine {
 
-    Character::Character(const std::string& entityName)
-        : Entity(World::GetWorld().CreateEntity(entityName), &World::GetWorld())
+    Character::Character(const std::string& entityName, const std::string& textureIdentifier, const sf::Vector2f& position)
+        : Entity(World::GetWorld().CreateEntity(entityName), &World::GetWorld()), m_textureIdentifier(textureIdentifier), m_Position(position)
     {
+        auto& transform = GetComponent<TransformComponent>();
+        transform.setPosition(m_Position);
 
+        AddComponent<SpriteComponent>(m_textureIdentifier);
     }
 
     Character::~Character()
@@ -15,13 +18,4 @@ namespace Engine {
 
     }
 
-	/*Character::Character(const std::string& entityName, const std::string& textureIdentifier, const sf::Vector2f& position)
-        : Entity(World::GetWorld().CreateEntity(entityName), &World::GetWorld())
-	{
-        auto& transform = AddComponent<TransformComponent>();
-        transform.setPosition(position.x, position.y);
-        AddComponent<SpriteComponent>(textureIdentifier);
-        AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
-        AddComponent<BoxCollider2DComponent>();
-	}*/
 }

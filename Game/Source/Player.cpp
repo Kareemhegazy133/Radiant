@@ -3,12 +3,18 @@
 using namespace Engine;
 
 Player::Player()
-    : Character("Player")
+    : Character("Player", "Player", sf::Vector2f(300.f, 200.f))
 {
-    auto& transform = GetComponent<TransformComponent>();
-    transform.setPosition(m_Position);
+    m_FrameWidth = 256;
+    m_FrameHeight = 256;
+    m_FrameWidthPadding = 32;
+    m_FrameHeightPadding = 40;
+    m_FrameCount = 18;
 
-    AddComponent<SpriteComponent>("Player");
+	auto& playerAnimationComponent = AddComponent<AnimationComponent>();
+	SetupAnimation("Idle", m_FrameCount, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.05f);
+	playerAnimationComponent.SetAnimation("Idle");
+
     AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
     AddComponent<BoxCollider2DComponent>();
 }

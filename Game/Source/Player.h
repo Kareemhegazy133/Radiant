@@ -13,7 +13,4 @@ public:
     ~Player();
 
     void OnUpdate(Timestep ts) override;
-
-private:
-    sf::Vector2f m_Position = { 300.f, 0.f };
 };

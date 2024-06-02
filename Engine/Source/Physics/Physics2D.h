@@ -1,7 +1,10 @@
 #pragma once
 
-#include "World/Components.h"
 #include "box2d/b2_body.h"
+#include "box2d/b2_fixture.h"
+#include "box2d/b2_polygon_shape.h"
+
+#include "World/Components.h"
 
 namespace Engine {
 
@@ -38,8 +41,19 @@ namespace Engine {
 		auto& sprite = entity.GetComponent<SpriteComponent>();
 
 		b2PolygonShape boxShape;
-		ENGINE_INFO("x: {0}, y: {1}", sprite.getTextureSize().x * transform.getScale().x * 0.5f, sprite.getTextureSize().y * transform.getScale().y * 0.5f);
-		boxShape.SetAsBox(sprite.getTextureSize().x * transform.getScale().x * 0.5f, sprite.getTextureSize().y * transform.getScale().y * 0.5f);
+		// Offsetting the Center.y because SFML to Box2d Coordinate System's Y Axis is Mirrored
+		boxShape.SetAsBox(
+			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
+			sprite.getTextureSize().y * transform.getScale().y * 0.5f,
+			b2Vec2(0.f, sprite.getTextureSize().y * 0.5f), DEG_TO_RAD(transform.getRotation()));
+
+		/*ENGINE_INFO("Sprite x: {0}, y: {1}, transform x: {2}, y: {3}, Rect x: {4}, y: {5}",
+			sprite.getTextureSize().x,
+			sprite.getTextureSize().y,
+			transform.getScale().x,
+			transform.getScale().y,
+			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
+			sprite.getTextureSize().y * transform.getScale().y * 0.5f);*/
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &boxShape;
@@ -57,6 +71,12 @@ namespace Engine {
 	{
 		b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
 		body->SetTransform(b2Vec2(transform.getPosition().x, transform.getPosition().y), DEG_TO_RAD(transform.getRotation()));
+		/*ENGINE_INFO("Transform x: {0}, y: {1}, Body x: {0}, y: {1}",
+			transform.getPosition().x,
+			transform.getPosition().y,
+			body->GetPosition().x,
+			body->GetPosition().y
+			);*/
 	}
 
 	void UpdateBoxColliderFixture(BoxCollider2DComponent& bc2d, TransformComponent& transform, SpriteComponent& sprite)
@@ -65,7 +85,13 @@ namespace Engine {
 
 		// Create a new shape
 		b2PolygonShape boxShape;
-		boxShape.SetAsBox(sprite.getTextureSize().x * transform.getScale().x * 0.5f, sprite.getTextureSize().y * transform.getScale().y * 0.5f);
+		// Offsetting the Center.y because SFML to Box2d Coordinate System's Y Axis is Mirrored
+		boxShape.SetAsBox(
+			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
+			sprite.getTextureSize().y * transform.getScale().y * 0.5f,
+			b2Vec2(0.f, sprite.getTextureSize().y * 0.5f), DEG_TO_RAD(transform.getRotation()));
+
+		//ENGINE_INFO("Centroid x: {0}, y: {1}", boxShape.m_centroid.x, boxShape.m_centroid.y);
 
 		// Create a new fixture definition
 		b2FixtureDef fixtureDef;

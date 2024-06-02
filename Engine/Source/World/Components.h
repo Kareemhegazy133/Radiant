@@ -95,6 +95,8 @@ namespace Engine {
         {
             std::vector<sf::IntRect> Frames;
             float FrameDuration;
+            uint8_t FrameWidthPadding;
+            uint8_t FrameHeightPadding;
 
             Animation() = default;
 
@@ -146,6 +148,18 @@ namespace Engine {
         const sf::IntRect& GetCurrentFrame() const {
             return Animations.at(CurrentAnimation).Frames[CurrentFrame];
         }
+
+        // Get the current size of the frame rectangle (Ignores Padding)
+        sf::Vector2i GetCurrentFrameSize() const {
+            const auto& currentAnimation = Animations.at(CurrentAnimation);
+            const auto& currentFrame = currentAnimation.Frames.at(CurrentFrame);
+
+            sf::Vector2i size = {
+                currentFrame.getSize().x - currentAnimation.FrameWidthPadding * 2,
+                currentFrame.getSize().y - currentAnimation.FrameHeightPadding
+            };
+            return size;
+        }
     };
 
 	struct SpriteComponent
@@ -186,7 +200,7 @@ namespace Engine {
             sf::Vector2i size;
             if (Animation)
             {
-                size = Animation->GetCurrentFrame().getSize();
+                size = Animation->GetCurrentFrameSize();
             }
             else {
                 size = Sprite.getTextureRect().getSize();
