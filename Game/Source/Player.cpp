@@ -15,7 +15,7 @@ Player::Player()
 	SetupAnimation("Idle", m_FrameCount, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.05f);
 	playerAnimationComponent.SetAnimation("Idle");
 
-    AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
+    auto& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
     AddComponent<BoxCollider2DComponent>();
 }
 

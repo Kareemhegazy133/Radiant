@@ -4,7 +4,7 @@
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "Core/Timestep.h"
 
-class b2World;
+#include "Physics/Physics2D.h"
 
 namespace Engine {
 
@@ -33,7 +33,7 @@ namespace Engine {
 		static World* s_Instance;
 		entt::registry m_Registry;
 
-		b2World* m_PhysicsWorld = nullptr;
+		Physics2D m_Physics;
 
 		friend class Entity;
 	};

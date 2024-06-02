@@ -18,7 +18,7 @@ namespace Engine {
 
 	GameApplication::~GameApplication()
 	{
-
+		delete m_TextureManager;
 	}
 
 	void GameApplication::PushLayer(Layer* layer)

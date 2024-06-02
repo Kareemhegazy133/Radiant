@@ -9,8 +9,8 @@ class TheReaper : public Engine::GameApplication
 public:
 	TheReaper(GameApplicationCommandLineArgs args) : GameApplication("The Reaper", args)
 	{
-		this->GetTextureManager().loadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
-		this->GetTextureManager().loadTexture("Platform", "Assets/Platform.png");
+		m_TextureManager->loadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
+		m_TextureManager->loadTexture("Platform", "Assets/Platform.png");
 		PushLayer(new GameLayer());
 	}
 

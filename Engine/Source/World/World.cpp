@@ -4,10 +4,6 @@
 #include "Components.h"
 #include "Entity.h"
 
-#include "box2d/b2_world.h"
-
-#include "Physics/Physics2D.h"
-
 namespace Engine {
 
 	World* World::s_Instance = nullptr;
@@ -17,13 +13,12 @@ namespace Engine {
 	{
 		ENGINE_ASSERT(!s_Instance, "World already exists!");
 		s_Instance = this;
-		m_PhysicsWorld = new b2World({ 0.0f, 9.8f });
+
 	}
 
 	World::~World()
 	{
-		delete m_PhysicsWorld;
-		m_PhysicsWorld = nullptr;
+
 	}
 
 	Entity World::CreateEntity(const std::string& name)
@@ -49,25 +44,20 @@ namespace Engine {
 		for (auto entity : view)
 		{
 			auto& [rb2d, transform, sprite] = view.get<Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
-			UpdatePhysicsBody(rb2d, transform);
+			m_Physics.UpdatePhysicsBody(rb2d, transform);
 			
 			auto& bc2d = m_Registry.get<BoxCollider2DComponent>(entity);
-			UpdateBoxColliderFixture(bc2d, transform, sprite);
+			m_Physics.UpdateBoxColliderFixture(bc2d, transform, sprite);
 		}
 
 		// Apply Physics
-		const int32_t velocityIterations = 6;
-		const int32_t positionIterations = 2;
-		m_PhysicsWorld->Step(ts, velocityIterations, positionIterations);
+		m_Physics.OnUpdate(ts);
 
 		// Update the transform after applying physics for sprite rendering
 		for (auto entity : view)
 		{
 			auto& [rb2d, transform, sprite] = view.get<Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
-			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-			const auto& position = body->GetPosition();
-			transform.setPosition(position.x, position.y);
-			transform.setRotation(RAD_TO_DEG(body->GetAngle()));
+			m_Physics.UpdateEntityTransform(rb2d, transform);
 
 			// Update the sprite's animation
 			sprite.update(ts);
@@ -81,7 +71,6 @@ namespace Engine {
 			m_RenderWindow->draw(sprite);
 		}
 	}
-
 
 	template<typename T>
 	void World::OnComponentAdded(Entity entity, T& component)
@@ -116,13 +105,13 @@ namespace Engine {
 	template<>
 	void World::OnComponentAdded<Rigidbody2DComponent>(Entity entity, Rigidbody2DComponent& component)
 	{
-		CreatePhysicsBody(m_PhysicsWorld, entity, component);
+		m_Physics.CreatePhysicsBody(entity, component);
 	}
 
 	template<>
 	void World::OnComponentAdded<BoxCollider2DComponent>(Entity entity, BoxCollider2DComponent& component)
 	{
-		CreateBoxColliderFixture(entity, component);
+		m_Physics.CreateBoxColliderFixture(entity, component);
 	}
 
 }

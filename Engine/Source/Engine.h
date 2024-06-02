@@ -15,9 +15,11 @@
 #include "Core/KeyCodes.h"
 #include "Core/MouseCodes.h"
 
-#include "Utils/TextureManager.h"
+#include "Physics/Physics2D.h"
 
 #include "World/World.h"
 #include "World/Entity.h"
 #include "World/Character.h"
 #include "World/Components.h"
+
+#include "Utils/TextureManager.h"
