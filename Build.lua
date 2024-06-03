@@ -102,7 +102,8 @@ project "Game"
 		"Engine/Source",
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.sfml}",
-		"%{IncludeDir.entt}"
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.box2d}"
 	}
 
 	libdirs

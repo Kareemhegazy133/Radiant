@@ -2,6 +2,7 @@
 
 #include "box2d/b2_world.h"
 #include "box2d/b2_body.h"
+#include "box2d/b2_contact.h"
 #include "box2d/b2_fixture.h"
 #include "box2d/b2_polygon_shape.h"
 
@@ -18,6 +19,8 @@ namespace Engine {
 	{
 		ENGINE_ASSERT(!s_Instance, "Physics System already exists!");
 		s_Instance = this;
+
+		m_PhysicsWorld->SetContactListener(this);
 	}
 
 	Physics2D::~Physics2D()
@@ -141,27 +144,43 @@ namespace Engine {
 		transform.setRotation(RAD_TO_DEG(body->GetAngle()));
 	}
 
-	void Physics2D::OnCollisionBegin(Entity* entityA, Entity* entityB)
+	void Physics2D::OnCollisionBegin(Entity entityA, Entity entityB)
 	{
-		if (entityA && entityB)
-		{
-			// Process collision start logic here
-			auto& entityATag = entityA->GetComponent<TagComponent>();
-			auto& entityBTag = entityB->GetComponent<TagComponent>();
-			ENGINE_INFO("Collision started between entity: {0} and entity: {1}.", entityATag.Tag, entityBTag.Tag);
-		}
+		auto& entityATag = entityA.GetComponent<TagComponent>();
+		auto& entityBTag = entityB.GetComponent<TagComponent>();
+		ENGINE_INFO("Collision started between entity: {0} and entity: {1}.", entityATag.Tag, entityBTag.Tag);
 
 	}
 
-	void Physics2D::OnCollisionEnd(Entity* entityA, Entity* entityB)
+	void Physics2D::OnCollisionEnd(Entity entityA, Entity entityB)
 	{
-		if (entityA && entityB)
-		{
-			// Process collision start logic here
-			auto& entityATag = entityA->GetComponent<TagComponent>();
-			auto& entityBTag = entityB->GetComponent<TagComponent>();
-			ENGINE_INFO("Collision ended between entity: {0} and entity: {1}.", entityATag.Tag, entityBTag.Tag);
-		}
+		auto& entityATag = entityA.GetComponent<TagComponent>();
+		auto& entityBTag = entityB.GetComponent<TagComponent>();
+		ENGINE_INFO("Collision ended between entity: {0} and entity: {1}.", entityATag.Tag, entityBTag.Tag);
 
+	}
+
+	void Physics2D::BeginContact(b2Contact* contact)
+	{
+		b2Body* bodyA = contact->GetFixtureA()->GetBody();
+		b2Body* bodyB = contact->GetFixtureB()->GetBody();
+
+		// Access the entity data
+		Entity* entityDataA = reinterpret_cast<Entity*>(bodyA->GetUserData().pointer);
+		Entity* entityDataB = reinterpret_cast<Entity*>(bodyB->GetUserData().pointer);
+
+		OnCollisionBegin(*entityDataA, *entityDataB);
+	}
+
+	void Physics2D::EndContact(b2Contact* contact)
+	{
+		b2Body* bodyA = contact->GetFixtureA()->GetBody();
+		b2Body* bodyB = contact->GetFixtureB()->GetBody();
+
+		// Access the entity data
+		Entity* entityDataA = reinterpret_cast<Entity*>(bodyA->GetUserData().pointer);
+		Entity* entityDataB = reinterpret_cast<Entity*>(bodyB->GetUserData().pointer);
+
+		OnCollisionEnd(*entityDataA, *entityDataB);
 	}
 }
