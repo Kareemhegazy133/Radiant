@@ -57,7 +57,8 @@ namespace Engine {
 		bodyDef.position.Set(transform.getPosition().x, transform.getPosition().y);
 		bodyDef.angle = DEG_TO_RAD(transform.getRotation());
 
-		bodyDef.userData.pointer = reinterpret_cast<uintptr_t>(&entity);
+		bodyDef.userData.pointer = static_cast<uintptr_t>(uint32_t(entity));
+		ENGINE_INFO("Entity: {0} in bodyDef.userData.pointer", uint32_t(entity));
 
 		b2Body* body = m_PhysicsWorld->CreateBody(&bodyDef);
 		body->SetFixedRotation(component.FixedRotation);
@@ -156,7 +157,7 @@ namespace Engine {
 	{
 		auto& entityATag = entityA.GetComponent<TagComponent>();
 		auto& entityBTag = entityB.GetComponent<TagComponent>();
-		ENGINE_INFO("Collision ended between entity: {0} and entity: {1}.", entityATag.Tag, entityBTag.Tag);
+		//ENGINE_INFO("Collision ended between entity: {0} and entity: {1}.", entityATag.Tag, entityBTag.Tag);
 
 	}
 
@@ -165,22 +166,27 @@ namespace Engine {
 		b2Body* bodyA = contact->GetFixtureA()->GetBody();
 		b2Body* bodyB = contact->GetFixtureB()->GetBody();
 
-		// Access the entity data
-		Entity* entityDataA = reinterpret_cast<Entity*>(bodyA->GetUserData().pointer);
-		Entity* entityDataB = reinterpret_cast<Entity*>(bodyB->GetUserData().pointer);
+		// Get the entity handle
+		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
+		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
 
-		OnCollisionBegin(*entityDataA, *entityDataB);
+		Entity entityA(entityAHandle, &World::GetWorld());
+		Entity entityB(entityBHandle, &World::GetWorld());
+
+		OnCollisionBegin(entityA, entityB);
 	}
 
 	void Physics2D::EndContact(b2Contact* contact)
 	{
 		b2Body* bodyA = contact->GetFixtureA()->GetBody();
 		b2Body* bodyB = contact->GetFixtureB()->GetBody();
+		// Get the entity handle
+		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
+		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
 
-		// Access the entity data
-		Entity* entityDataA = reinterpret_cast<Entity*>(bodyA->GetUserData().pointer);
-		Entity* entityDataB = reinterpret_cast<Entity*>(bodyB->GetUserData().pointer);
+		Entity entityA(entityAHandle, &World::GetWorld());
+		Entity entityB(entityBHandle, &World::GetWorld());
 
-		OnCollisionEnd(*entityDataA, *entityDataB);
+		OnCollisionEnd(entityA, entityB);
 	}
 }
