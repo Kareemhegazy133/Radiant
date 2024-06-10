@@ -13,4 +13,7 @@ public:
     ~Player();
 
     void OnUpdate(Timestep ts) override;
+
+    void OnCollisionBegin(const Entity& other) override;
+    void OnCollisionEnd(const Entity& other) override;
 };

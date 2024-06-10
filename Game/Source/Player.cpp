@@ -27,3 +27,13 @@ void Player::OnUpdate(Timestep ts)
 {
     
 }
+
+void Player::OnCollisionBegin(const Entity& other)
+{
+
+}
+
+void Player::OnCollisionEnd(const Entity& other)
+{
+
+}

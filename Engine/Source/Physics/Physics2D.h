@@ -28,9 +28,6 @@ namespace Engine {
 
 		void UpdateEntityTransform(Rigidbody2DComponent& rb2d, TransformComponent& transform);
 
-		void OnCollisionBegin(Entity entityA, Entity entityB);
-		void OnCollisionEnd(Entity entityA, Entity entityB);
-
 		inline static Physics2D& Get() { return *s_Instance; }
 
 	private:

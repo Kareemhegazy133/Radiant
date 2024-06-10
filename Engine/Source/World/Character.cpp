@@ -18,4 +18,14 @@ namespace Engine {
 
     }
 
+    void Character::OnCollisionBegin(const Entity& other)
+    {
+
+    }
+
+    void Character::OnCollisionEnd(const Entity& other)
+    {
+
+    }
+
 }
