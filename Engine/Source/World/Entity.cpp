@@ -8,17 +8,17 @@ namespace Engine {
 	{
 
 	}
-
-	void Entity::OnCollisionBegin(const Entity& other)
-	{
-
-	}
-
-	void Entity::OnCollisionEnd(const Entity& other)
-	{
-
-	}
 	
+	void Entity::OnCollisionBegin(Entity& other)
+	{
+
+	}
+
+	void Entity::OnCollisionEnd(Entity& other)
+	{
+
+	}
+
 	void Entity::SetupAnimation(const std::string& animationName, int frameCount, int frameWidth, int frameHeight, int frameWidthPadding, int frameHeightPadding, float frameDuration)
 	{
 		std::vector<sf::IntRect> frames;

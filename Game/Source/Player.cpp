@@ -16,6 +16,9 @@ Player::Player()
 	playerAnimationComponent.SetAnimation("Idle");
 
     auto& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
+    rb2d.OnCollisionBegin = BIND_MEMBER_FUNCTION(Player::OnCollisionBegin, this);
+    rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Player::OnCollisionEnd, this);
+
     AddComponent<BoxCollider2DComponent>();
 }
 
@@ -28,12 +31,12 @@ void Player::OnUpdate(Timestep ts)
     
 }
 
-void Player::OnCollisionBegin(const Entity& other)
+void Player::OnCollisionBegin(Entity& other)
 {
-
+    //GAME_INFO("Player collided with: {0}", other.GetComponent<TagComponent>().Tag);
 }
 
-void Player::OnCollisionEnd(const Entity& other)
+void Player::OnCollisionEnd(Entity& other)
 {
 
 }

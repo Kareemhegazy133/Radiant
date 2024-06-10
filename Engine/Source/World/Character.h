@@ -12,8 +12,8 @@ namespace Engine {
 
         virtual void OnUpdate(Timestep ts) = 0;
 
-        virtual void OnCollisionBegin(const Entity& other) override;
-        virtual void OnCollisionEnd(const Entity& other) override;
+        virtual void OnCollisionBegin(Entity& other) override;
+        virtual void OnCollisionEnd(Entity& other) override;
 
     protected:
         std::string m_textureIdentifier;

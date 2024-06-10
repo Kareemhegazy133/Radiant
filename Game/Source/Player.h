@@ -14,6 +14,6 @@ public:
 
     void OnUpdate(Timestep ts) override;
 
-    void OnCollisionBegin(const Entity& other) override;
-    void OnCollisionEnd(const Entity& other) override;
+    void OnCollisionBegin(Entity& other) override;
+    void OnCollisionEnd(Entity& other) override;
 };

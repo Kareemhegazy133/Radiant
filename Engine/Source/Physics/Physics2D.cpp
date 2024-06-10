@@ -156,8 +156,17 @@ namespace Engine {
 		Entity entityA(entityAHandle, &World::GetWorld());
 		Entity entityB(entityBHandle, &World::GetWorld());
 
-		entityA.OnCollisionBegin(entityB);
-		entityB.OnCollisionBegin(entityA);
+		auto& entityARB2D = entityA.GetComponent<Rigidbody2DComponent>();
+		if (entityARB2D.OnCollisionBegin)
+		{
+			entityARB2D.OnCollisionBegin(entityB);
+		}
+
+		auto& entityBRB2D = entityB.GetComponent<Rigidbody2DComponent>();
+		if (entityBRB2D.OnCollisionBegin)
+		{
+			entityBRB2D.OnCollisionBegin(entityA);
+		}
 	}
 
 	void Physics2D::EndContact(b2Contact* contact)
@@ -172,7 +181,16 @@ namespace Engine {
 		Entity entityA(entityAHandle, &World::GetWorld());
 		Entity entityB(entityBHandle, &World::GetWorld());
 
-		entityA.OnCollisionEnd(entityB);
-		entityB.OnCollisionEnd(entityA);
+		auto& entityARB2D = entityA.GetComponent<Rigidbody2DComponent>();
+		if (entityARB2D.OnCollisionEnd)
+		{
+			entityARB2D.OnCollisionEnd(entityB);
+		}
+
+		auto& entityBRB2D = entityB.GetComponent<Rigidbody2DComponent>();
+		if (entityBRB2D.OnCollisionEnd)
+		{
+			entityBRB2D.OnCollisionEnd(entityA);
+		}
 	}
 }

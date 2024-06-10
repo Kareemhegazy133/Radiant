@@ -15,9 +15,6 @@ namespace Engine {
 		Entity(entt::entity handle, World* world);
 		Entity(const Entity& other) = default;
 
-		virtual void OnCollisionBegin(const Entity& other);
-		virtual void OnCollisionEnd(const Entity& other);
-
 		template<typename T, typename... Args>
 		T& AddComponent(Args&&... args)
 		{
@@ -61,6 +58,9 @@ namespace Engine {
 			return !(*this == other);
 		}
 	protected:
+		virtual void OnCollisionBegin(Entity& other);
+		virtual void OnCollisionEnd(Entity& other);
+
 		void SetupAnimation(const std::string& animationName, int frameCount, int frameWidth, int frameHeight,
 			int frameWidthPadding, int frameHeightPadding, float frameDuration);
 

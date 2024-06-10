@@ -25,6 +25,8 @@
 
 #define ENGINE_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
+#define BIND_MEMBER_FUNCTION(function, instance) std::bind(&function, instance, std::placeholders::_1)
+
 namespace Engine {
 
 	template<typename T>
