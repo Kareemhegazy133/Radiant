@@ -74,7 +74,7 @@ namespace Engine {
 		boxShape.SetAsBox(
 			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
 			sprite.getTextureSize().y * transform.getScale().y * 0.5f,
-			b2Vec2(0.f, sprite.getTextureSize().y * 0.5f), DEG_TO_RAD(transform.getRotation()));
+			b2Vec2(sprite.getTextureSize().x * 0.5f, sprite.getTextureSize().y * 0.5f), DEG_TO_RAD(transform.getRotation()));
 
 		/*ENGINE_INFO("Sprite x: {0}, y: {1}, transform x: {2}, y: {3}, Rect x: {4}, y: {5}",
 			sprite.getTextureSize().x,
@@ -118,7 +118,7 @@ namespace Engine {
 		boxShape.SetAsBox(
 			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
 			sprite.getTextureSize().y * transform.getScale().y * 0.5f,
-			b2Vec2(0.f, sprite.getTextureSize().y * 0.5f), DEG_TO_RAD(transform.getRotation()));
+			b2Vec2(sprite.getTextureSize().x * 0.5f, sprite.getTextureSize().y * 0.5f), DEG_TO_RAD(transform.getRotation()));
 
 		//ENGINE_INFO("Centroid x: {0}, y: {1}", boxShape.m_centroid.x, boxShape.m_centroid.y);
 

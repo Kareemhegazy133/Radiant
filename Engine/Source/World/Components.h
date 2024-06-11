@@ -251,7 +251,7 @@ namespace Engine {
     {
         enum class BodyType { Static = 0, Dynamic, Kinematic };
         BodyType Type;
-        bool FixedRotation = false;
+        bool FixedRotation = true;
 
         // Storage for runtime
         void* RuntimeBody = nullptr;
@@ -290,7 +290,7 @@ namespace Engine {
         float Density = 1.0f;
         float Friction = 0.5f;
         float Restitution = 0.0f;
-        float RestitutionThreshold = 0.5f;
+        float RestitutionThreshold = 0.0f;
 
         // Storage for runtime
         void* RuntimeFixture = nullptr;
