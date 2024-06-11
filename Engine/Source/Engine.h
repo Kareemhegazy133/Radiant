@@ -12,8 +12,8 @@
 #include "Core/Timestep.h"
 
 #include "Core/Input.h"
-#include "Core/KeyCodes.h"
 #include "Core/MouseCodes.h"
+#include "Core/KeyCodes.h"
 
 #include "Physics/Physics2D.h"
 

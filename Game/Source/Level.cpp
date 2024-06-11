@@ -26,12 +26,17 @@ Level::~Level()
 
 void Level::OnUpdate(Timestep ts)
 {
- 
+	m_Player.OnUpdate(ts);
 
     World::OnUpdate(ts);
 }
 
 void Level::OnRender()
+{
+
+}
+
+void Level::OnEvent(Event& e)
 {
 
 }

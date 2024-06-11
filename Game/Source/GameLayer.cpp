@@ -23,5 +23,5 @@ void GameLayer::OnUpdate(Timestep ts)
 
 void GameLayer::OnEvent(Event& e)
 {
-	
+	m_Level->OnEvent(e);
 }

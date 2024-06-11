@@ -16,6 +16,8 @@ public:
     void OnUpdate(Timestep ts) override;
     void OnRender();
 
+    void OnEvent(Event& e);
+
 private:
     Player m_Player;
 };
