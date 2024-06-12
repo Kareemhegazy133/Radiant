@@ -70,7 +70,7 @@ namespace Engine {
 		auto& sprite = entity.GetComponent<SpriteComponent>();
 
 		b2PolygonShape boxShape;
-		// Offsetting the Center.y because SFML to Box2d Coordinate System's Y Axis is Mirrored
+		// Offsetting the Center because SFML to Box2d Coordinate System's Y Axis is Mirrored
 		boxShape.SetAsBox(
 			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
 			sprite.getTextureSize().y * transform.getScale().y * 0.5f,
@@ -114,7 +114,7 @@ namespace Engine {
 
 		// Create a new shape
 		b2PolygonShape boxShape;
-		// Offsetting the Center.y because SFML to Box2d Coordinate System's Y Axis is Mirrored
+		// Offsetting the Center because SFML to Box2d Coordinate System's Y Axis is Mirrored
 		boxShape.SetAsBox(
 			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
 			sprite.getTextureSize().y * transform.getScale().y * 0.5f,
