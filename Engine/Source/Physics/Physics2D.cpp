@@ -31,7 +31,7 @@ namespace Engine {
 	void Physics2D::OnUpdate(Timestep ts)
 	{
 		const int32_t velocityIterations = 6;
-		const int32_t positionIterations = 2;
+		const int32_t positionIterations = 3;
 		m_PhysicsWorld->Step(ts, velocityIterations, positionIterations);
 	}
 
