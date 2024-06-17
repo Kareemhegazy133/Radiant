@@ -1,7 +1,7 @@
 #include "Level.h"
 
-Level::Level(sf::RenderWindow* renderWindow)
-    : World(renderWindow)
+Level::Level()
+    : World(static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow()))
 {
 	auto platform = CreateEntity("Platform");
 	platform.AddComponent<SpriteComponent>("Platform");

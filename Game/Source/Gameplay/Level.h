@@ -2,7 +2,7 @@
 
 #include <Engine.h>
 
-#include "Player.h"
+#include "Entities/Player.h"
 
 using namespace Engine;
 
@@ -10,7 +10,7 @@ class Level : public World
 {
 
 public:
-    Level(sf::RenderWindow* renderWindow);
+    Level();
     ~Level();
 
     void OnUpdate(Timestep ts) override;

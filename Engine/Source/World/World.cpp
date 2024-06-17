@@ -75,7 +75,7 @@ namespace Engine {
 	template<typename T>
 	void World::OnComponentAdded(Entity entity, T& component)
 	{
-		static_assert(false);
+		//static_assert(false);
 	}
 
 	template<>
@@ -86,13 +86,11 @@ namespace Engine {
 	template<>
 	void World::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
 	{
-		
 	}
 
 	template<>
 	void World::OnComponentAdded<SpriteComponent>(Entity entity, SpriteComponent& component)
 	{
-		
 	}
 
 	template<>
@@ -114,4 +112,8 @@ namespace Engine {
 		m_Physics.CreateBoxColliderFixture(entity, component);
 	}
 
+	template<>
+	void World::OnComponentAdded<AttributesComponent>(Entity entity, AttributesComponent& component)
+	{
+	}
 }

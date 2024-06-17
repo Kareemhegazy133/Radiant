@@ -2,12 +2,14 @@
 
 GameLayer::GameLayer() : Layer("GameLayer")
 {
+	GameApplication::Get().GetTextureManager().loadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
+	GameApplication::Get().GetTextureManager().loadTexture("Platform", "Assets/Platform.png");
 
 }
 
 void GameLayer::OnAttach()
 {
-	m_Level = CreateRef<Level>(static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow()));
+	m_Level = CreateRef<Level>();
 }
 
 void GameLayer::OnDetach()

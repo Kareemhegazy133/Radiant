@@ -27,6 +27,9 @@
 
 #define BIND_MEMBER_FUNCTION(function, instance) std::bind(&function, instance, std::placeholders::_1)
 
+#define DEG_TO_RAD(angleInDegrees) ((angleInDegrees) * 3.14159265f / 180.0f)
+#define RAD_TO_DEG(angleInRadians) ((angleInRadians) * 180.0f / 3.14159265f)
+
 namespace Engine {
 
 	template<typename T>

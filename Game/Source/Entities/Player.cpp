@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "Gameplay/Attributes.h"
 
 using namespace Engine;
 
@@ -22,6 +23,15 @@ Player::Player()
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Player::OnCollisionEnd, this);
 
     AddComponent<BoxCollider2DComponent>();
+
+    auto& attributes = AddComponent<AttributesComponent>();
+    attributes.SetAttribute(Attributes::Health, 100.f);
+    attributes.SetAttribute(Attributes::Stamina, 100.f);
+    attributes.SetAttribute(Attributes::Strength, 10.f);
+    attributes.SetAttribute(Attributes::Defense, 10.f);
+    attributes.SetAttribute(Attributes::Magic, 10.f);
+
+    GAME_INFO("Health: {0}", attributes.GetAttribute(Attributes::Health));
 }
 
 Player::~Player()

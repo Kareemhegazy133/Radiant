@@ -4,8 +4,6 @@
 #include "World.h"
 #include "Components.h"
 
-#include "Utils/TextureManager.h"
-
 namespace Engine {
 	
 	class Entity

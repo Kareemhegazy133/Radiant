@@ -42,6 +42,7 @@ namespace Engine {
 		void PushOverlay(Layer* layer);
 
 		inline Window& GetWindow() { return *m_Window; }
+		inline TextureManager& GetTextureManager() { return *m_TextureManager; }
 		inline float SFMLGetTime() { return clock.getElapsedTime().asSeconds(); }
 
 		inline static GameApplication& Get() { return *s_Instance; }
@@ -49,8 +50,7 @@ namespace Engine {
 		GameApplicationCommandLineArgs GetCommandLineArgs() const { return m_CommandLineArgs; }
 	private:
 		void Run();
-	protected:
-		TextureManager* m_TextureManager;
+		
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		GameApplicationCommandLineArgs m_CommandLineArgs;
@@ -60,6 +60,7 @@ namespace Engine {
 		float m_LastFrameTime = 0.0f;
 	private:
 		static GameApplication* s_Instance;
+		TextureManager* m_TextureManager;
 		friend int ::main(int argc, char** argv);
 	};
 
