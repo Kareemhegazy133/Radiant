@@ -9,6 +9,14 @@ namespace Engine {
 
 	}
 	
+	void Entity::OnUpdate(Timestep ts)
+	{
+		if (GetComponent<MetadataComponent>().OnUpdate)
+		{
+			GetComponent<MetadataComponent>().OnUpdate(ts);
+		}
+	}
+
 	void Entity::OnCollisionBegin(Entity& other)
 	{
 
@@ -19,7 +27,8 @@ namespace Engine {
 
 	}
 
-	void Entity::SetupAnimation(const std::string& animationName, int frameCount, int frameWidth, int frameHeight, int frameWidthPadding, int frameHeightPadding, float frameDuration)
+	void Entity::SetupAnimation(const std::string& animationName, int frameCount, int frameWidth, int frameHeight,
+		int frameWidthPadding, int frameHeightPadding, float frameDuration, bool enableLooping)
 	{
 		std::vector<sf::IntRect> frames;
 		for (int i = 0; i < frameCount; i++)
@@ -28,7 +37,7 @@ namespace Engine {
 		}
 
 		auto& animationComponent = GetComponent<AnimationComponent>();
-		animationComponent.AddAnimation(animationName, frames, frameDuration);
+		animationComponent.AddAnimation(animationName, frames, frameDuration, enableLooping);
 
 		animationComponent.Animations[animationName].FrameWidthPadding = frameWidthPadding;
 		animationComponent.Animations[animationName].FrameHeightPadding = frameHeightPadding;

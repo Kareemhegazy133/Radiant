@@ -16,13 +16,14 @@ namespace Engine {
         {
             std::vector<sf::IntRect> Frames;
             float FrameDuration;
+            bool Loop = true;
             uint8_t FrameWidthPadding;
             uint8_t FrameHeightPadding;
 
             Animation() = default;
 
-            Animation(const std::vector<sf::IntRect>& frames, float frameDuration)
-                : Frames(frames), FrameDuration(frameDuration)
+            Animation(const std::vector<sf::IntRect>& frames, float frameDuration, bool enableLooping = true)
+                : Frames(frames), FrameDuration(frameDuration), Loop(enableLooping)
             {}
         };
 
@@ -34,8 +35,8 @@ namespace Engine {
         AnimationComponent() : ElapsedTime(0.0f), CurrentFrame(0) {}
 
         // Add an animation
-        void AddAnimation(const std::string& name, const std::vector<sf::IntRect>& frames, float frameDuration) {
-            Animations[name] = Animation(frames, frameDuration);
+        void AddAnimation(const std::string& name, const std::vector<sf::IntRect>& frames, float frameDuration, bool enableLooping) {
+            Animations[name] = Animation(frames, frameDuration, enableLooping);
         }
 
         // Set the current animation

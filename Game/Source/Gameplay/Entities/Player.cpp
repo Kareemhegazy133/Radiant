@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "Gameplay/Attributes.h"
+#include "Gameplay/Entities/Abilities.h"
 
 using namespace Engine;
 
@@ -15,7 +16,7 @@ Player::Player()
     m_Speed = 200.f;
 
 	auto& playerAnimationComponent = AddComponent<AnimationComponent>();
-	SetupAnimation("Idle", m_FrameCount, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.05f);
+	SetupAnimation("Idle", m_FrameCount, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.05f, true);
 	playerAnimationComponent.SetAnimation("Idle");
 
     auto& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
@@ -32,6 +33,11 @@ Player::Player()
     attributes.SetAttribute(Attributes::Magic, 10.f);
 
     GAME_INFO("Health: {0}", attributes.GetAttribute(Attributes::Health));
+
+    auto& abilities = AddComponent<AbilitiesComponent>();
+    abilities.AddAbility<Fireball>();
+
+    GetComponent<MetadataComponent>().OnUpdate = BIND_MEMBER_FUNCTION(Player::OnUpdate, this);
 }
 
 Player::~Player()
@@ -40,23 +46,27 @@ Player::~Player()
 
 void Player::OnUpdate(Timestep ts)
 {
-    m_Velocity = { 0.0f, 0.0f }; // Reset velocity each frame
+    // Reset velocity each frame
+    sf::Vector2f velocity = { 0.0f, 0.0f };
 
     if (Input::IsKeyPressed(Key::W))
-        m_Velocity.y -= m_Speed;
+        velocity.y -= m_Speed;
     if (Input::IsKeyPressed(Key::S))
-        m_Velocity.y += m_Speed;
+        velocity.y += m_Speed;
     if (Input::IsKeyPressed(Key::A))
-        m_Velocity.x -= m_Speed;
+        velocity.x -= m_Speed;
     if (Input::IsKeyPressed(Key::D))
-        m_Velocity.x += m_Speed;
+        velocity.x += m_Speed;
 
     auto& transform = GetComponent<TransformComponent>();
 
     transform.setPosition(
-        transform.getPosition().x + m_Velocity.x * ts,
-        transform.getPosition().y + m_Velocity.y * ts
+        transform.getPosition().x + velocity.x * ts,
+        transform.getPosition().y + velocity.y * ts
     );
+
+    if (Input::IsKeyPressed(Key::Num1))
+        GetComponent<AbilitiesComponent>().ActivateAbility(0, *this);
 }
 
 void Player::OnCollisionBegin(Entity& other)

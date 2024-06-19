@@ -23,10 +23,7 @@ namespace Engine {
 
 		void CreatePhysicsBody(Entity entity, Rigidbody2DComponent& component);
 		void CreateBoxColliderFixture(Entity entity, BoxCollider2DComponent& component);
-		void UpdatePhysicsBody(Rigidbody2DComponent& rb2d, TransformComponent& transform);
 		void UpdateBoxColliderFixture(BoxCollider2DComponent& bc2d, TransformComponent& transform, SpriteComponent& sprite);
-
-		void UpdateEntityTransform(Rigidbody2DComponent& rb2d, TransformComponent& transform);
 
 		inline static Physics2D& Get() { return *s_Instance; }
 

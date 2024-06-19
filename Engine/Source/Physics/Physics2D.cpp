@@ -6,7 +6,7 @@
 #include "box2d/b2_fixture.h"
 #include "box2d/b2_polygon_shape.h"
 
-#include "World/Entity.h"
+#include "World/Entities/Entity.h"
 
 #include "Physics2D.h"
 
@@ -62,6 +62,7 @@ namespace Engine {
 		b2Body* body = m_PhysicsWorld->CreateBody(&bodyDef);
 		body->SetFixedRotation(component.FixedRotation);
 		component.RuntimeBody = body;
+		transform.RuntimeBody = body;
 	}
 
 	void Physics2D::CreateBoxColliderFixture(Entity entity, BoxCollider2DComponent& component)
@@ -96,18 +97,6 @@ namespace Engine {
 		component.RuntimeFixture = fixture;
 	}
 
-	void Physics2D::UpdatePhysicsBody(Rigidbody2DComponent& rb2d, TransformComponent& transform)
-	{
-		b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-		body->SetTransform(b2Vec2(transform.getPosition().x, transform.getPosition().y), DEG_TO_RAD(transform.getRotation()));
-		/*ENGINE_INFO("Transform x: {0}, y: {1}, Body x: {0}, y: {1}",
-			transform.getPosition().x,
-			transform.getPosition().y,
-			body->GetPosition().x,
-			body->GetPosition().y
-			);*/
-	}
-
 	void Physics2D::UpdateBoxColliderFixture(BoxCollider2DComponent& bc2d, TransformComponent& transform, SpriteComponent& sprite)
 	{
 		b2Fixture* fixture = static_cast<b2Fixture*>(bc2d.RuntimeFixture);
@@ -134,14 +123,6 @@ namespace Engine {
 		b2Body* rb2d = fixture->GetBody();
 		rb2d->DestroyFixture(fixture);
 		bc2d.RuntimeFixture = rb2d->CreateFixture(&fixtureDef);
-	}
-
-	void Physics2D::UpdateEntityTransform(Rigidbody2DComponent& rb2d, TransformComponent& transform)
-	{
-		b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-		const auto& position = body->GetPosition();
-		transform.setPosition(position.x, position.y);
-		transform.setRotation(RAD_TO_DEG(body->GetAngle()));
 	}
 
 	void Physics2D::BeginContact(b2Contact* contact)

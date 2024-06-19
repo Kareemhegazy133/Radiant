@@ -18,8 +18,9 @@
 #include "Physics/Physics2D.h"
 
 #include "World/World.h"
-#include "World/Entity.h"
-#include "World/Character.h"
+#include "World/Entities/Entity.h"
+#include "World/Entities/Character.h"
+#include "World/Entities/Ability.h"
 #include "World/Components.h"
 
 #include "Utils/TextureManager.h"

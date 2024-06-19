@@ -18,7 +18,9 @@ namespace Engine {
 
 		Entity CreateEntity(const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
+
 		virtual void OnUpdate(Timestep ts);
+		void OnRender();
 
 		inline static World& GetWorld() { return *s_Instance; }
 

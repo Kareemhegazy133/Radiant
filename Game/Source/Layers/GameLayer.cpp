@@ -3,6 +3,7 @@
 GameLayer::GameLayer() : Layer("GameLayer")
 {
 	GameApplication::Get().GetTextureManager().loadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
+	GameApplication::Get().GetTextureManager().loadTexture("Fireball", "Assets/Abilities/Fireball.png");
 	GameApplication::Get().GetTextureManager().loadTexture("Platform", "Assets/Platform.png");
 
 }

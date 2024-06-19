@@ -2,7 +2,7 @@
 
 #include "World.h"
 #include "Components.h"
-#include "Entity.h"
+#include "Entities/Entity.h"
 
 namespace Engine {
 
@@ -26,8 +26,8 @@ namespace Engine {
 		Entity entity = { m_Registry.create(), this };
 
 		entity.AddComponent<TransformComponent>();
-		auto& tag = entity.AddComponent<TagComponent>();
-		tag.Tag = name.empty() ? "Entity" : name;
+		auto& metadata = entity.AddComponent<MetadataComponent>();
+		metadata.Tag = name.empty() ? "Entity" : name;
 
 		return entity;
 	}
@@ -40,27 +40,40 @@ namespace Engine {
 	void World::OnUpdate(Timestep ts)
 	{
 		// Update Physics Bodies and Colliders of all entities
-		auto view = m_Registry.view<Rigidbody2DComponent, TransformComponent, SpriteComponent>();
+		auto view = m_Registry.view<MetadataComponent, Rigidbody2DComponent, TransformComponent, SpriteComponent>();
 		for (auto entity : view)
 		{
-			auto& [rb2d, transform, sprite] = view.get<Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
-			m_Physics.UpdatePhysicsBody(rb2d, transform);
+			auto& [metadata, rb2d, transform, sprite] = view.get<MetadataComponent, Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
+
+			// Skip inactive Entities
+			if (!metadata.IsActive) continue;
+
+			Entity entity(entity, this);
+			entity.OnUpdate(ts);
 			
 			auto& bc2d = m_Registry.get<BoxCollider2DComponent>(entity);
 			m_Physics.UpdateBoxColliderFixture(bc2d, transform, sprite);
+
+			// Update the sprite's animation
+			sprite.update(ts);
 		}
 
 		// Apply Physics
 		m_Physics.OnUpdate(ts);
 
+		OnRender();
+	}
+
+	void World::OnRender()
+	{
 		// Update the transform after applying physics for sprite rendering
+		auto view = m_Registry.view<MetadataComponent, Rigidbody2DComponent, TransformComponent, SpriteComponent>();
 		for (auto entity : view)
 		{
-			auto& [rb2d, transform, sprite] = view.get<Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
-			m_Physics.UpdateEntityTransform(rb2d, transform);
+			auto& [metadata, rb2d, transform, sprite] = view.get<MetadataComponent, Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
 
-			// Update the sprite's animation
-			sprite.update(ts);
+			// Skip inactive Entities
+			if (!metadata.IsActive) continue;
 
 			// Apply the transform to the sprite
 			sprite.setPosition(transform.getPosition());
@@ -79,7 +92,7 @@ namespace Engine {
 	}
 
 	template<>
-	void World::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
+	void World::OnComponentAdded<MetadataComponent>(Entity entity, MetadataComponent& component)
 	{
 	}
 
@@ -114,6 +127,11 @@ namespace Engine {
 
 	template<>
 	void World::OnComponentAdded<AttributesComponent>(Entity entity, AttributesComponent& component)
+	{
+	}
+
+	template<>
+	void World::OnComponentAdded<AbilitiesComponent>(Entity entity, AbilitiesComponent& component)
 	{
 	}
 }

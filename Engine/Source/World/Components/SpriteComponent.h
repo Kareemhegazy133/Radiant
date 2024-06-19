@@ -19,7 +19,7 @@ namespace Engine {
 
         SpriteComponent() : Animation(nullptr) {}
 
-        SpriteComponent(const std::string& textureIdentifier, AnimationComponent* animation = nullptr)
+        SpriteComponent(const std::string& textureIdentifier, AnimationComponent * animation = nullptr)
             : Sprite(), TextureIdentifier(textureIdentifier), Animation(animation)
         {
             // Set the texture using the TextureManager

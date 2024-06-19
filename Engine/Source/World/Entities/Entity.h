@@ -1,8 +1,8 @@
 #pragma once
 
 #include "entt.hpp"
-#include "World.h"
-#include "Components.h"
+#include "World/World.h"
+#include "World/Components.h"
 
 namespace Engine {
 	
@@ -12,6 +12,8 @@ namespace Engine {
 		Entity() = default;
 		Entity(entt::entity handle, World* world);
 		Entity(const Entity& other) = default;
+
+		virtual void OnUpdate(Timestep ts);
 
 		template<typename T, typename... Args>
 		T& AddComponent(Args&&... args)
@@ -55,12 +57,13 @@ namespace Engine {
 		{
 			return !(*this == other);
 		}
+
 	protected:
 		virtual void OnCollisionBegin(Entity& other);
 		virtual void OnCollisionEnd(Entity& other);
 
 		void SetupAnimation(const std::string& animationName, int frameCount, int frameWidth, int frameHeight,
-			int frameWidthPadding, int frameHeightPadding, float frameDuration);
+			int frameWidthPadding, int frameHeightPadding, float frameDuration, bool enableLooping);
 
 	protected:
 		uint8_t m_FrameCount;

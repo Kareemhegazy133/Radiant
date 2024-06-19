@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Entity.h"
+#include "World/Entities/Entity.h"
 
 namespace Engine {
 
-    class Character : public Entity {
+    class Character : public Entity
+    {
     public:
         Character(const std::string& entityName, const std::string& textureIdentifier, const sf::Vector2f& position);
 
@@ -19,8 +20,6 @@ namespace Engine {
         std::string m_textureIdentifier;
 
         sf::Vector2f m_Position;
-
-        sf::Vector2f m_Velocity = { 0.0f, 0.0f };
         float m_Speed;
     };
 

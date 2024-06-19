@@ -2,7 +2,7 @@
 
 #include <Engine.h>
 
-#include "Entities/Player.h"
+#include "Gameplay/Entities/Player.h"
 
 using namespace Engine;
 
