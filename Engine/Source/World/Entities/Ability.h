@@ -20,9 +20,10 @@ namespace Engine {
 		virtual void OnCollisionEnd(Entity& other) override;
 
 	protected:
-		std::string m_textureIdentifier;
-
-		float m_Speed;
-
+		MetadataComponent& metadata = GetComponent<MetadataComponent>();
+		TransformComponent& transform = GetComponent<TransformComponent>();
+		AbilityComponent& ability = AddComponent<AbilityComponent>();
+		SpriteComponent& sprite;
+		AnimationComponent& animation = AddComponent<AnimationComponent>();
 	};
 }

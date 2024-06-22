@@ -1,8 +1,6 @@
 #include "Enginepch.h"
 
 #include "box2d/b2_world.h"
-#include "box2d/b2_body.h"
-#include "box2d/b2_contact.h"
 #include "box2d/b2_fixture.h"
 #include "box2d/b2_polygon_shape.h"
 
@@ -20,7 +18,8 @@ namespace Engine {
 		ENGINE_ASSERT(!s_Instance, "Physics System already exists!");
 		s_Instance = this;
 
-		m_PhysicsWorld->SetContactListener(this);
+		m_PhysicsWorld->SetContactListener(&m_CollisionListener);
+		m_PhysicsWorld->SetContactFilter(&m_CollisionListener);
 	}
 
 	Physics2D::~Physics2D()
@@ -123,55 +122,5 @@ namespace Engine {
 		b2Body* rb2d = fixture->GetBody();
 		rb2d->DestroyFixture(fixture);
 		bc2d.RuntimeFixture = rb2d->CreateFixture(&fixtureDef);
-	}
-
-	void Physics2D::BeginContact(b2Contact* contact)
-	{
-		b2Body* bodyA = contact->GetFixtureA()->GetBody();
-		b2Body* bodyB = contact->GetFixtureB()->GetBody();
-
-		// Get the entity handle
-		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
-		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
-
-		Entity entityA(entityAHandle, &World::GetWorld());
-		Entity entityB(entityBHandle, &World::GetWorld());
-
-		auto& entityARB2D = entityA.GetComponent<Rigidbody2DComponent>();
-		if (entityARB2D.OnCollisionBegin)
-		{
-			entityARB2D.OnCollisionBegin(entityB);
-		}
-
-		auto& entityBRB2D = entityB.GetComponent<Rigidbody2DComponent>();
-		if (entityBRB2D.OnCollisionBegin)
-		{
-			entityBRB2D.OnCollisionBegin(entityA);
-		}
-	}
-
-	void Physics2D::EndContact(b2Contact* contact)
-	{
-		b2Body* bodyA = contact->GetFixtureA()->GetBody();
-		b2Body* bodyB = contact->GetFixtureB()->GetBody();
-
-		// Get the entity handle
-		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
-		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
-
-		Entity entityA(entityAHandle, &World::GetWorld());
-		Entity entityB(entityBHandle, &World::GetWorld());
-
-		auto& entityARB2D = entityA.GetComponent<Rigidbody2DComponent>();
-		if (entityARB2D.OnCollisionEnd)
-		{
-			entityARB2D.OnCollisionEnd(entityB);
-		}
-
-		auto& entityBRB2D = entityB.GetComponent<Rigidbody2DComponent>();
-		if (entityBRB2D.OnCollisionEnd)
-		{
-			entityBRB2D.OnCollisionEnd(entityA);
-		}
 	}
 }

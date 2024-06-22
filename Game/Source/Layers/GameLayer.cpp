@@ -1,5 +1,7 @@
 #include "GameLayer.h"
 
+// TODO: Serialize and Deserialize the game layer
+
 GameLayer::GameLayer() : Layer("GameLayer")
 {
 	GameApplication::Get().GetTextureManager().loadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");

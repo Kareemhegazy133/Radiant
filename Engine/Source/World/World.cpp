@@ -134,4 +134,14 @@ namespace Engine {
 	void World::OnComponentAdded<AbilitiesComponent>(Entity entity, AbilitiesComponent& component)
 	{
 	}
+
+	template<>
+	void World::OnComponentAdded<CharacterComponent>(Entity entity, CharacterComponent& component)
+	{
+	}
+
+	template<>
+	void World::OnComponentAdded<AbilityComponent>(Entity entity, AbilityComponent& component)
+	{
+	}
 }

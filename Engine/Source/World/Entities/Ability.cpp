@@ -5,9 +5,9 @@
 namespace Engine {
 
     Ability::Ability(const std::string& entityName, const std::string& textureIdentifier)
-        : Entity(World::GetWorld().CreateEntity(entityName), &World::GetWorld()), m_textureIdentifier(textureIdentifier)
+        : Entity(World::GetWorld().CreateEntity(entityName), &World::GetWorld()), sprite(AddComponent<SpriteComponent>(textureIdentifier))
     {
-        AddComponent<SpriteComponent>(m_textureIdentifier);
+
     }
 
     Ability::~Ability()

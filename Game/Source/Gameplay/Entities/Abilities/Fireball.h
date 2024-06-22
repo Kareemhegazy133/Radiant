@@ -21,6 +21,5 @@ public:
     void OnCollisionEnd(Entity& other) override;
 
 private:
-    float m_Timer = 0.0f;
-    float m_ActiveDuration;
+    Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Kinematic);
 };

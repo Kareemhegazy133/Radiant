@@ -1,18 +1,20 @@
 #pragma once
 
-#include "box2d/b2_world_callbacks.h"
-
 #include "Core/Timestep.h"
+
+#include "CollisionListener.h"
 
 #include "World/Components.h"
 
 class b2World;
 
+// TODO: Collision Filtering
+
 namespace Engine {
 
 	class Entity;
 
-	class Physics2D : public b2ContactListener
+	class Physics2D
 	{
 	public:
 		
@@ -28,11 +30,9 @@ namespace Engine {
 		inline static Physics2D& Get() { return *s_Instance; }
 
 	private:
-		void BeginContact(b2Contact* contact) override;
-		void EndContact(b2Contact* contact) override;
-
-	private:
 		static Physics2D* s_Instance;
 		b2World* m_PhysicsWorld;
+
+		CollisionListener m_CollisionListener;
 	};
 }

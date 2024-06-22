@@ -11,3 +11,7 @@
 #include "World/Components/SpriteComponent.h"
 #include "World/Components/MetadataComponent.h"
 #include "World/Components/TransformComponent.h"
+
+// Entity based Components
+#include "World/Components/CharacterComponent.h"
+#include "World/Components/AbilityComponent.h"

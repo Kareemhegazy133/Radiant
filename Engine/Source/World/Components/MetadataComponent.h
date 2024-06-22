@@ -12,11 +12,11 @@ namespace Engine {
 
         MetadataComponent() = default;
         MetadataComponent(const MetadataComponent&) = default;
-        MetadataComponent(const std::string& tag, bool isActive = true) : Tag(tag), IsActive(isActive) {}
+        MetadataComponent(const std::string& tag, bool isActive = true)
+            : Tag(tag), IsActive(isActive) {}
 
     public:
         std::string Tag;
-
         bool IsActive = true;
 
         std::function<void(Timestep&)> OnUpdate = nullptr;
