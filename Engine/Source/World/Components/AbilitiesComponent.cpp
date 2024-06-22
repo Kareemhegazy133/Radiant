@@ -10,7 +10,9 @@ namespace Engine {
     {
         if (index < m_Abilities.size())
         {
-            m_Abilities[index]->Activate(caster);
+            Ref<Ability> ability = m_Abilities[index];
+            if (ability->OnCooldown()) return;
+            ability->Activate(caster);
         }
         else
         {

@@ -8,8 +8,6 @@
 
 class b2World;
 
-// TODO: Collision Filtering
-
 namespace Engine {
 
 	class Entity;

@@ -27,6 +27,7 @@ namespace Engine {
 
 	}
 
+	// TODO: Support Multiple Animations
 	void Entity::SetupAnimation(const std::string& animationName, int frameCount, int frameWidth, int frameHeight,
 		int frameWidthPadding, int frameHeightPadding, float frameDuration, bool enableLooping)
 	{

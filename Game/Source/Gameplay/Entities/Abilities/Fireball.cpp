@@ -12,6 +12,9 @@ Fireball::Fireball()
     m_FrameCount = 41;
 
     ability.Speed = 200.f;
+    ability.MaxDuration = 2.f;
+    ability.Cooldown = 4.f;
+    ability.LastActivatedTime = -ability.Cooldown;
 
     SetupAnimation("Fireball", m_FrameCount, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.025f, false);
     animation.SetAnimation("Fireball");
@@ -32,14 +35,13 @@ Fireball::~Fireball()
 
 void Fireball::Activate(Entity& caster)
 {
-    // TODO: Add Cooldown functionality
+    ability.LastActivatedTime = GameApplication::Get().SFMLGetTime();
     ability.Caster = &caster;
     if (metadata.IsActive) return;
 
     auto& casterTransform = caster.GetComponent<TransformComponent>();
     transform.setPosition(
-        casterTransform.getPosition().x + 75.f,
-        casterTransform.getPosition().y + 50.f
+        casterTransform.getPosition() + m_SocketOffset
     );
     
     metadata.IsActive = true;
@@ -49,15 +51,15 @@ void Fireball::Activate(Entity& caster)
 void Fireball::Deactivate()
 {
     metadata.IsActive = false;
-    ability.ActiveDuration = 0.0f;
+    m_ActiveDuration = 0.0f;
     GAME_INFO("Fireball Deactivated!");
 }
 
 void Fireball::OnUpdate(Timestep ts)
 {
     // Update timer
-    ability.ActiveDuration += ts;
-    if (ability.ActiveDuration >= ability.MaxDuration) {
+    m_ActiveDuration += ts;
+    if (m_ActiveDuration >= ability.MaxDuration) {
         Deactivate();
         return;
     }

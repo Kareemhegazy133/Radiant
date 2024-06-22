@@ -14,6 +14,8 @@ namespace Engine {
 		virtual void Activate(Entity& caster) = 0;
 		virtual void Deactivate() = 0;
 
+		bool OnCooldown() const;
+
 		virtual void OnUpdate(Timestep ts) = 0;
 
 		virtual void OnCollisionBegin(Entity& other) override;

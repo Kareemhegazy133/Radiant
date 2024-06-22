@@ -1,5 +1,7 @@
 #include "Enginepch.h"
 
+#include "Core/GameApplication.h"
+
 #include "Ability.h"
 
 namespace Engine {
@@ -13,6 +15,12 @@ namespace Engine {
     Ability::~Ability()
     {
 
+    }
+
+    bool Ability::OnCooldown() const
+    {
+        float elapsedTime = GameApplication::Get().SFMLGetTime() - ability.LastActivatedTime;
+        return elapsedTime < ability.Cooldown;
     }
 
     void Ability::OnCollisionBegin(Entity& other)

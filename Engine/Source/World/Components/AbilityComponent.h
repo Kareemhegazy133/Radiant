@@ -17,8 +17,9 @@ namespace Engine {
         Entity* Caster = nullptr;
         float Speed;
 
-        float ActiveDuration = 0.0f;
-        float MaxDuration = 2.f;
+        float MaxDuration;
+        float Cooldown;
+        float LastActivatedTime;
     };
 }
 
