@@ -33,7 +33,7 @@ Fireball::~Fireball()
 {
 }
 
-void Fireball::Activate(Entity& caster)
+void Fireball::Activate(GameplayEntity& caster)
 {
     ability.LastActivatedTime = GameApplication::Get().SFMLGetTime();
     ability.Caster = &caster;
@@ -73,13 +73,13 @@ void Fireball::OnUpdate(Timestep ts)
     );
 }
 
-void Fireball::OnCollisionBegin(Entity& other)
+void Fireball::OnCollisionBegin(GameplayEntity& other)
 {
     GAME_INFO("Fireball collided with: {0}", other.GetComponent<MetadataComponent>().Tag);
     Deactivate();
 }
 
-void Fireball::OnCollisionEnd(Entity& other)
+void Fireball::OnCollisionEnd(GameplayEntity& other)
 {
 
 }

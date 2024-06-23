@@ -1,10 +1,10 @@
 #pragma once
 
-#include "World/Entities/Entity.h"
+#include "GameplayEntity.h"
 
 namespace Engine {
 
-    class Character : public Entity
+    class Character : public GameplayEntity
     {
     public:
         Character(const std::string& entityName, const std::string& textureIdentifier, const sf::Vector2f& position);
@@ -13,8 +13,8 @@ namespace Engine {
 
         virtual void OnUpdate(Timestep ts) = 0;
 
-        virtual void OnCollisionBegin(Entity& other) override;
-        virtual void OnCollisionEnd(Entity& other) override;
+        virtual void OnCollisionBegin(GameplayEntity& other) = 0;
+        virtual void OnCollisionEnd(GameplayEntity& other) = 0;
 
     protected:
         MetadataComponent& metadata = GetComponent<MetadataComponent>();

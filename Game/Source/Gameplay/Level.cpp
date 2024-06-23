@@ -1,7 +1,6 @@
 #include "Level.h"
 
 Level::Level()
-    : World(static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow()))
 {
 	auto platform = CreateEntity("Platform");
 	platform.AddComponent<SpriteComponent>("Platform");
@@ -26,14 +25,12 @@ Level::~Level()
 
 void Level::OnUpdate(Timestep ts)
 {
-	//m_Player.OnUpdate(ts);
-
     World::OnUpdate(ts);
 }
 
 void Level::OnRender()
 {
-
+	World::OnRender();
 }
 
 void Level::OnEvent(Event& e)

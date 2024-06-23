@@ -64,12 +64,12 @@ void Player::OnUpdate(Timestep ts)
         abilities.ActivateAbility(0, *this);
 }
 
-void Player::OnCollisionBegin(Entity& other)
+void Player::OnCollisionBegin(GameplayEntity& other)
 {
     //GAME_INFO("Player collided with: {0}", other.GetComponent<MetadataComponent>().Tag);
 }
 
-void Player::OnCollisionEnd(Entity& other)
+void Player::OnCollisionEnd(GameplayEntity& other)
 {
 
 }

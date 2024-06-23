@@ -3,8 +3,8 @@
 #include "box2d/b2_body.h"
 #include "box2d/b2_contact.h"
 
-#include "World/Entities/Entity.h"
-#include "World/Entities/Ability.h"
+#include "World/Entities/GameplayEntities//GameplayEntity.h"
+#include "World/Entities/GameplayEntities/Ability.h"
 
 #include "CollisionListener.h"
 
@@ -19,8 +19,8 @@ namespace Engine {
 		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
 		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
 
-		Entity entityA(entityAHandle, &World::GetWorld());
-		Entity entityB(entityBHandle, &World::GetWorld());
+		GameplayEntity entityA(entityAHandle, &World::GetWorld());
+		GameplayEntity entityB(entityBHandle, &World::GetWorld());
 
 		auto& entityARB2D = entityA.GetComponent<Rigidbody2DComponent>();
 		if (entityARB2D.OnCollisionBegin)
@@ -44,8 +44,8 @@ namespace Engine {
 		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
 		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
 
-		Entity entityA(entityAHandle, &World::GetWorld());
-		Entity entityB(entityBHandle, &World::GetWorld());
+		GameplayEntity entityA(entityAHandle, &World::GetWorld());
+		GameplayEntity entityB(entityBHandle, &World::GetWorld());
 
 		auto& entityARB2D = entityA.GetComponent<Rigidbody2DComponent>();
 		if (entityARB2D.OnCollisionEnd)
@@ -69,10 +69,10 @@ namespace Engine {
 		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
 		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
 
-		Entity entityA(entityAHandle, &World::GetWorld());
-		Entity entityB(entityBHandle, &World::GetWorld());
+		GameplayEntity entityA(entityAHandle, &World::GetWorld());
+		GameplayEntity entityB(entityBHandle, &World::GetWorld());
 
-		//ENGINE_INFO("Entity A: {0}, Entity B: {1}", entityA.GetComponent<MetadataComponent>().Tag, entityB.GetComponent<MetadataComponent>().Tag);
+		//ENGINE_INFO("GameplayEntity A: {0}, GameplayEntity B: {1}", entityA.GetComponent<MetadataComponent>().Tag, entityB.GetComponent<MetadataComponent>().Tag);
 
 		auto* entityAAbilityComponent = entityA.TryGetComponent<AbilityComponent>();
 		if (entityAAbilityComponent)

@@ -1,12 +1,12 @@
 #include "Enginepch.h"
-#include "World/Entities/Entity.h"
-#include "World/Entities/Ability.h"
+#include "World/Entities/GameplayEntities/GameplayEntity.h"
+#include "World/Entities/GameplayEntities/Ability.h"
 
 #include "AbilitiesComponent.h"
 
 namespace Engine {
 
-    void AbilitiesComponent::ActivateAbility(size_t index, Entity& caster)
+    void AbilitiesComponent::ActivateAbility(size_t index, GameplayEntity& caster)
     {
         if (index < m_Abilities.size())
         {

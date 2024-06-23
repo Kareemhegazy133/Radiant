@@ -13,7 +13,7 @@ namespace Engine {
 	class World
 	{
 	public:
-		World(sf::RenderWindow* renderWindow);
+		World();
 		~World();
 
 		Entity CreateEntity(const std::string& name = std::string());

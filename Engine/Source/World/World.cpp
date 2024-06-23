@@ -1,5 +1,7 @@
 #include "Enginepch.h"
 
+#include "Core/GameApplication.h"
+
 #include "World.h"
 #include "Components.h"
 #include "Entities/Entity.h"
@@ -8,8 +10,8 @@ namespace Engine {
 
 	World* World::s_Instance = nullptr;
 
-	World::World(sf::RenderWindow* renderWindow)
-		: m_RenderWindow(renderWindow)
+	World::World()
+		: m_RenderWindow(static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow()))
 	{
 		ENGINE_ASSERT(!s_Instance, "World already exists!");
 		s_Instance = this;
@@ -60,8 +62,6 @@ namespace Engine {
 
 		// Apply Physics
 		m_Physics.OnUpdate(ts);
-
-		OnRender();
 	}
 
 	void World::OnRender()

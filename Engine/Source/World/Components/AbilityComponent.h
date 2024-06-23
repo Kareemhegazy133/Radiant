@@ -14,7 +14,7 @@ namespace Engine {
         AbilityComponent(const AbilityComponent&) = default;
 
     public:
-        Entity* Caster = nullptr;
+        GameplayEntity* Caster = nullptr;
         float Speed;
 
         float MaxDuration;

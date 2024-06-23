@@ -4,7 +4,7 @@
 
 namespace Engine {
 
-    class Entity;
+    class GameplayEntity;
     class Ability;
 
     class AbilitiesComponent : public Component
@@ -24,7 +24,7 @@ namespace Engine {
             return m_Abilities;
         }
 
-        void ActivateAbility(size_t index, Entity& caster);
+        void ActivateAbility(size_t index, GameplayEntity& caster);
 
     private:
         std::vector<Ref<Ability>> m_Abilities;
