@@ -1,25 +1,25 @@
 #pragma once
 
-#include "GameplayEntity.h"
+#include "Entity.h"
 
 namespace Engine {
 
-	class Ability : public GameplayEntity
+	class Ability : public Entity
 	{
 	public:
 		Ability(const std::string& entityName, const std::string& textureIdentifier);
 
 		virtual ~Ability();
 
-		virtual void Activate(GameplayEntity& caster) = 0;
+		virtual void Activate(Entity& caster) = 0;
 		virtual void Deactivate() = 0;
 
 		bool OnCooldown() const;
 
 		virtual void OnUpdate(Timestep ts) = 0;
 
-		virtual void OnCollisionBegin(GameplayEntity& other) override;
-		virtual void OnCollisionEnd(GameplayEntity& other) override;
+		virtual void OnCollisionBegin(Entity& other) override;
+		virtual void OnCollisionEnd(Entity& other) override;
 
 	protected:
 		MetadataComponent& metadata = GetComponent<MetadataComponent>();

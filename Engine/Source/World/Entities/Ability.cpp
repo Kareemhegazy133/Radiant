@@ -7,7 +7,7 @@
 namespace Engine {
 
     Ability::Ability(const std::string& entityName, const std::string& textureIdentifier)
-        : GameplayEntity(World::GetWorld().CreateEntity(entityName), &World::GetWorld()), sprite(AddComponent<SpriteComponent>(textureIdentifier))
+        : Entity(World::GetWorld().CreateGameObject(entityName), &World::GetWorld()), sprite(AddComponent<SpriteComponent>(textureIdentifier))
     {
 
     }
@@ -23,12 +23,12 @@ namespace Engine {
         return elapsedTime < ability.Cooldown;
     }
 
-    void Ability::OnCollisionBegin(GameplayEntity& other)
+    void Ability::OnCollisionBegin(Entity& other)
     {
 
     }
 
-    void Ability::OnCollisionEnd(GameplayEntity& other)
+    void Ability::OnCollisionEnd(Entity& other)
     {
 
     }

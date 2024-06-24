@@ -13,7 +13,7 @@
 	#else
 		#error "Platform doesn't support debugbreak yet!"
 	#endif
-	#define ENGINE_ENABLE_ASSERTS
+// TODO: #define ENGINE_ENABLE_ASSERTS
 #else
 	#define ENGINE_DEBUGBREAK()
 #endif
@@ -48,6 +48,8 @@ namespace Engine {
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 }
+// TODO: #ifdef ENGINE_ENABLE_ASSERTS
+// Currently accepts at least the condition and one additional parameter (the message) being optional
+#define ENGINE_ASSERT(...)
 
 #include "Core/Log.h"
-#include "Core/Assert.h"

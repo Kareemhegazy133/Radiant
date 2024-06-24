@@ -7,7 +7,6 @@
 #include "Core/GameApplication.h"
 #include "Core/Layer.h"
 #include "Core/Log.h"
-#include "Core/Assert.h"
 
 #include "Core/Timestep.h"
 
@@ -19,9 +18,9 @@
 
 #include "World/World.h"
 #include "World/Components.h"
+#include "World/GameObject.h"
 #include "World/Entities/Entity.h"
-#include "World/Entities/GameplayEntities/GameplayEntity.h"
-#include "World/Entities/GameplayEntities/Character.h"
-#include "World/Entities/GameplayEntities/Ability.h"
+#include "World/Entities/Character.h"
+#include "World/Entities/Ability.h"
 
-#include "Utils/TextureManager.h"
+#include "Resources/TextureManager.h"

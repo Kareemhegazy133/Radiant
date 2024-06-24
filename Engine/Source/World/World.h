@@ -8,7 +8,7 @@
 
 namespace Engine {
 
-	class Entity;
+	class GameObject;
 
 	class World
 	{
@@ -16,8 +16,8 @@ namespace Engine {
 		World();
 		~World();
 
-		Entity CreateEntity(const std::string& name = std::string());
-		void DestroyEntity(Entity entity);
+		GameObject CreateGameObject(const std::string& name = std::string());
+		void DestroyGameObject(GameObject gameObject);
 
 		virtual void OnUpdate(Timestep ts);
 		void OnRender();
@@ -26,7 +26,7 @@ namespace Engine {
 
 	private:
 		template<typename T>
-		void OnComponentAdded(Entity entity, T& component);
+		void OnComponentAdded(GameObject gameObject, T& component);
 
 	protected:
 		sf::RenderWindow* m_RenderWindow;
@@ -37,7 +37,7 @@ namespace Engine {
 
 		Physics2D m_Physics;
 
-		friend class Entity;
+		friend class GameObject;
 	};
 
 }

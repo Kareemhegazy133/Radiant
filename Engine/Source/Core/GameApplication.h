@@ -2,8 +2,8 @@
 
 #include "SFML/Graphics.hpp"
 
+#include "Core/Base.h"
 #include "Core/Log.h"
-#include "Core/Assert.h"
 
 #include "Window.h"
 #include "Core/LayerStack.h"
@@ -12,7 +12,7 @@
 
 #include "Core/Timestep.h"
 
-#include "Utils/TextureManager.h"
+#include "Resources/TextureManager.h"
 
 int main(int argc, char** argv);
 

@@ -1,6 +1,6 @@
 #include "Player.h"
 #include "Gameplay/Attributes.h"
-#include "Gameplay/Entities/Abilities.h"
+#include "Gameplay/Entities/Abilities/Abilities.h"
 
 using namespace Engine;
 
@@ -64,12 +64,12 @@ void Player::OnUpdate(Timestep ts)
         abilities.ActivateAbility(0, *this);
 }
 
-void Player::OnCollisionBegin(GameplayEntity& other)
+void Player::OnCollisionBegin(Entity& other)
 {
     //GAME_INFO("Player collided with: {0}", other.GetComponent<MetadataComponent>().Tag);
 }
 
-void Player::OnCollisionEnd(GameplayEntity& other)
+void Player::OnCollisionEnd(Entity& other)
 {
 
 }

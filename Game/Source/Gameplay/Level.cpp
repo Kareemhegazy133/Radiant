@@ -2,7 +2,7 @@
 
 Level::Level()
 {
-	auto platform = CreateEntity("Platform");
+	auto platform = CreateGameObject("Platform");
 	platform.AddComponent<SpriteComponent>("Platform");
 	auto& platform_transform = platform.GetComponent<TransformComponent>();
 	platform_transform.SetPosition(300.f, 600.f);
@@ -10,7 +10,7 @@ Level::Level()
 	auto& platform_rb2d = platform.AddComponent<Rigidbody2DComponent>();
 	platform.AddComponent<BoxCollider2DComponent>();
 
-	/*auto platform2 = CreateEntity("Platform2");
+	/*auto platform2 = CreateGameObject("Platform2");
 	platform2.AddComponent<SpriteComponent>("Platform");
 	auto& platform2_transform = platform2.GetComponent<TransformComponent>();
 	platform2_transform.setPosition(300.f, 0.f);

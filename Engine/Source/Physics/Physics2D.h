@@ -10,7 +10,7 @@ class b2World;
 
 namespace Engine {
 
-	class Entity;
+	class GameObject;
 
 	class Physics2D
 	{
@@ -21,8 +21,8 @@ namespace Engine {
 
 		void OnUpdate(Timestep ts);
 
-		void CreatePhysicsBody(Entity entity, Rigidbody2DComponent& component);
-		void CreateBoxColliderFixture(Entity entity, BoxCollider2DComponent& component);
+		void CreatePhysicsBody(GameObject gameObject, Rigidbody2DComponent& component);
+		void CreateBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component);
 		void UpdateBoxColliderFixture(BoxCollider2DComponent& bc2d, TransformComponent& transform, SpriteComponent& sprite);
 
 		inline static Physics2D& Get() { return *s_Instance; }

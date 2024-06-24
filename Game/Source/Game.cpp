@@ -7,7 +7,8 @@ class TheReaper : public Engine::GameApplication
 {
 
 public:
-	TheReaper(GameApplicationCommandLineArgs args) : GameApplication("The Reaper", args)
+	TheReaper(GameApplicationCommandLineArgs args)
+		: GameApplication("The Reaper", args)
 	{
 		PushLayer(new GameLayer());
 	}

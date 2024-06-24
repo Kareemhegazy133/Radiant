@@ -6,7 +6,7 @@
 
 namespace Engine {
 
-    class GameplayEntity;
+    class Entity;
 
     class Rigidbody2DComponent : public Component
     {
@@ -26,7 +26,7 @@ namespace Engine {
          * object representing the other entity involved in the collision.
          * @endcode
         */
-        std::function<void(GameplayEntity&)> OnCollisionBegin = nullptr;
+        std::function<void(Entity&)> OnCollisionBegin = nullptr;
 
         /**
          * @brief Function pointer for handling collision events when a collision ends.
@@ -37,7 +37,7 @@ namespace Engine {
          * object representing the other entity involved in the collision.
          * @endcode
         */
-        std::function<void(GameplayEntity&)> OnCollisionEnd = nullptr;
+        std::function<void(Entity&)> OnCollisionEnd = nullptr;
 
     public:
         BodyType Type;

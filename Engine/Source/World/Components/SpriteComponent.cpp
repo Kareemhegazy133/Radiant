@@ -2,7 +2,7 @@
 
 #include "SpriteComponent.h"
 
-#include "Utils/TextureManager.h"
+#include "Resources/TextureManager.h"
 
 namespace Engine {
 

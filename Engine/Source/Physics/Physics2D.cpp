@@ -4,7 +4,7 @@
 #include "box2d/b2_fixture.h"
 #include "box2d/b2_polygon_shape.h"
 
-#include "World/Entities/Entity.h"
+#include "World/GameObject.h"
 
 #include "Physics2D.h"
 
@@ -47,16 +47,16 @@ namespace Engine {
 		return b2_staticBody;
 	}
 
-	void Physics2D::CreatePhysicsBody(Entity entity, Rigidbody2DComponent& component)
+	void Physics2D::CreatePhysicsBody(GameObject gameObject, Rigidbody2DComponent& component)
 	{
-		auto& transform = entity.GetComponent<TransformComponent>();
+		auto& transform = gameObject.GetComponent<TransformComponent>();
 
 		b2BodyDef bodyDef;
 		bodyDef.type = Rigidbody2DTypeToBox2DBody(component.Type);
 		bodyDef.position.Set(transform.GetPosition().x, transform.GetPosition().y);
 		bodyDef.angle = DEG_TO_RAD(transform.GetRotation());
 
-		bodyDef.userData.pointer = static_cast<uintptr_t>(uint32_t(entity));
+		bodyDef.userData.pointer = static_cast<uintptr_t>(uint32_t(gameObject));
 
 		b2Body* body = m_PhysicsWorld->CreateBody(&bodyDef);
 		body->SetFixedRotation(component.FixedRotation);
@@ -64,10 +64,10 @@ namespace Engine {
 		transform.RuntimeBody = body;
 	}
 
-	void Physics2D::CreateBoxColliderFixture(Entity entity, BoxCollider2DComponent& component)
+	void Physics2D::CreateBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component)
 	{
-		auto& transform = entity.GetComponent<TransformComponent>();
-		auto& sprite = entity.GetComponent<SpriteComponent>();
+		auto& transform = gameObject.GetComponent<TransformComponent>();
+		auto& sprite = gameObject.GetComponent<SpriteComponent>();
 
 		b2PolygonShape boxShape;
 		// Offsetting the Center because SFML to Box2d Coordinate System's Y Axis is Mirrored
@@ -91,7 +91,7 @@ namespace Engine {
 		fixtureDef.restitution = component.Restitution;
 		fixtureDef.restitutionThreshold = component.RestitutionThreshold;
 
-		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+		auto& rb2d = gameObject.GetComponent<Rigidbody2DComponent>();
 		b2Fixture* fixture = static_cast<b2Body*>(rb2d.RuntimeBody)->CreateFixture(&fixtureDef);
 		component.RuntimeFixture = fixture;
 	}
