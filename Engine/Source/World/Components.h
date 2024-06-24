@@ -13,7 +13,6 @@
 #include "World/Components/AnimationComponent.h"
 
 // Gameplay Entities Components
-
 #include "World/Components/RigidBody2DComponent.h"
 #include "World/Components/BoxCollider2DComponent.h"
 #include "World/Components/AttributesComponent.h"
@@ -24,4 +23,5 @@
 #include "World/Components/AbilityComponent.h"
 
 // UI Entities Components
+#include "World/Components/TextComponent.h"
 #include "World/Components/ButtonComponent.h"
