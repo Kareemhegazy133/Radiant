@@ -9,6 +9,11 @@ namespace Engine {
     class BoxCollider2DComponent: public Component
     {
     public:
+        
+        BoxCollider2DComponent() = default;
+        BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
+
+    public:
         sf::Vector2f Offset = { 0.0f, 0.0f };
 
         float Density = 1.0f;
@@ -18,8 +23,5 @@ namespace Engine {
 
         // Storage for runtime
         void* RuntimeFixture = nullptr;
-
-        BoxCollider2DComponent() = default;
-        BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
     };
 }

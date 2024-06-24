@@ -40,8 +40,8 @@ void Fireball::Activate(GameplayEntity& caster)
     if (metadata.IsActive) return;
 
     auto& casterTransform = caster.GetComponent<TransformComponent>();
-    transform.setPosition(
-        casterTransform.getPosition() + m_SocketOffset
+    transform.SetPosition(
+        casterTransform.GetPosition() + m_SocketOffset
     );
     
     metadata.IsActive = true;
@@ -67,9 +67,9 @@ void Fireball::OnUpdate(Timestep ts)
     sf::Vector2f velocity = { 0.0f, 0.0f };
     velocity.x += ability.Speed;
 
-    transform.setPosition(
-        transform.getPosition().x + velocity.x * ts,
-        transform.getPosition().y + velocity.y * ts
+    transform.SetPosition(
+        transform.GetPosition().x + velocity.x * ts,
+        transform.GetPosition().y + velocity.y * ts
     );
 }
 

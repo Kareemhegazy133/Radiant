@@ -1,96 +1,51 @@
 #pragma once
 
 #include "SFML/Graphics/Sprite.hpp"
-#include "Utils/TextureManager.h"
 
 #include "World/Components/Component.h"
 #include "World/Components/AnimationComponent.h"
-
-#include "Enginepch.h"
 
 namespace Engine {
 
     class SpriteComponent : public Component
     {
     public:
-        sf::Sprite Sprite;
-        std::string TextureIdentifier; // Identifier for the texture in the TextureManager
-        AnimationComponent* Animation; // Pointer to an AnimationComponent (optional)
 
-        SpriteComponent() : Animation(nullptr) {}
-
-        SpriteComponent(const std::string& textureIdentifier, AnimationComponent * animation = nullptr)
-            : Sprite(), TextureIdentifier(textureIdentifier), Animation(animation)
-        {
-            // Set the texture using the TextureManager
-            Sprite.setTexture(TextureManager::Get().getTexture(textureIdentifier));
-
-            // If there's an animation, set the initial texture rectangle
-            if (Animation) {
-                Sprite.setTextureRect(Animation->GetCurrentFrame());
-            }
-        }
-
-        operator const sf::Sprite& () { return Sprite; }
+        SpriteComponent();
+        SpriteComponent(const std::string& textureIdentifier, AnimationComponent* animation = nullptr);
 
         // Function to set the texture identifier and update the texture of the sprite
-        void setTextureIdentifier(const std::string& textureIdentifier) {
-            TextureIdentifier = textureIdentifier;
-            Sprite.setTexture(TextureManager::Get().getTexture(textureIdentifier));
-        }
-
+        void SetTextureIdentifier(const std::string& textureIdentifier);
         // Function to get the texture identifier
-        const std::string& getTextureIdentifier() const {
-            return TextureIdentifier;
-        }
+        const std::string& GetTextureIdentifier() const;
 
         // Function to get the size of the texture
-        sf::Vector2f getTextureSize() const {
-            sf::Vector2i size;
-            if (Animation)
-            {
-                size = Animation->GetCurrentFrameSize();
-            }
-            else {
-                size = Sprite.getTextureRect().getSize();
-            }
-            return sf::Vector2f(static_cast<float>(size.x), static_cast<float>(size.y));
-        }
+        sf::Vector2f GetTextureSize() const;
 
-        void setTextureRect(const sf::IntRect& rectangle) {
-            Sprite.setTextureRect(rectangle);
-        }
+        void SetTextureRect(const sf::IntRect& rectangle);
+        const sf::IntRect& GetTextureRect() const;
 
-        const sf::IntRect& getTextureRect() const {
-            return Sprite.getTextureRect();
-        }
+        void SetPosition(const sf::Vector2f& position);
+        void SetPosition(float x, float y);
 
-        void setPosition(const sf::Vector2f& position) {
-            Sprite.setPosition(position);
-        }
+        void SetRotation(float angle);
 
-        void setPosition(float x, float y) {
-            Sprite.setPosition(x, y);
-        }
-
-        void setRotation(float angle) {
-            Sprite.setRotation(angle);
-        }
-
-        void setScale(const sf::Vector2f& scale) {
-            Sprite.setScale(scale);
-        }
-
-        void setScale(float factorX, float factorY) {
-            Sprite.setScale(factorX, factorY);
-        }
+        void SetScale(const sf::Vector2f& scale);
+        void SetScale(float factorX, float factorY);
 
         // Update the sprite's animation
-        void update(Timestep ts) {
-            if (Animation) {
-                Animation->Update(ts);
-                Sprite.setTextureRect(Animation->GetCurrentFrame());
-            }
-        }
+        void Update(Timestep ts);
+
+        operator const sf::Sprite& () { return Sprite; }
+        operator sf::Sprite& () { return Sprite; }
+
+    public:
+        // Pointer to an AnimationComponent (optional)
+        AnimationComponent* Animation;
+    private:
+        sf::Sprite Sprite;
+        // Identifier for the texture in the TextureManager
+        std::string TextureIdentifier;
+
     };
 }

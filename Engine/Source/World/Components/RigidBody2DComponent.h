@@ -12,11 +12,6 @@ namespace Engine {
     {
     public:
         enum class BodyType { Static = 0, Dynamic, Kinematic };
-        BodyType Type;
-        bool FixedRotation = true;
-
-        // Storage for runtime
-        void* RuntimeBody = nullptr;
 
         Rigidbody2DComponent(BodyType type = BodyType::Static)
             : Type(type) {}
@@ -43,5 +38,12 @@ namespace Engine {
          * @endcode
         */
         std::function<void(GameplayEntity&)> OnCollisionEnd = nullptr;
+
+    public:
+        BodyType Type;
+        bool FixedRotation = true;
+
+        // Storage for runtime
+        void* RuntimeBody = nullptr;
     };
 }

@@ -10,7 +10,7 @@ namespace Engine {
     class AbilitiesComponent : public Component
     {
     public:
-        AbilitiesComponent() = default;
+        AbilitiesComponent();
 
         template<typename T, typename... Args>
         void AddAbility(Args&&... args)
@@ -19,12 +19,9 @@ namespace Engine {
             m_Abilities.emplace_back(CreateRef<T>(std::forward<Args>(args)...));
         }
 
-        const std::vector<Ref<Ability>>& GetAbilities() const
-        {
-            return m_Abilities;
-        }
-
         void ActivateAbility(size_t index, GameplayEntity& caster);
+
+        const std::vector<Ref<Ability>>& GetAbilities() const;
 
     private:
         std::vector<Ref<Ability>> m_Abilities;

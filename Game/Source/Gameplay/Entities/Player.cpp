@@ -54,9 +54,9 @@ void Player::OnUpdate(Timestep ts)
     if (Input::IsKeyPressed(Key::D))
         velocity.x += character.Speed;
 
-    transform.setPosition(
-        transform.getPosition().x + velocity.x * ts,
-        transform.getPosition().y + velocity.y * ts
+    transform.SetPosition(
+        transform.GetPosition().x + velocity.x * ts,
+        transform.GetPosition().y + velocity.y * ts
     );
 
     // TODO: Add Keybinds functionality

@@ -6,6 +6,7 @@
 
 // Common Components
 
+// TODO: See if operator overloading is possible for sfml default functions
 #include "World/Components/MetadataComponent.h"
 #include "World/Components/TransformComponent.h"
 #include "World/Components/SpriteComponent.h"
@@ -23,4 +24,4 @@
 #include "World/Components/AbilityComponent.h"
 
 // UI Entities Components
-
+#include "World/Components/ButtonComponent.h"

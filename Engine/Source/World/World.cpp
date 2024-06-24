@@ -41,13 +41,13 @@ namespace Engine {
 
 	void World::OnUpdate(Timestep ts)
 	{
-		// Update Physics Bodies and Colliders of all entities
+		// Update Physics Bodies and Colliders of all gameplay entities
 		auto view = m_Registry.view<MetadataComponent, Rigidbody2DComponent, TransformComponent, SpriteComponent>();
 		for (auto entity : view)
 		{
 			auto& [metadata, rb2d, transform, sprite] = view.get<MetadataComponent, Rigidbody2DComponent, TransformComponent, SpriteComponent>(entity);
 
-			// Skip inactive Entities
+			// Skip inactive Gameplay Entities
 			if (!metadata.IsActive) continue;
 
 			Entity entity(entity, this);
@@ -57,7 +57,7 @@ namespace Engine {
 			m_Physics.UpdateBoxColliderFixture(bc2d, transform, sprite);
 
 			// Update the sprite's animation
-			sprite.update(ts);
+			sprite.Update(ts);
 		}
 
 		// Apply Physics
@@ -76,9 +76,9 @@ namespace Engine {
 			if (!metadata.IsActive) continue;
 
 			// Apply the transform to the sprite
-			sprite.setPosition(transform.getPosition());
-			sprite.setRotation(transform.getRotation());
-			sprite.setScale(transform.getScale());
+			sprite.SetPosition(transform.GetPosition());
+			sprite.SetRotation(transform.GetRotation());
+			sprite.SetScale(transform.GetScale());
 
 			// Draw the sprite to the render window
 			m_RenderWindow->draw(sprite);
@@ -142,6 +142,11 @@ namespace Engine {
 
 	template<>
 	void World::OnComponentAdded<AbilityComponent>(Entity entity, AbilityComponent& component)
+	{
+	}
+
+	template<>
+	void World::OnComponentAdded<ButtonComponent>(Entity entity, ButtonComponent& component)
 	{
 	}
 }

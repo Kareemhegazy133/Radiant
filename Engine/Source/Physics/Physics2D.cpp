@@ -53,8 +53,8 @@ namespace Engine {
 
 		b2BodyDef bodyDef;
 		bodyDef.type = Rigidbody2DTypeToBox2DBody(component.Type);
-		bodyDef.position.Set(transform.getPosition().x, transform.getPosition().y);
-		bodyDef.angle = DEG_TO_RAD(transform.getRotation());
+		bodyDef.position.Set(transform.GetPosition().x, transform.GetPosition().y);
+		bodyDef.angle = DEG_TO_RAD(transform.GetRotation());
 
 		bodyDef.userData.pointer = static_cast<uintptr_t>(uint32_t(entity));
 
@@ -72,17 +72,17 @@ namespace Engine {
 		b2PolygonShape boxShape;
 		// Offsetting the Center because SFML to Box2d Coordinate System's Y Axis is Mirrored
 		boxShape.SetAsBox(
-			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
-			sprite.getTextureSize().y * transform.getScale().y * 0.5f,
-			b2Vec2(sprite.getTextureSize().x * 0.5f, sprite.getTextureSize().y * 0.5f), DEG_TO_RAD(transform.getRotation()));
+			sprite.GetTextureSize().x * transform.GetScale().x * 0.5f,
+			sprite.GetTextureSize().y * transform.GetScale().y * 0.5f,
+			b2Vec2(sprite.GetTextureSize().x * 0.5f, sprite.GetTextureSize().y * 0.5f), DEG_TO_RAD(transform.GetRotation()));
 
 		/*ENGINE_INFO("Sprite x: {0}, y: {1}, transform x: {2}, y: {3}, Rect x: {4}, y: {5}",
-			sprite.getTextureSize().x,
-			sprite.getTextureSize().y,
-			transform.getScale().x,
-			transform.getScale().y,
-			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
-			sprite.getTextureSize().y * transform.getScale().y * 0.5f);*/
+			sprite.GetTextureSize().x,
+			sprite.GetTextureSize().y,
+			transform.GetScale().x,
+			transform.GetScale().y,
+			sprite.GetTextureSize().x * transform.GetScale().x * 0.5f,
+			sprite.GetTextureSize().y * transform.GetScale().y * 0.5f);*/
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &boxShape;
@@ -104,9 +104,9 @@ namespace Engine {
 		b2PolygonShape boxShape;
 		// Offsetting the Center because SFML to Box2d Coordinate System's Y Axis is Mirrored
 		boxShape.SetAsBox(
-			sprite.getTextureSize().x * transform.getScale().x * 0.5f,
-			sprite.getTextureSize().y * transform.getScale().y * 0.5f,
-			b2Vec2(sprite.getTextureSize().x * 0.5f, sprite.getTextureSize().y * 0.5f), DEG_TO_RAD(transform.getRotation()));
+			sprite.GetTextureSize().x * transform.GetScale().x * 0.5f,
+			sprite.GetTextureSize().y * transform.GetScale().y * 0.5f,
+			b2Vec2(sprite.GetTextureSize().x * 0.5f, sprite.GetTextureSize().y * 0.5f), DEG_TO_RAD(transform.GetRotation()));
 
 		//ENGINE_INFO("Centroid x: {0}, y: {1}", boxShape.m_centroid.x, boxShape.m_centroid.y);
 
