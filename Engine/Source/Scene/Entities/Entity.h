@@ -7,8 +7,8 @@ namespace Engine {
 	class Entity : public GameObject
 	{
 	public:
-		Entity(entt::entity handle, Scene* world)
-			: GameObject(handle, world) {}
+		Entity(entt::entity handle, Scene* scene)
+			: GameObject(handle, scene) {}
 		Entity(const Entity& other) = default;
 
 		virtual void OnUpdate(Timestep ts);

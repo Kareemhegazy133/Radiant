@@ -4,18 +4,19 @@
 #include "Scene.h"
 
 namespace Engine {
-	
+	// TODO: Fix these Asserts
+
 	class GameObject
 	{
 	public:
 		GameObject() = default;
-		GameObject(entt::entity handle, Scene* world);
+		GameObject(entt::entity handle, Scene* scene);
 		GameObject(const GameObject& other) = default;
 
 		template<typename T, typename... Args>
 		T& AddComponent(Args&&... args)
 		{
-			ENGINE_ASSERT(!HasComponent<T>(), "GameObject already has component!");
+			//ENGINE_ASSERT(!HasComponent<T>(), "GameObject already has component!");
 			T& component = m_Scene->m_Registry.emplace<T>(m_GameObjectHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
 			return component;
@@ -24,7 +25,7 @@ namespace Engine {
 		template<typename T>
 		T& GetComponent()
 		{
-			ENGINE_ASSERT(HasComponent<T>(), "GameObject does not have component!");
+			//ENGINE_ASSERT(HasComponent<T>(), "GameObject does not have component!");
 			return m_Scene->m_Registry.get<T>(m_GameObjectHandle);
 		}
 

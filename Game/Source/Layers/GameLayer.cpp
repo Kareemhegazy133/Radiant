@@ -14,7 +14,7 @@ GameLayer::GameLayer() : Layer("GameLayer")
 void GameLayer::OnAttach()
 {
 	m_GameLevel = CreateRef<GameLevel>();
-    //m_MainMenuLevel = CreateRef<MainMenuLevel>();
+    m_MainMenuLevel = CreateRef<MainMenuLevel>();
 }
 
 void GameLayer::OnDetach()
