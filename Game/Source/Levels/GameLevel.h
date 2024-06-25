@@ -6,15 +6,15 @@
 
 using namespace Engine;
 
-class Level : public World
+class GameLevel : public Level
 {
 
 public:
-    Level();
-    ~Level();
+    GameLevel();
+    ~GameLevel();
 
     void OnUpdate(Timestep ts) override;
-    void OnRender();
+    void OnRender() override;
 
     void OnEvent(Event& e);
 

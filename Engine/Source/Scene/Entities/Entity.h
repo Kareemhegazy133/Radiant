@@ -1,15 +1,17 @@
 #pragma once
 
-#include "World/GameObject.h"
+#include "Scene/GameObject.h"
 
 namespace Engine {
 
 	class Entity : public GameObject
 	{
 	public:
-		Entity(entt::entity handle, World* world)
+		Entity(entt::entity handle, Scene* world)
 			: GameObject(handle, world) {}
 		Entity(const Entity& other) = default;
+
+		virtual void OnUpdate(Timestep ts);
 
 	protected:
 		virtual void OnCollisionBegin(Entity& other);

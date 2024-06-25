@@ -4,7 +4,7 @@
 #include "box2d/b2_fixture.h"
 #include "box2d/b2_polygon_shape.h"
 
-#include "World/GameObject.h"
+#include "Scene/GameObject.h"
 
 #include "Physics2D.h"
 

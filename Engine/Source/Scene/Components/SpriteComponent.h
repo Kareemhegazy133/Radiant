@@ -2,8 +2,8 @@
 
 #include "SFML/Graphics/Sprite.hpp"
 
-#include "World/Components/Component.h"
-#include "World/Components/AnimationComponent.h"
+#include "Scene/Components/Component.h"
+#include "Scene/Components/AnimationComponent.h"
 
 namespace Engine {
 

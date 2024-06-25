@@ -1,7 +1,7 @@
 #include "Enginepch.h"
 
-#include "World/Entities/Entity.h"
-#include "World/Entities/Ability.h"
+#include "Scene/Entities/Entity.h"
+#include "Scene/Entities/Ability.h"
 
 #include "AbilitiesComponent.h"
 

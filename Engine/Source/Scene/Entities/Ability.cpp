@@ -7,7 +7,7 @@
 namespace Engine {
 
     Ability::Ability(const std::string& entityName, const std::string& textureIdentifier)
-        : Entity(World::GetWorld().CreateGameObject(entityName), &World::GetWorld()), sprite(AddComponent<SpriteComponent>(textureIdentifier))
+        : Entity(Scene::GetScene().CreateGameObject(entityName), &Scene::GetScene()), sprite(AddComponent<SpriteComponent>(textureIdentifier))
     {
 
     }

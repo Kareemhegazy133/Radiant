@@ -4,6 +4,14 @@
 
 namespace Engine {
 
+	void Entity::OnUpdate(Timestep ts)
+	{
+		if (GetComponent<MetadataComponent>().OnUpdate)
+		{
+			GetComponent<MetadataComponent>().OnUpdate(ts);
+		}
+	}
+
 	void Entity::OnCollisionBegin(Entity& other)
 	{
 

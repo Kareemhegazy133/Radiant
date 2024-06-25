@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Engine.h"
+#include <Engine.h>
 
-#include "Gameplay/Level.h"
+#include "Levels/GameLevel.h"
+#include "Levels/MainMenuLevel.h"
 
 using namespace Engine;
 
@@ -18,7 +19,21 @@ public:
 	void OnUpdate(Timestep ts) override;
 	void OnEvent(Event& e) override;
 
+	bool OnKeyPressed(KeyPressedEvent& e);
+
 private:
-	Ref<Level> m_Level;
+	Ref<GameLevel> m_GameLevel;
+	Ref<MainMenuLevel> m_MainMenuLevel;
+
+	enum class GameState
+	{
+		MainMenu = 0,
+		Loading,
+		Playing,
+		Paused,
+		GameOver
+	};
+
+	GameState m_CurrentState = GameState::Playing;
 };
 

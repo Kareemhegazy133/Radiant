@@ -1,7 +1,7 @@
 #pragma once
 
 #include "entt.hpp"
-#include "World/World.h"
+#include "Scene.h"
 
 namespace Engine {
 	
@@ -9,17 +9,15 @@ namespace Engine {
 	{
 	public:
 		GameObject() = default;
-		GameObject(entt::entity handle, World* world);
+		GameObject(entt::entity handle, Scene* world);
 		GameObject(const GameObject& other) = default;
-
-		virtual void OnUpdate(Timestep ts);
 
 		template<typename T, typename... Args>
 		T& AddComponent(Args&&... args)
 		{
 			ENGINE_ASSERT(!HasComponent<T>(), "GameObject already has component!");
-			T& component = m_World->m_Registry.emplace<T>(m_GameObjectHandle, std::forward<Args>(args)...);
-			m_World->OnComponentAdded<T>(*this, component);
+			T& component = m_Scene->m_Registry.emplace<T>(m_GameObjectHandle, std::forward<Args>(args)...);
+			m_Scene->OnComponentAdded<T>(*this, component);
 			return component;
 		}
 
@@ -27,26 +25,26 @@ namespace Engine {
 		T& GetComponent()
 		{
 			ENGINE_ASSERT(HasComponent<T>(), "GameObject does not have component!");
-			return m_World->m_Registry.get<T>(m_GameObjectHandle);
+			return m_Scene->m_Registry.get<T>(m_GameObjectHandle);
 		}
 
 		template<typename T>
 		T* TryGetComponent()
 		{
-			return m_World->m_Registry.try_get<T>(m_GameObjectHandle);
+			return m_Scene->m_Registry.try_get<T>(m_GameObjectHandle);
 		}
 
 		template<typename T>
 		bool HasComponent()
 		{
-			return m_World->m_Registry.has<T>(m_GameObjectHandle);
+			return m_Scene->m_Registry.has<T>(m_GameObjectHandle);
 		}
 
 		template<typename T>
 		void RemoveComponent()
 		{
 			ENGINE_ASSERT(HasComponent<T>(), "GameObject does not have component!");
-			m_World->m_Registry.remove<T>(m_GameObjectHandle);
+			m_Scene->m_Registry.remove<T>(m_GameObjectHandle);
 		}
 
 		operator bool() const { return m_GameObjectHandle != entt::null; }
@@ -55,7 +53,7 @@ namespace Engine {
 
 		bool operator==(const GameObject& other) const
 		{
-			return m_GameObjectHandle == other.m_GameObjectHandle && m_World == other.m_World;
+			return m_GameObjectHandle == other.m_GameObjectHandle && m_Scene == other.m_Scene;
 		}
 
 		bool operator!=(const GameObject& other) const
@@ -65,6 +63,6 @@ namespace Engine {
 
 	private:
 		entt::entity m_GameObjectHandle{ entt::null };
-		World* m_World = nullptr;
+		Scene* m_Scene = nullptr;
 	};
 }

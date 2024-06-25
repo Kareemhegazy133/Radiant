@@ -4,7 +4,7 @@
 
 #include "CollisionListener.h"
 
-#include "World/Components.h"
+#include "Scene/Components.h"
 
 class b2World;
 

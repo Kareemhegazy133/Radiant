@@ -1,6 +1,7 @@
 #include "GameLayer.h"
-
 // TODO: Serialize and Deserialize the game layer
+
+using namespace Engine;
 
 GameLayer::GameLayer() : Layer("GameLayer")
 {
@@ -12,7 +13,8 @@ GameLayer::GameLayer() : Layer("GameLayer")
 
 void GameLayer::OnAttach()
 {
-	m_Level = CreateRef<Level>();
+	m_GameLevel = CreateRef<GameLevel>();
+    //m_MainMenuLevel = CreateRef<MainMenuLevel>();
 }
 
 void GameLayer::OnDetach()
@@ -21,12 +23,46 @@ void GameLayer::OnDetach()
 
 void GameLayer::OnUpdate(Timestep ts)
 {
-	m_Level->OnUpdate(ts);
-	m_Level->OnRender();
+    switch (m_CurrentState)
+    {
+    case GameState::MainMenu:
+
+        break;
+    case GameState::Loading:
+        
+        break;
+    case GameState::Playing:
+        m_GameLevel->OnUpdate(ts);
+        m_GameLevel->OnRender();
+        break;
+    case GameState::Paused:
+
+        break;
+
+    }
 }
 
 
 void GameLayer::OnEvent(Event& e)
 {
-	m_Level->OnEvent(e);
+    EventDispatcher dispatcher(e);
+    dispatcher.Dispatch<KeyPressedEvent>(ENGINE_BIND_EVENT_FN(GameLayer::OnKeyPressed));
+    if (e.Handled) return;
+
+    m_GameLevel->OnEvent(e);
+}
+
+bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
+{
+    if (e.GetKeyCode() == Key::Escape)
+    {
+        if (m_CurrentState == GameState::Playing)
+            m_CurrentState = GameState::Paused;
+        else if (m_CurrentState == GameState::Paused)
+            m_CurrentState = GameState::Playing;
+
+        return true;
+    }
+
+    return false;
 }

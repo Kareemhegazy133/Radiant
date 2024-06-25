@@ -2,7 +2,7 @@
 
 #include "SFML/Graphics/Transformable.hpp"
 
-#include "World/Components/Component.h"
+#include "Scene/Components/Component.h"
 
 namespace Engine {
 

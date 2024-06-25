@@ -8,7 +8,7 @@ namespace Engine {
 	bool Input::IsKeyPressed(KeyCode key)
 	{
 		auto window = static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow());
-		return window->hasFocus() && sf::Keyboard::isKeyPressed(static_cast<sf::Keyboard::Scancode>(key));
+		return window->hasFocus() && sf::Keyboard::isKeyPressed(static_cast<sf::Keyboard::Key>(key));
 	}
 
 	bool Input::IsMouseButtonPressed(MouseCode button)

@@ -2,7 +2,6 @@
 
 #include "entt.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
-#include "Core/Timestep.h"
 
 #include "Physics/Physics2D.h"
 
@@ -10,19 +9,23 @@ namespace Engine {
 
 	class GameObject;
 
-	class World
+	class Scene
 	{
 	public:
-		World();
-		~World();
+		Scene();
+		~Scene();
 
 		GameObject CreateGameObject(const std::string& name = std::string());
 		void DestroyGameObject(GameObject gameObject);
 
-		virtual void OnUpdate(Timestep ts);
-		void OnRender();
+		inline static Scene& GetScene() { return *s_Instance; }
 
-		inline static World& GetWorld() { return *s_Instance; }
+	protected:
+		template<typename... Components>
+		auto GetView()
+		{
+			return m_Registry.view<Components...>();
+		}
 
 	private:
 		template<typename T>
@@ -30,12 +33,11 @@ namespace Engine {
 
 	protected:
 		sf::RenderWindow* m_RenderWindow;
+		Physics2D m_Physics;
 
 	private:
-		static World* s_Instance;
+		static Scene* s_Instance;
 		entt::registry m_Registry;
-
-		Physics2D m_Physics;
 
 		friend class GameObject;
 	};

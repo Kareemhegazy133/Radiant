@@ -14,13 +14,18 @@
 #include "Core/MouseCodes.h"
 #include "Core/KeyCodes.h"
 
+#include "Events/Event.h"
+#include "Events/MouseEvent.h"
+#include "Events/KeyEvent.h"
+
 #include "Physics/Physics2D.h"
 
-#include "World/World.h"
-#include "World/Components.h"
-#include "World/GameObject.h"
-#include "World/Entities/Entity.h"
-#include "World/Entities/Character.h"
-#include "World/Entities/Ability.h"
+#include "Scene/Scene.h"
+#include "Scene/Level.h"
+#include "Scene/Components.h"
+#include "Scene/GameObject.h"
+#include "Scene/Entities/Entity.h"
+#include "Scene/Entities/Character.h"
+#include "Scene/Entities/Ability.h"
 
 #include "Resources/TextureManager.h"

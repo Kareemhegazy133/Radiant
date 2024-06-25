@@ -3,7 +3,7 @@
 #include "SFML/Graphics/Rect.hpp"
 
 #include "Core/Timestep.h"
-#include "World/Components/Component.h"
+#include "Scene/Components/Component.h"
 
 #include "Enginepch.h"
 
