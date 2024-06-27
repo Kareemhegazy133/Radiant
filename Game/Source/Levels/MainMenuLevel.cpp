@@ -2,11 +2,12 @@
 
 MainMenuLevel::MainMenuLevel()
 {
-	
+
 }
 
 MainMenuLevel::~MainMenuLevel()
 {
+
 }
 
 void MainMenuLevel::OnUpdate(Timestep ts)

@@ -21,6 +21,7 @@ GameLevel::GameLevel()
 
 GameLevel::~GameLevel()
 {
+	
 }
 
 void GameLevel::OnUpdate(Timestep ts)

@@ -1,6 +1,6 @@
 #include "Enginepch.h"
 
-#include "Core/GameApplication.h"
+#include "Physics/Physics2D.h"
 
 #include "Scene.h"
 #include "Components.h"
@@ -11,11 +11,14 @@ namespace Engine {
 	Scene* Scene::s_Instance = nullptr;
 
 	Scene::Scene()
-		: m_RenderWindow(static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow()))
 	{
-		ENGINE_ASSERT(!s_Instance, "Scene already exists!");
-		s_Instance = this;
-
+		/*ENGINE_ASSERT(!s_Instance, "Scene already exists!");
+		s_Instance = this;*/
+		if (!s_Instance)
+		{
+			s_Instance = this;
+		}
+		std::cout << "Scene Instance: " << s_Instance << std::endl;
 	}
 
 	Scene::~Scene()
@@ -70,13 +73,13 @@ namespace Engine {
 	template<>
 	void Scene::OnComponentAdded<Rigidbody2DComponent>(GameObject gameObject, Rigidbody2DComponent& component)
 	{
-		m_Physics.CreatePhysicsBody(gameObject, component);
+		Physics2D::Get().CreatePhysicsBody(gameObject, component);
 	}
 
 	template<>
 	void Scene::OnComponentAdded<BoxCollider2DComponent>(GameObject gameObject, BoxCollider2DComponent& component)
 	{
-		m_Physics.CreateBoxColliderFixture(gameObject, component);
+		Physics2D::Get().CreateBoxColliderFixture(gameObject, component);
 	}
 
 	template<>

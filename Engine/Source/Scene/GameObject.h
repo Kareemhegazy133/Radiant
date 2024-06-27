@@ -1,7 +1,11 @@
 #pragma once
 
 #include "entt.hpp"
-#include "Scene.h"
+
+#include "Core/Timestep.h"
+#include "Scene/Components.h"
+
+#include "Level.h"
 
 namespace Engine {
 
