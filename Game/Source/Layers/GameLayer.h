@@ -2,23 +2,19 @@
 
 #include <Engine.h>
 
-#include "Levels/GameLevel.h"
-#include "Levels/MainMenuLevel.h"
-
 using namespace Engine;
 
 class GameLayer : public Layer
 {
 public:
 
-	enum class GameState
-	{
-		MainMenu = 0,
-		Loading,
-		Playing,
-		Paused,
-		GameOver
-	};
+    enum class GameState
+    {
+        MainMenu = 0,
+        Playing,
+        Paused,
+        GameOver
+    };
 
 	GameLayer();
 	virtual ~GameLayer() = default;
@@ -30,12 +26,13 @@ public:
 	void OnEvent(Event& e) override;
 
 	void SetGameState(GameState newState);
+	inline GameState& GetGameState() { return m_CurrentState; }
 
+private:
 	bool OnKeyPressed(KeyPressedEvent& e);
 
 private:
-	Scope<Level> m_CurrentLevel = nullptr;
-
+	Scope<Level> m_CurrentLevel;
 	GameState m_CurrentState;
 };
 

@@ -11,7 +11,7 @@ namespace Engine {
 	{
 	public:
 		Scene();
-		~Scene();
+		virtual ~Scene();
 
 		GameObject CreateGameObject(const std::string& name = std::string());
 		void DestroyGameObject(GameObject gameObject);

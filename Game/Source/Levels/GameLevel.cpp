@@ -2,6 +2,8 @@
 
 GameLevel::GameLevel()
 {
+	std::cout << "GameLevel Created!" << std::endl;
+
 	auto platform = CreateGameObject("Platform");
 	platform.AddComponent<SpriteComponent>("Platform");
 	auto& platform_transform = platform.GetComponent<TransformComponent>();
@@ -21,7 +23,7 @@ GameLevel::GameLevel()
 
 GameLevel::~GameLevel()
 {
-	
+	std::cout << "GameLevel Destroyed!" << std::endl;
 }
 
 void GameLevel::OnUpdate(Timestep ts)

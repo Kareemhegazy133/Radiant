@@ -8,7 +8,6 @@ namespace Engine {
     {
     public:
         Character(const std::string& entityName, const std::string& textureIdentifier, const sf::Vector2f& position);
-
         virtual ~Character();
 
         virtual void OnUpdate(Timestep ts) = 0;

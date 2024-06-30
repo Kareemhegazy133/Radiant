@@ -12,23 +12,18 @@ namespace Engine {
 
 	Scene::Scene()
 	{
-		/*ENGINE_ASSERT(!s_Instance, "Scene already exists!");
-		s_Instance = this;*/
-		if (!s_Instance)
-		{
-			s_Instance = this;
-		}
+		s_Instance = this;
 		std::cout << "Scene Instance: " << s_Instance << std::endl;
 	}
 
 	Scene::~Scene()
 	{
-
+		std::cout << "Scene Destroyed: " << this << std::endl;
 	}
 
 	GameObject Scene::CreateGameObject(const std::string& name)
 	{
-		GameObject gameObject = { m_Registry.create(), this };
+		GameObject gameObject = { m_Registry.create(), &GetScene()};
 
 		gameObject.AddComponent<TransformComponent>();
 		auto& metadata = gameObject.AddComponent<MetadataComponent>();

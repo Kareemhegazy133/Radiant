@@ -8,7 +8,6 @@ namespace Engine {
 	{
 	public:
 		Ability(const std::string& entityName, const std::string& textureIdentifier);
-
 		virtual ~Ability();
 
 		virtual void Activate(Entity& caster) = 0;
