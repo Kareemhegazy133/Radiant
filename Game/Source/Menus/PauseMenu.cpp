@@ -16,29 +16,26 @@ PauseMenu::~PauseMenu()
 
 void PauseMenu::Initialize()
 {
-	m_TitleText.SetText("Game Paused");
-	m_TitleText.SetFont(m_Font);
-	m_TitleText.SetCharacterSize(50);
-	m_TitleText.SetPosition({ 400.f, 200.f });
-	m_TitleText.SetColor(sf::Color::White);
+	titleText.SetText("GAME PAUSED");
+	titleText.SetFont(m_Font);
+	titleText.SetCharacterSize(50);
+	titleText.SetPosition({ 400.f, 200.f });
+	titleText.SetColor(sf::Color::White);
 
-	//m_ResumeButton = AddComponent<ButtonComponent>(
-	//	sf::Vector2f(400.f, 300.f),
-	//	sf::Vector2f(200.f, 50.f)
-	//);
-	//m_ResumeButton.SetButtonCallback(std::bind(&PauseMenu::OnResumeButtonClicked, this));
-	//m_ResumeButton.SetFillColor(sf::Color::Green);
-	//m_ResumeButton.SetOutlineColor(sf::Color::White);
-	//m_ResumeButton.SetOutlineThickness(2.f);
+	resumeButton.SetPosition({ 400.f, 300.f });
+	resumeButton.SetSize({ 200.f, 50.f });
+	resumeButton.SetButtonCallback(std::bind(&PauseMenu::OnResumeButtonClicked, this));
+	resumeButton.SetFillColor(sf::Color::Green);
+	resumeButton.SetOutlineColor(sf::Color::White);
+	resumeButton.SetOutlineThickness(2.f);
 
-	//m_QuitButton = AddComponent<ButtonComponent>(
-	//	sf::Vector2f(400.f, 400.f),
-	//	sf::Vector2f(200.f, 50.f)
-	//);
-	//m_QuitButton.SetButtonCallback(std::bind(&PauseMenu::OnQuitButtonClicked, this));
-	//m_QuitButton.SetFillColor(sf::Color::Red);
-	//m_QuitButton.SetOutlineColor(sf::Color::White);
-	//m_QuitButton.SetOutlineThickness(2.f);
+
+	/*quitButton.SetPosition({ 400.f, 400.f });
+	quitButton.SetSize({ 200.f, 50.f });
+	quitButton.SetButtonCallback(std::bind(&PauseMenu::OnQuitButtonClicked, this));
+	quitButton.SetFillColor(sf::Color::Red);
+	quitButton.SetOutlineColor(sf::Color::White);
+	quitButton.SetOutlineThickness(2.f);*/
 
 	metadata.OnUpdate = BIND_MEMBER_FUNCTION(PauseMenu::OnUpdate, this);
 	Hide();
@@ -46,9 +43,9 @@ void PauseMenu::Initialize()
 
 void PauseMenu::OnUpdate(Timestep ts)
 {
-	m_RenderWindow->draw(m_TitleText);
-	/*m_RenderWindow->draw(m_ResumeButton);
-	m_RenderWindow->draw(m_QuitButton);*/
+	m_RenderWindow->draw(titleText);
+	m_RenderWindow->draw(resumeButton);
+	//m_RenderWindow->draw(quitButton);
 }
 
 void PauseMenu::OnResumeButtonClicked()

@@ -22,9 +22,9 @@ public:
 	bool IsVisible() const override;
 
 private:
-	TextComponent& m_TitleText = AddComponent<TextComponent>();
-	//ButtonComponent& m_ResumeButton;
-	//ButtonComponent& m_QuitButton;
+	TextComponent& titleText = AddComponent<TextComponent>();
+	ButtonComponent& resumeButton = AddComponent<ButtonComponent>();
+	//ButtonComponent& quitButton = AddComponent<ButtonComponent>();
 
 	// TODO: Manage Game font elsewhere
 	sf::Font m_Font;

@@ -4,6 +4,11 @@
 
 namespace Engine {
 
+    ButtonComponent::ButtonComponent()
+        : m_Rectangle()
+    {
+    }
+
     ButtonComponent::ButtonComponent(const sf::Vector2f& position, const sf::Vector2f& size)
     {
         SetSize(size);

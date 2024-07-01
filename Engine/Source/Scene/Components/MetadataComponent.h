@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/UUID.h"
+
 #include "Scene/Components/Component.h"
 
 #include "Enginepch.h"
@@ -16,6 +18,7 @@ namespace Engine {
             : Tag(tag), IsActive(isActive) {}
 
     public:
+        UUID ID;
         std::string Tag;
         bool IsActive = true;
 

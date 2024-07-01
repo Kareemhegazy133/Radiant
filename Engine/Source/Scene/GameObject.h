@@ -55,6 +55,8 @@ namespace Engine {
 		operator entt::entity() const { return m_GameObjectHandle; }
 		operator uint32_t() const { return (uint32_t)m_GameObjectHandle; }
 
+		UUID GetUUID() { return GetComponent<MetadataComponent>().ID; }
+
 		bool operator==(const GameObject& other) const
 		{
 			return m_GameObjectHandle == other.m_GameObjectHandle && m_Scene == other.m_Scene;

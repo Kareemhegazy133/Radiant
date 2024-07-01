@@ -9,6 +9,7 @@ namespace Engine {
 	class ButtonComponent : public Component
 	{
 	public:
+		ButtonComponent();
 		ButtonComponent(const sf::Vector2f& position, const sf::Vector2f& size);
 
 		void SetSize(const sf::Vector2f& size);

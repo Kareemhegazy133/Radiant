@@ -14,6 +14,8 @@ namespace Engine {
 		virtual ~Scene();
 
 		GameObject CreateGameObject(const std::string& name = std::string());
+		GameObject CreateGameObjectWithUUID(UUID uuid, const std::string& name = std::string());
+
 		void DestroyGameObject(GameObject gameObject);
 
 		inline static Scene& GetScene() { return *s_Instance; }
@@ -32,6 +34,8 @@ namespace Engine {
 	private:
 		static Scene* s_Instance;
 		entt::registry m_Registry;
+
+		std::unordered_map<UUID, entt::entity> m_GameObjectMap;
 
 		friend class GameObject;
 	};

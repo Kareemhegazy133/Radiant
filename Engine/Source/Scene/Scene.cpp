@@ -23,11 +23,19 @@ namespace Engine {
 
 	GameObject Scene::CreateGameObject(const std::string& name)
 	{
-		GameObject gameObject = { m_Registry.create(), &GetScene()};
+		return CreateGameObjectWithUUID(UUID(), name);
+	}
+
+	GameObject Scene::CreateGameObjectWithUUID(UUID uuid, const std::string& name)
+	{
+		GameObject gameObject = { m_Registry.create(), &GetScene() };
 
 		gameObject.AddComponent<TransformComponent>();
 		auto& metadata = gameObject.AddComponent<MetadataComponent>();
+		metadata.ID = uuid;
 		metadata.Tag = name.empty() ? "GameObject" : name;
+
+		m_GameObjectMap[uuid] = gameObject;
 
 		return gameObject;
 	}
