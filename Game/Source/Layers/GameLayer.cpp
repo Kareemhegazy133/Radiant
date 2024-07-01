@@ -7,8 +7,13 @@
 
 using namespace Engine;
 
+GameLayer* GameLayer::s_Instance = nullptr;
+
 GameLayer::GameLayer() : Layer("GameLayer")
 {
+    ENGINE_ASSERT(!s_Instance, "GameLayer already exists!");
+    s_Instance = this;
+
 	GameApplication::Get().GetTextureManager().loadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
 	GameApplication::Get().GetTextureManager().loadTexture("Fireball", "Assets/Abilities/Fireball.png");
 	GameApplication::Get().GetTextureManager().loadTexture("Platform", "Assets/Platform.png");
@@ -29,6 +34,13 @@ void GameLayer::OnUpdate(Timestep ts)
 {
     if (m_CurrentLevel)
     {
+        if (m_CurrentState == GameState::Paused)
+        {
+            GameLevel* gameLevel = static_cast<GameLevel*>(m_CurrentLevel.get());
+            gameLevel->UpdatePauseMenu(ts);
+            return;
+        }
+
         m_CurrentLevel->OnUpdate(ts);
         m_CurrentLevel->OnRender();
     }
@@ -37,10 +49,6 @@ void GameLayer::OnUpdate(Timestep ts)
 
 void GameLayer::OnEvent(Event& e)
 {
-    EventDispatcher dispatcher(e);
-    dispatcher.Dispatch<KeyPressedEvent>(ENGINE_BIND_EVENT_FN(GameLayer::OnKeyPressed));
-    if (e.Handled) return;
-
     m_CurrentLevel->OnEvent(e);
 }
 
@@ -59,22 +67,13 @@ void GameLayer::SetGameState(GameState newState)
             m_CurrentLevel = CreateScope<GameLevel>();
             m_CurrentState = GameState::Playing;
         }
+        else if (m_CurrentState == GameState::Paused)
+        {
+            m_CurrentState = GameState::Playing;
+        }
+        break;
+    case GameState::Paused:
+        m_CurrentState = GameState::Paused;
         break;
     }
-}
-
-bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
-{
-    if (e.GetKeyCode() == Key::Escape)
-    {
-        SetGameState(GameState::Paused);
-        return true;
-    }
-    else if (e.GetKeyCode() == Key::X)
-    {
-        SetGameState(GameState::Playing);
-        return true;
-    }
-
-    return false;
 }

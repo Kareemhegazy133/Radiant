@@ -5,12 +5,12 @@ namespace Engine {
 
 	GameApplication* GameApplication::s_Instance = nullptr;
 
-	GameApplication::GameApplication(const std::string& name, GameApplicationCommandLineArgs args)
+	GameApplication::GameApplication(const std::string& name, const uint32_t width, const uint32_t height, GameApplicationCommandLineArgs args)
 		: m_CommandLineArgs(args)
 	{
 		ENGINE_ASSERT(!s_Instance, "GameApplication already exists!");
 		s_Instance = this;
-		m_Window = Window::Create(WindowProps(name));
+		m_Window = Window::Create(WindowProps(name, width, height));
 		m_Window->SetEventCallback(ENGINE_BIND_EVENT_FN(GameApplication::OnEvent));
 
 		m_TextureManager = new TextureManager();

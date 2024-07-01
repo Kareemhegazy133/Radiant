@@ -1,5 +1,7 @@
 #include "GameLevel.h"
 
+#include "Layers/GameLayer.h"
+
 GameLevel::GameLevel()
 {
 	std::cout << "GameLevel Created!" << std::endl;
@@ -28,7 +30,7 @@ GameLevel::~GameLevel()
 
 void GameLevel::OnUpdate(Timestep ts)
 {
-	auto view = GetView<MetadataComponent, TransformComponent, SpriteComponent, BoxCollider2DComponent>();
+	auto view = GetAllGameObjectsWith<MetadataComponent, TransformComponent, SpriteComponent, BoxCollider2DComponent>();
 	for (auto entityHandle : view)
 	{
 		auto& [metadata, transform, sprite, bc2d] = view.get<
@@ -54,7 +56,7 @@ void GameLevel::OnUpdate(Timestep ts)
 void GameLevel::OnRender()
 {
 	// Update the transform after applying physics for sprite rendering
-	auto view = GetView<MetadataComponent, TransformComponent, SpriteComponent>();
+	auto view = GetAllGameObjectsWith<MetadataComponent, TransformComponent, SpriteComponent>();
 	for (auto entity : view)
 	{
 		auto& [metadata, transform, sprite] = view.get<MetadataComponent, TransformComponent, SpriteComponent>(entity);
@@ -74,5 +76,28 @@ void GameLevel::OnRender()
 
 void GameLevel::OnEvent(Event& e)
 {
+	EventDispatcher dispatcher(e);
+	dispatcher.Dispatch<KeyPressedEvent>(ENGINE_BIND_EVENT_FN(GameLevel::OnKeyPressed));
+	if (e.Handled) return;
+	
+}
 
+bool GameLevel::OnKeyPressed(KeyPressedEvent& e)
+{
+	if (e.GetKeyCode() == Key::Escape)
+	{
+		if (GameLayer::Get().GetGameState() == GameLayer::GameState::Paused)
+		{
+			m_PauseMenu.Hide();
+			GameLayer::Get().SetGameState(GameLayer::GameState::Playing);
+		}
+		else
+		{
+			m_PauseMenu.Show();
+			GameLayer::Get().SetGameState(GameLayer::GameState::Paused);
+		}
+		return true;
+	}
+
+	return false;
 }

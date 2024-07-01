@@ -27,5 +27,7 @@
 #include "Scene/Entities/Entity.h"
 #include "Scene/Entities/Character.h"
 #include "Scene/Entities/Ability.h"
+#include "Scene/UI/UIElement.h"
+#include "Scene/UI/Menu.h"
 
 #include "Resources/TextureManager.h"

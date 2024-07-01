@@ -28,11 +28,12 @@ public:
 	void SetGameState(GameState newState);
 	inline GameState& GetGameState() { return m_CurrentState; }
 
-private:
-	bool OnKeyPressed(KeyPressedEvent& e);
+	inline static GameLayer& Get() { return *s_Instance; }
 
 private:
+	static GameLayer* s_Instance;
 	Scope<Level> m_CurrentLevel;
 	GameState m_CurrentState;
+
 };
 

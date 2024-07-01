@@ -101,4 +101,9 @@ namespace Engine {
 	void Scene::OnComponentAdded<ButtonComponent>(GameObject gameObject, ButtonComponent& component)
 	{
 	}
+
+	template<>
+	void Scene::OnComponentAdded<TextComponent>(GameObject gameObject, TextComponent& component)
+	{
+	}
 }

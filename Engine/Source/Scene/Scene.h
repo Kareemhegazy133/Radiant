@@ -20,7 +20,7 @@ namespace Engine {
 
 	protected:
 		template<typename... Components>
-		auto GetView()
+		auto GetAllGameObjectsWith()
 		{
 			return m_Registry.view<Components...>();
 		}

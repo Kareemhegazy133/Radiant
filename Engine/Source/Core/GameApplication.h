@@ -33,7 +33,12 @@ namespace Engine {
 	class GameApplication
 	{
 	public:
-		GameApplication(const std::string& name = "Game App", GameApplicationCommandLineArgs args = GameApplicationCommandLineArgs());
+		GameApplication(
+			const std::string& name = "Game App",
+			const uint32_t width = 1280,
+			const uint32_t height = 720,
+			GameApplicationCommandLineArgs args = GameApplicationCommandLineArgs()
+		);
 		virtual ~GameApplication();
 
 		void OnEvent(Event& e);

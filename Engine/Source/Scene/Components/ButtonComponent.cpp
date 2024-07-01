@@ -4,8 +4,7 @@
 
 namespace Engine {
 
-    ButtonComponent::ButtonComponent(const sf::Vector2f& position, const sf::Vector2f& size, std::function<void()> onClick)
-        : m_OnClick(onClick)
+    ButtonComponent::ButtonComponent(const sf::Vector2f& position, const sf::Vector2f& size)
     {
         SetSize(size);
         SetPosition(position);
@@ -36,6 +35,11 @@ namespace Engine {
         return m_Rectangle.getPosition();
     }
 
+    void ButtonComponent::SetButtonCallback(std::function<void()> callback)
+    {
+        m_OnClick = callback;
+    }
+
     void ButtonComponent::SetFillColor(const sf::Color& color)
     {
         m_Rectangle.setFillColor(color);
@@ -58,7 +62,10 @@ namespace Engine {
 
     void ButtonComponent::OnClick()
     {
-        m_OnClick();
+        if (m_OnClick)
+        {
+            m_OnClick();
+        }
     }
 
 }

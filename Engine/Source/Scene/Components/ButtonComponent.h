@@ -9,7 +9,7 @@ namespace Engine {
 	class ButtonComponent : public Component
 	{
 	public:
-		ButtonComponent(const sf::Vector2f& position, const sf::Vector2f& size, std::function<void()> onClick);
+		ButtonComponent(const sf::Vector2f& position, const sf::Vector2f& size);
 
 		void SetSize(const sf::Vector2f& size);
 		const sf::Vector2f& GetSize() const;
@@ -18,6 +18,7 @@ namespace Engine {
 		void SetPosition(float x, float y);
 		const sf::Vector2f& GetPosition() const;
 
+		void SetButtonCallback(std::function<void()> callback);
 		void SetFillColor(const sf::Color& color);
 		void SetOutlineColor(const sf::Color& color);
 		void SetOutlineThickness(float thickness);
