@@ -2,15 +2,15 @@
 
 #include <SFML/Graphics.hpp>
 
-#include "Component.h"
+#include "UI/UIElement.h"
 
 namespace Engine {
 
-	class ButtonComponent : public Component
+	class Button : public UIElement
 	{
 	public:
-		ButtonComponent();
-		ButtonComponent(const sf::Vector2f& position, const sf::Vector2f& size);
+		Button() = default;
+		Button(const sf::Vector2f& position, const sf::Vector2f& size);
 
 		void SetSize(const sf::Vector2f& size);
 		const sf::Vector2f& GetSize() const;
@@ -26,6 +26,8 @@ namespace Engine {
 
 		bool IsHovered(const sf::Vector2i& mousePos) const;
 		void OnClick();
+
+		inline sf::RectangleShape& GetDrawable() override { return m_Rectangle; }
 
 		operator const sf::RectangleShape& () { return m_Rectangle; }
 		operator sf::RectangleShape& () { return m_Rectangle; }

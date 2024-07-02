@@ -21,7 +21,3 @@
 // Specific Gameplay Entities' based Components
 #include "Scene/Components/CharacterComponent.h"
 #include "Scene/Components/AbilityComponent.h"
-
-// UI Entities Components
-#include "Scene/Components/TextComponent.h"
-#include "Scene/Components/ButtonComponent.h"

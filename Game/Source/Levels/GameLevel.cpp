@@ -88,12 +88,12 @@ bool GameLevel::OnKeyPressed(KeyPressedEvent& e)
 	{
 		if (GameLayer::Get().GetGameState() == GameLayer::GameState::Paused)
 		{
-			m_PauseMenu.Hide();
+			m_PauseMenu.SetVisibility(false);
 			GameLayer::Get().SetGameState(GameLayer::GameState::Playing);
 		}
 		else
 		{
-			m_PauseMenu.Show();
+			m_PauseMenu.SetVisibility(true);
 			GameLayer::Get().SetGameState(GameLayer::GameState::Paused);
 		}
 		return true;

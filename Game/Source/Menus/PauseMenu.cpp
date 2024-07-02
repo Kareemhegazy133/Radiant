@@ -3,7 +3,6 @@
 using namespace Engine;
 
 PauseMenu::PauseMenu()
-	: Menu("PauseMenu")
 {
 	m_Font.loadFromFile("Assets/Font/Mantinia_Regular.otf");
 	Initialize();
@@ -29,23 +28,13 @@ void PauseMenu::Initialize()
 	resumeButton.SetOutlineColor(sf::Color::White);
 	resumeButton.SetOutlineThickness(2.f);
 
-
-	/*quitButton.SetPosition({ 400.f, 400.f });
+	quitButton.SetPosition({ 400.f, 400.f });
 	quitButton.SetSize({ 200.f, 50.f });
 	quitButton.SetButtonCallback(std::bind(&PauseMenu::OnQuitButtonClicked, this));
 	quitButton.SetFillColor(sf::Color::Red);
 	quitButton.SetOutlineColor(sf::Color::White);
-	quitButton.SetOutlineThickness(2.f);*/
+	quitButton.SetOutlineThickness(2.f);
 
-	metadata.OnUpdate = BIND_MEMBER_FUNCTION(PauseMenu::OnUpdate, this);
-	Hide();
-}
-
-void PauseMenu::OnUpdate(Timestep ts)
-{
-	m_RenderWindow->draw(titleText);
-	m_RenderWindow->draw(resumeButton);
-	//m_RenderWindow->draw(quitButton);
 }
 
 void PauseMenu::OnResumeButtonClicked()
@@ -56,19 +45,3 @@ void PauseMenu::OnQuitButtonClicked()
 {
 }
 
-void PauseMenu::Show()
-{
-	metadata.IsActive = true;
-	GAME_INFO("PauseMenu Visible");
-}
-
-void PauseMenu::Hide()
-{
-	metadata.IsActive = false;
-	GAME_INFO("PauseMenu Hidden");
-}
-
-bool PauseMenu::IsVisible() const
-{
-	return metadata.IsActive;
-}

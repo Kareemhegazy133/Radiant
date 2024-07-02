@@ -4,7 +4,7 @@
 
 using namespace Engine;
 
-class PauseMenu : public Menu
+class PauseMenu : public UIScreen
 {
 public:
 	PauseMenu();
@@ -12,19 +12,13 @@ public:
 
 	void Initialize() override;
 
-	void OnUpdate(Timestep ts) override;
-
 	void OnResumeButtonClicked();
 	void OnQuitButtonClicked();
 
-	void Show() override;
-	void Hide() override;
-	bool IsVisible() const override;
-
 private:
-	TextComponent& titleText = AddComponent<TextComponent>();
-	ButtonComponent& resumeButton = AddComponent<ButtonComponent>();
-	//ButtonComponent& quitButton = AddComponent<ButtonComponent>();
+	Text& titleText = AddElement<Text>();
+	Button& resumeButton = AddElement<Button>();
+	Button& quitButton = AddElement<Button>();
 
 	// TODO: Manage Game font elsewhere
 	sf::Font m_Font;
