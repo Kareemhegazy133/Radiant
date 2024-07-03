@@ -14,9 +14,9 @@ GameLayer::GameLayer() : Layer("GameLayer")
     ENGINE_ASSERT(!s_Instance, "GameLayer already exists!");
     s_Instance = this;
 
-	GameApplication::Get().GetTextureManager().loadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
-	GameApplication::Get().GetTextureManager().loadTexture("Fireball", "Assets/Abilities/Fireball.png");
-	GameApplication::Get().GetTextureManager().loadTexture("Platform", "Assets/Platform.png");
+	TextureManager::LoadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
+    TextureManager::LoadTexture("Fireball", "Assets/Abilities/Fireball.png");
+    TextureManager::LoadTexture("Platform", "Assets/Platform.png");
 
 }
 

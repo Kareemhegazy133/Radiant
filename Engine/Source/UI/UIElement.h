@@ -2,8 +2,6 @@
 
 namespace Engine {
 
-    class UIScreen;
-
     class UIElement
     {
     public:

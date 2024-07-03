@@ -13,6 +13,7 @@
 #include "Core/Timestep.h"
 
 #include "Resources/TextureManager.h"
+#include "Resources/FontManager.h"
 
 int main(int argc, char** argv);
 
@@ -47,7 +48,6 @@ namespace Engine {
 		void PushOverlay(Layer* layer);
 
 		inline Window& GetWindow() { return *m_Window; }
-		inline TextureManager& GetTextureManager() { return *m_TextureManager; }
 		inline float SFMLGetTime() { return clock.getElapsedTime().asSeconds(); }
 
 		inline static GameApplication& Get() { return *s_Instance; }
@@ -65,7 +65,8 @@ namespace Engine {
 		float m_LastFrameTime = 0.0f;
 	private:
 		static GameApplication* s_Instance;
-		TextureManager* m_TextureManager;
+		Scope<TextureManager> m_TextureManager;
+		Scope<FontManager> m_FontManager;
 		friend int ::main(int argc, char** argv);
 	};
 

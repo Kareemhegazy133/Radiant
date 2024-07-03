@@ -4,7 +4,6 @@ using namespace Engine;
 
 PauseMenu::PauseMenu()
 {
-	m_Font.loadFromFile("Assets/Font/Mantinia_Regular.otf");
 	Initialize();
 }
 
@@ -16,7 +15,7 @@ PauseMenu::~PauseMenu()
 void PauseMenu::Initialize()
 {
 	titleText.SetText("GAME PAUSED");
-	titleText.SetFont(m_Font);
+	titleText.SetFont(FontManager::GetFont("Mantinia_Regular"));
 	titleText.SetCharacterSize(50);
 	titleText.SetPosition({ 400.f, 200.f });
 	titleText.SetColor(sf::Color::White);

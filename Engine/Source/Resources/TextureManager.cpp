@@ -1,4 +1,5 @@
 #include "Enginepch.h"
+
 #include "TextureManager.h"
 
 namespace Engine {
@@ -13,10 +14,10 @@ namespace Engine {
 
     TextureManager::~TextureManager()
     {
-
     }
 
-    bool TextureManager::loadTexture(const std::string& identifier, const std::string& filePath) {
+    bool TextureManager::LoadTextureInternal(const std::string& identifier, const std::string& filePath)
+    {
         sf::Texture texture;
         if (!texture.loadFromFile(filePath)) {
             ENGINE_ERROR("Failed to load texture from file: {0}", filePath);
@@ -26,7 +27,8 @@ namespace Engine {
         return true;
     }
 
-    const sf::Texture& TextureManager::getTexture(const std::string& identifier) const {
+    const sf::Texture& TextureManager::GetTextureInternal(const std::string& identifier) const
+    {
         auto it = m_Textures.find(identifier);
         if (it != m_Textures.end()) {
             return it->second;
@@ -36,11 +38,13 @@ namespace Engine {
         return m_Textures.at("default");
     }
 
-    bool TextureManager::isTextureLoaded(const std::string& identifier) const {
+    bool TextureManager::IsTextureLoadedInternal(const std::string& identifier) const
+    {
         return m_Textures.find(identifier) != m_Textures.end();
     }
 
-    void TextureManager::unloadTexture(const std::string& identifier) {
+    void TextureManager::UnloadTextureInternal(const std::string& identifier)
+    {
         auto it = m_Textures.find(identifier);
         if (it != m_Textures.end()) {
             m_Textures.erase(it);

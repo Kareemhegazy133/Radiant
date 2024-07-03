@@ -42,7 +42,6 @@ namespace Engine {
 		
 	protected:
 		sf::RenderWindow* m_RenderWindow = static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow());
-
 		bool m_IsVisible = false;
 
 		std::vector<UIElement*> m_Elements;

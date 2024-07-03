@@ -20,7 +20,5 @@ private:
 	Button& resumeButton = AddElement<Button>();
 	Button& quitButton = AddElement<Button>();
 
-	// TODO: Manage Game font elsewhere
-	sf::Font m_Font;
 };
 

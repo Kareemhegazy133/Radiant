@@ -15,7 +15,7 @@ namespace Engine {
         : Sprite(), TextureIdentifier(textureIdentifier), Animation(animation)
     {
         // Set the texture using the TextureManager
-        Sprite.setTexture(TextureManager::Get().getTexture(textureIdentifier));
+        Sprite.setTexture(TextureManager::GetTexture(textureIdentifier));
 
         // If there's an animation, set the initial texture rectangle
         if (Animation) {
@@ -26,7 +26,7 @@ namespace Engine {
     void SpriteComponent::SetTextureIdentifier(const std::string& textureIdentifier)
     {
         TextureIdentifier = textureIdentifier;
-        Sprite.setTexture(TextureManager::Get().getTexture(textureIdentifier));
+        Sprite.setTexture(TextureManager::GetTexture(textureIdentifier));
     }
 
     const std::string& SpriteComponent::GetTextureIdentifier() const
