@@ -7,3 +7,4 @@
 // UI Elements
 #include "UI/Elements/Text.h"
 #include "UI/Elements/Button.h"
+#include "UI/Elements/Sprite.h"

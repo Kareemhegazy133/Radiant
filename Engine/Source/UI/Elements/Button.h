@@ -20,6 +20,7 @@ namespace Engine {
 		const sf::Vector2f& GetPosition() const;
 
 		void SetButtonCallback(std::function<void()> callback);
+		void SetTexture(const sf::Texture* texture);
 		void SetFillColor(const sf::Color& color);
 		void SetOutlineColor(const sf::Color& color);
 		void SetOutlineThickness(float thickness);

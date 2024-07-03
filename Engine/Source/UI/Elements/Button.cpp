@@ -40,6 +40,11 @@ namespace Engine {
         m_OnClick = callback;
     }
 
+    void Button::SetTexture(const sf::Texture* texture)
+    {
+        m_Rectangle.setTexture(texture);
+    }
+
     void Button::SetFillColor(const sf::Color& color)
     {
         m_Rectangle.setFillColor(color);

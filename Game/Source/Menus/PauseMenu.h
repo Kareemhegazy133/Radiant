@@ -12,13 +12,19 @@ public:
 
 	void Initialize() override;
 
+	void OnCloseButtonClicked();
+	void OnMainMenuButtonClicked();
 	void OnResumeButtonClicked();
-	void OnQuitButtonClicked();
+	void OnSettingsButtonClicked();
 
 private:
-	Text& titleText = AddElement<Text>();
+	Sprite& menuBackground = AddElement<Sprite>(TextureManager::GetTexture("PauseMenu"));
+	Text& gamePausedText = AddElement<Text>();
+	Button& closeButton = AddElement<Button>();
+	Button& mainMenuButton = AddElement<Button>();
 	Button& resumeButton = AddElement<Button>();
-	Button& quitButton = AddElement<Button>();
-
+	Button& settingsButton = AddElement<Button>();
+	
+	
 };
 

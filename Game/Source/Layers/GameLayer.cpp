@@ -13,11 +13,6 @@ GameLayer::GameLayer() : Layer("GameLayer")
 {
     ENGINE_ASSERT(!s_Instance, "GameLayer already exists!");
     s_Instance = this;
-
-	TextureManager::LoadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
-    TextureManager::LoadTexture("Fireball", "Assets/Abilities/Fireball.png");
-    TextureManager::LoadTexture("Platform", "Assets/Platform.png");
-
 }
 
 void GameLayer::OnAttach()

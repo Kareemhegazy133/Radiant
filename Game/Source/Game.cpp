@@ -16,7 +16,16 @@ public:
 
 	void InitializeSystems()
 	{
-		FontManager::LoadFont("Mantinia_Regular", "Assets/Font/Mantinia_Regular.otf");
+		FontManager::LoadFont("Dimbo_Regular", "Assets/Font/Dimbo_Regular.ttf");
+
+		TextureManager::LoadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
+		TextureManager::LoadTexture("Fireball", "Assets/Abilities/Fireball.png");
+		TextureManager::LoadTexture("Platform", "Assets/Platform.png");
+		TextureManager::LoadTexture("PauseMenu", "Assets/UI/Menus/PauseMenu.png");
+		TextureManager::LoadTexture("ResumeButton", "Assets/UI/Buttons/ResumeButton.png");
+		TextureManager::LoadTexture("CloseButton", "Assets/UI/Buttons/CloseButton.png");
+		TextureManager::LoadTexture("SettingsButton", "Assets/UI/Buttons/SettingsButton.png");
+		TextureManager::LoadTexture("MainMenuButton", "Assets/UI/Buttons/MainMenuButton.png");
 	}
 };
 
