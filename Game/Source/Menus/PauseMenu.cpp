@@ -59,17 +59,12 @@ bool PauseMenu::OnMouseButtonPressed(MouseButtonPressedEvent& e)
 			static_cast<int>(Input::GetMousePosition().second)
 		};
 
-		std::vector<Button> m_Buttons;
-		m_Buttons.emplace_back(closeButton);
-		m_Buttons.emplace_back(mainMenuButton);
-		m_Buttons.emplace_back(resumeButton);
-		m_Buttons.emplace_back(settingsButton);
-
-		for (auto button : m_Buttons)
+		for (auto element : m_Elements[typeid(Button)])
 		{
-			if (button.IsHovered(mousePos))
+			Button* button = static_cast<Button*>(element);
+			if (button->IsHovered(mousePos))
 			{
-				button.OnClick();
+				button->OnClick();
 				return true;
 			}
 		}

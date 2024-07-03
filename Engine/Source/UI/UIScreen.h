@@ -1,5 +1,7 @@
 #pragma once
 
+#include <typeindex>
+
 #include "Core/GameApplication.h"
 #include "Core/Timestep.h"
 
@@ -12,9 +14,13 @@ namespace Engine {
 	public:
 		virtual ~UIScreen()
 		{
-			for (auto element : m_Elements)
+			for (auto& pair : m_Elements)
 			{
-				delete element;
+				for (auto element : pair.second)
+				{
+					delete element;
+				}
+				pair.second.clear();
 			}
 			m_Elements.clear();
 		}
@@ -24,16 +30,20 @@ namespace Engine {
 		template<typename T, typename... Args>
 		T& AddElement(Args&&... args)
 		{
-			m_Elements.emplace_back(new T(std::forward<Args>(args)...));
-			return static_cast<T&>(*m_Elements.back());
+			T* element = new T(std::forward<Args>(args)...);
+			m_Elements[typeid(T)].emplace_back(element);
+			return *element;
 		}
 
 		virtual void OnUpdate(Timestep ts)
 		{
-			for (UIElement* element : m_Elements)
+			for (auto& pair : m_Elements)
 			{
-				ENGINE_ASSERT(element, "Element must not be nullptr!");
-				m_RenderWindow->draw(element->GetDrawable());
+				for (UIElement* element : pair.second)
+				{
+					ENGINE_ASSERT(element, "Element must not be nullptr!");
+					m_RenderWindow->draw(element->GetDrawable());
+				}
 			}
 		}
 
@@ -46,7 +56,6 @@ namespace Engine {
 		sf::RenderWindow* m_RenderWindow = static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow());
 		bool m_IsVisible = false;
 
-		// TODO: Convert to unordered_map with key being class type (button, sprite, text), value being a vector
-		std::vector<UIElement*> m_Elements;
+		std::unordered_map<std::type_index, std::vector<UIElement*>> m_Elements;
 	};
 }
