@@ -37,6 +37,8 @@ namespace Engine {
 			}
 		}
 
+		virtual void OnEvent(Event& e) = 0;
+
 		inline virtual void SetVisibility(bool visible) { m_IsVisible = visible; }
 		inline virtual bool IsVisible() const { return m_IsVisible; }
 		
@@ -44,6 +46,7 @@ namespace Engine {
 		sf::RenderWindow* m_RenderWindow = static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow());
 		bool m_IsVisible = false;
 
+		// TODO: Convert to unordered_map with key being class type (button, sprite, text), value being a vector
 		std::vector<UIElement*> m_Elements;
 	};
 }

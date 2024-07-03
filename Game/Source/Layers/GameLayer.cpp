@@ -47,7 +47,7 @@ void GameLayer::OnEvent(Event& e)
     m_CurrentLevel->OnEvent(e);
 }
 
-void GameLayer::SetGameState(GameState newState)
+void GameLayer::SetGameStateInternal(GameState newState)
 {
     switch (newState)
     {

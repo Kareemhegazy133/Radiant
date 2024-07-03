@@ -12,11 +12,15 @@ public:
 
 	void Initialize() override;
 
+	void OnEvent(Event& e) override;
+
+private:
+	bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+
 	void OnCloseButtonClicked();
 	void OnMainMenuButtonClicked();
 	void OnResumeButtonClicked();
 	void OnSettingsButtonClicked();
-
 private:
 	Sprite& menuBackground = AddElement<Sprite>(TextureManager::GetTexture("PauseMenu"));
 	Text& gamePausedText = AddElement<Text>();

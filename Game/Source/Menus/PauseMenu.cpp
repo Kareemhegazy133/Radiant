@@ -14,7 +14,6 @@ PauseMenu::~PauseMenu()
 
 void PauseMenu::Initialize()
 {
-
 	gamePausedText.SetText("GAME PAUSED");
 	gamePausedText.SetFont(FontManager::GetFont("Dimbo_Regular"));
 	gamePausedText.SetCharacterSize(50);
@@ -43,6 +42,40 @@ void PauseMenu::Initialize()
 
 }
 
+void PauseMenu::OnEvent(Event& e)
+{
+	EventDispatcher dispatcher(e);
+	dispatcher.Dispatch<MouseButtonPressedEvent>(ENGINE_BIND_EVENT_FN(PauseMenu::OnMouseButtonPressed));
+	if (e.Handled) return;
+
+}
+
+bool PauseMenu::OnMouseButtonPressed(MouseButtonPressedEvent& e)
+{
+	if (e.GetMouseButton() == Mouse::Left)
+	{
+		sf::Vector2i mousePos = { 
+			static_cast<int>(Input::GetMousePosition().first),
+			static_cast<int>(Input::GetMousePosition().second)
+		};
+
+		std::vector<Button> m_Buttons;
+		m_Buttons.emplace_back(closeButton);
+		m_Buttons.emplace_back(mainMenuButton);
+		m_Buttons.emplace_back(resumeButton);
+		m_Buttons.emplace_back(settingsButton);
+
+		for (auto button : m_Buttons)
+		{
+			if (button.IsHovered(mousePos))
+			{
+				button.OnClick();
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
 void PauseMenu::OnCloseButtonClicked()
 {

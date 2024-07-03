@@ -80,21 +80,25 @@ void GameLevel::OnEvent(Event& e)
 	dispatcher.Dispatch<KeyPressedEvent>(ENGINE_BIND_EVENT_FN(GameLevel::OnKeyPressed));
 	if (e.Handled) return;
 	
+	if (GameLayer::GetGameState() == GameLayer::GameState::Paused)
+	{
+		m_PauseMenu.OnEvent(e);
+	}
 }
 
 bool GameLevel::OnKeyPressed(KeyPressedEvent& e)
 {
 	if (e.GetKeyCode() == Key::Escape)
 	{
-		if (GameLayer::Get().GetGameState() == GameLayer::GameState::Paused)
+		if (GameLayer::GetGameState() == GameLayer::GameState::Paused)
 		{
 			m_PauseMenu.SetVisibility(false);
-			GameLayer::Get().SetGameState(GameLayer::GameState::Playing);
+			GameLayer::SetGameState(GameLayer::GameState::Playing);
 		}
 		else
 		{
 			m_PauseMenu.SetVisibility(true);
-			GameLayer::Get().SetGameState(GameLayer::GameState::Paused);
+			GameLayer::SetGameState(GameLayer::GameState::Paused);
 		}
 		return true;
 	}

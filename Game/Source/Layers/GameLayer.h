@@ -25,10 +25,11 @@ public:
 	void OnUpdate(Timestep ts) override;
 	void OnEvent(Event& e) override;
 
-	void SetGameState(GameState newState);
-	inline GameState& GetGameState() { return m_CurrentState; }
+	inline static void SetGameState(GameState newState) { s_Instance->SetGameStateInternal(newState); }
+	inline static GameState& GetGameState() { return s_Instance->m_CurrentState; }
 
-	inline static GameLayer& Get() { return *s_Instance; }
+private:
+	void SetGameStateInternal(GameState newState);
 
 private:
 	static GameLayer* s_Instance;

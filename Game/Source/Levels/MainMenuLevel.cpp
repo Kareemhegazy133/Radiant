@@ -33,7 +33,7 @@ bool MainMenuLevel::OnKeyPressed(KeyPressedEvent& e)
 {
 	if (e.GetKeyCode() == Key::X)
 	{
-		GameLayer::Get().SetGameState(GameLayer::GameState::Playing);
+		GameLayer::SetGameState(GameLayer::GameState::Playing);
 		return true;
 	}
 	return false;
