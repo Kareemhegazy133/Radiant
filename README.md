@@ -5,11 +5,17 @@
 ## Features
 
 - **Entity Component System (ECS)**: The ECS allows for modular and reusable components, making it easy to extend and maintain game entities.
+
 - **UI Element System**: Dynamic and interactive user interfaces are managed using the UI Element System. This includes buttons, text fields, and other UI components.
+
 - **Event System**: An event handling system enables efficient communication between different parts of the game, reducing coupling and improving maintainability.
+
 - **Custom Game Engine**: The game engine is built using modern C++ standards and design patterns, ensuring high performance and maintainability. It leverages SFML for graphics rendering and other functionalities.
+
 - **Physics Engine**: a Physics engine to simulate AABB collision detection and response.
+
 - **Resource Management System**: a Resource Management System to handle assets like textures, fonts, and sounds, ensuring efficient loading and unloading, reducing memory usage and improving game performance.
+
 
 ## LICENSE
 
