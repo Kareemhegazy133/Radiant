@@ -14,7 +14,7 @@ MainMenuLevel::~MainMenuLevel()
 
 void MainMenuLevel::OnUpdate(Timestep ts)
 {
-	GAME_INFO("MainMenuLevel Updating");
+	m_MainMenu.OnUpdate(ts);
 }
 
 void MainMenuLevel::OnRender()
