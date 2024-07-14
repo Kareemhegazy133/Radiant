@@ -2,6 +2,8 @@
 
 #include "Layers/GameLayer.h"
 
+#include "GameTheme.h"
+
 using namespace Engine;
 
 MainMenu::MainMenu()
@@ -16,34 +18,35 @@ MainMenu::~MainMenu()
 
 void MainMenu::Initialize()
 {
-	// TODO: Abstract Colors
-	sf::Color TextColor = sf::Color(41, 77, 89);
+	// TODO: Make menus and elements to be responsive to all resolutions
+
 	gameTitleText.SetText("THE REAPER");
-	gameTitleText.SetFont(FontManager::GetFont("Euljiro"));
+	gameTitleText.SetFont(GameTheme::GetFont());
 	gameTitleText.SetCharacterSize(63);
 	gameTitleText.SetPosition({ 65.f, 100.f });
-	gameTitleText.SetColor(TextColor);
+	gameTitleText.SetColor(sf::Color(41, 77, 89));
+
 
 	playGameButton.SetPosition({ 90.f, 300.f });
-	playGameButton.SetSize({ 280.f, 90.f });
-	Text playGameButtonText = Text("Play Game", FontManager::GetFont("Euljiro"), 42, TextColor);
+	playGameButton.SetSize(GameTheme::GetMediumButtonSize());
+	Text playGameButtonText = Text("Play Game", GameTheme::GetFont(), GameTheme::GetMediumButtonTextSize(), GameTheme::GetButtonTextColor());
 	playGameButton.SetText(playGameButtonText);
 	playGameButton.SetButtonCallback(std::bind(&MainMenu::OnPlayGameButtonClicked, this));
-	playGameButton.SetTexture(&TextureManager::GetTexture("MediumButton"));
+	playGameButton.SetTexture(GameTheme::GetMediumButtonNormalTexture());
 
 	optionsButton.SetPosition({ 90.f, 425.f });
-	optionsButton.SetSize({ 280.f, 90.f });
-	Text optionsButtonText = Text("Options", FontManager::GetFont("Euljiro"), 42, TextColor);
+	optionsButton.SetSize(GameTheme::GetMediumButtonSize());
+	Text optionsButtonText = Text("Options", GameTheme::GetFont(), GameTheme::GetMediumButtonTextSize(), GameTheme::GetButtonTextColor());
 	optionsButton.SetText(optionsButtonText);
 	optionsButton.SetButtonCallback(std::bind(&MainMenu::OnOptionsButtonClicked, this));
-	optionsButton.SetTexture(&TextureManager::GetTexture("MediumButton"));
+	optionsButton.SetTexture(GameTheme::GetMediumButtonNormalTexture());
 
 	quitGameButton.SetPosition({ 90.f, 550.f });
-	quitGameButton.SetSize({ 280.f, 90.f });
-	Text quitGameButtonText = Text("Quit Game", FontManager::GetFont("Euljiro"), 42, TextColor);
+	quitGameButton.SetSize(GameTheme::GetMediumButtonSize());
+	Text quitGameButtonText = Text("Quit Game", GameTheme::GetFont(), GameTheme::GetMediumButtonTextSize(), GameTheme::GetButtonTextColor());
 	quitGameButton.SetText(quitGameButtonText);
 	quitGameButton.SetButtonCallback(std::bind(&MainMenu::OnQuitGameButtonClicked, this));
-	quitGameButton.SetTexture(&TextureManager::GetTexture("MediumButton"));
+	quitGameButton.SetTexture(GameTheme::GetMediumButtonNormalTexture());
 
 }
 

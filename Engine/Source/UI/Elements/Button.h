@@ -11,7 +11,8 @@ namespace Engine {
 	{
 		Small = 0,
 		Medium,
-		Large
+		Large,
+		Custom
 	};
 
 	class Button : public UIElement
@@ -34,6 +35,7 @@ namespace Engine {
 		void SetOutlineColor(const sf::Color& color);
 		void SetOutlineThickness(float thickness);
 
+		inline Text GetText() const { return m_ButtonText; }
 		sf::FloatRect GetLocalBounds();
 
 		bool IsHovered(const sf::Vector2i& mousePos) const;
@@ -52,7 +54,5 @@ namespace Engine {
 		bool m_IsHovered = false;
 		ButtonSize m_ButtonSize;
 		Text m_ButtonText;
-
-		friend class Text;
 	};
 }

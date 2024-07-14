@@ -16,17 +16,17 @@ namespace Engine {
     {
         m_Rectangle.setSize(size);
 
-        if (size.x >= 340.f)
+        switch (static_cast<int>(size.x))
         {
-            m_ButtonSize = ButtonSize::Large;
-        }
-        else if (size.x >= 280.f)
-        {
+        /*case  :
+        * m_ButtonSize = ButtonSize::Small;
+            break;*/
+        case 280:
             m_ButtonSize = ButtonSize::Medium;
-        }
-        else
-        {
-            m_ButtonSize = ButtonSize::Small;
+            break;
+        case 340:
+            m_ButtonSize = ButtonSize::Large;
+            break;
         }
     }
 
@@ -108,12 +108,14 @@ namespace Engine {
         sf::Vector2i mousePos = sf::Mouse::getPosition(*renderWindow);
         bool isCurrentlyHovered = IsHovered(mousePos);
 
+        // if is now hovered and wasnt hovered last frame
         if (isCurrentlyHovered && !m_IsHovered)
         {
             m_IsHovered = true;
             switch (m_ButtonSize)
             {
             case ButtonSize::Small:
+                //SetTexture(&TextureManager::GetTexture("SmallButtonHovered"));
                 break;
             case ButtonSize::Medium:
                 SetTexture(&TextureManager::GetTexture("MediumButtonHovered"));
@@ -121,21 +123,27 @@ namespace Engine {
             case ButtonSize::Large:
                 SetTexture(&TextureManager::GetTexture("LargeButtonHovered"));
                 break;
+            case ButtonSize::Custom:
+                break;
             }
             
         }
+        // else if is now not hovered and was hovered last frame
         else if (!isCurrentlyHovered && m_IsHovered)
         {
             m_IsHovered = false;
             switch (m_ButtonSize)
             {
             case ButtonSize::Small:
+                //SetTexture(&TextureManager::GetTexture("SmallButton"));
                 break;
             case ButtonSize::Medium:
                 SetTexture(&TextureManager::GetTexture("MediumButton"));
                 break;
             case ButtonSize::Large:
                 SetTexture(&TextureManager::GetTexture("LargeButton"));
+                break;
+            case ButtonSize::Custom:
                 break;
             }
         }

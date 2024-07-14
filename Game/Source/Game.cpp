@@ -1,7 +1,10 @@
 #include <Engine.h>
 #include <Core/EntryPoint.h>
 
+#include "GameTheme.h"
 #include "Layers/GameLayer.h"
+
+// TODO: Abstract sf::X from Game
 
 class TheReaper : public Engine::GameApplication
 {
@@ -30,7 +33,9 @@ public:
 		TextureManager::LoadTexture("MainMenu", "Assets/UI/Menus/MainMenu.png");
 		TextureManager::LoadTexture("PauseMenu", "Assets/UI/Menus/PauseMenu.png");
 
+		GameTheme::Initialize();
 	}
+
 };
 
 Engine::GameApplication* Engine::CreateGameApplication(GameApplicationCommandLineArgs args)
