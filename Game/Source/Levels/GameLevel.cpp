@@ -86,15 +86,15 @@ void GameLevel::OnEvent(Event& e)
 	dispatcher.Dispatch<KeyPressedEvent>(ENGINE_BIND_EVENT_FN(GameLevel::OnKeyPressed));
 	if (e.Handled) return;
 	
-	if (GameLayer::GetGameState() == GameLayer::GameState::Paused)
-	{
-		m_PauseMenu.OnEvent(e);
-	}
-
 	if (m_CharacterInfoMenu.IsVisible())
 	{
 		m_CharacterInfoMenu.OnEvent(e);
 	}
+
+	if (GameLayer::GetGameState() == GameLayer::GameState::Paused)
+	{
+		m_PauseMenu.OnEvent(e);
+	}	
 }
 
 bool GameLevel::OnKeyPressed(KeyPressedEvent& e)

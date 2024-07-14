@@ -21,7 +21,8 @@ public:
 	{
 		FontManager::LoadFont("Euljiro", "Assets/Font/Euljiro.ttf");
 
-		TextureManager::LoadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
+		TextureManager::LoadTexture("Player", "Assets/Player/Reaper/ReaperIdle.png");
+		TextureManager::LoadTexture("PlayerIcon", "Assets/Player/Reaper/ReaperIcon.png");
 		TextureManager::LoadTexture("Fireball", "Assets/Abilities/Fireball.png");
 		TextureManager::LoadTexture("Platform", "Assets/Platform.png");
 
@@ -36,6 +37,8 @@ public:
 		TextureManager::LoadTexture("CharacterInfoMenu", "Assets/UI/Menus/CharacterInfoMenu.png");
 		TextureManager::LoadTexture("CloseButton", "Assets/UI/Buttons/CloseButton.png");
 		TextureManager::LoadTexture("CloseButtonHovered", "Assets/UI/Buttons/CloseButtonHovered.png");
+		TextureManager::LoadTexture("CoinIcon", "Assets/UI/Icons/CoinIcon.png");
+		TextureManager::LoadTexture("DiamondIcon", "Assets/UI/Icons/DiamondIcon.png");
 
 		GameTheme::Initialize();
 	}
