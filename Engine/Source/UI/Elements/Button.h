@@ -30,6 +30,7 @@ namespace Engine {
 
 		void SetButtonCallback(std::function<void()> callback);
 		void SetTexture(const sf::Texture* texture);
+		void SetHoveredTexture(const sf::Texture* texture);
 		void SetText(Text& textElement);
 		void SetFillColor(const sf::Color& color);
 		void SetOutlineColor(const sf::Color& color);
@@ -52,6 +53,8 @@ namespace Engine {
 		sf::RectangleShape m_Rectangle;
 		std::function<void()> m_OnClick;
 		bool m_IsHovered = false;
+		const sf::Texture* m_NormalTexture = nullptr;
+		const sf::Texture* m_HoveredTexture = nullptr;
 		ButtonSize m_ButtonSize;
 		Text m_ButtonText;
 	};

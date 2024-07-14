@@ -27,6 +27,9 @@ namespace Engine {
         case 340:
             m_ButtonSize = ButtonSize::Large;
             break;
+        default:
+            m_ButtonSize = ButtonSize::Custom;
+            break;
         }
     }
 
@@ -58,6 +61,13 @@ namespace Engine {
     void Button::SetTexture(const sf::Texture* texture)
     {
         m_Rectangle.setTexture(texture);
+    }
+
+    void Button::SetHoveredTexture(const sf::Texture* texture)
+    {
+        m_HoveredTexture = texture;
+        // Store the normal texture
+        m_NormalTexture = m_Rectangle.getTexture();
     }
 
     void Button::SetText(Text& textElement)
@@ -124,6 +134,7 @@ namespace Engine {
                 SetTexture(&TextureManager::GetTexture("LargeButtonHovered"));
                 break;
             case ButtonSize::Custom:
+                SetTexture(m_HoveredTexture);
                 break;
             }
             
@@ -144,6 +155,7 @@ namespace Engine {
                 SetTexture(&TextureManager::GetTexture("LargeButton"));
                 break;
             case ButtonSize::Custom:
+                SetTexture(m_NormalTexture);
                 break;
             }
         }

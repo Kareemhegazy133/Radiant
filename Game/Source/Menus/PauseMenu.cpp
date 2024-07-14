@@ -24,9 +24,6 @@ void PauseMenu::Initialize()
 	pausedTitleText.SetPosition({ 525.f, 25.f });
 	pausedTitleText.SetColor(sf::Color(51, 94, 109));
 
-	sf::Color ButtonTextColor = sf::Color(41, 77, 89);
-	unsigned int ButtonTextSize = 55;
-
 	resumeButton.SetPosition({ 470.f, 160.f });
 	resumeButton.SetSize(GameTheme::GetLargeButtonSize());
 	Text resumeButtonText = Text("Resume", GameTheme::GetFont(), GameTheme::GetLargeButtonTextSize(), GameTheme::GetButtonTextColor());

@@ -72,6 +72,12 @@ void GameLevel::OnRender()
 		// Draw the sprite to the render window
 		m_RenderWindow->draw(sprite);
 	}
+
+	// Render any active menus
+	if (m_CharacterInfoMenu.IsVisible())
+	{
+		m_CharacterInfoMenu.OnRender();
+	}
 }
 
 void GameLevel::OnEvent(Event& e)
@@ -83,6 +89,11 @@ void GameLevel::OnEvent(Event& e)
 	if (GameLayer::GetGameState() == GameLayer::GameState::Paused)
 	{
 		m_PauseMenu.OnEvent(e);
+	}
+
+	if (m_CharacterInfoMenu.IsVisible())
+	{
+		m_CharacterInfoMenu.OnEvent(e);
 	}
 }
 
@@ -99,6 +110,18 @@ bool GameLevel::OnKeyPressed(KeyPressedEvent& e)
 		{
 			m_PauseMenu.SetVisibility(true);
 			GameLayer::SetGameState(GameLayer::GameState::Paused);
+		}
+		return true;
+	}
+	else if (e.GetKeyCode() == Key::C)
+	{
+		if (!m_CharacterInfoMenu.IsVisible())
+		{
+			m_CharacterInfoMenu.SetVisibility(true);
+		}
+		else
+		{
+			m_CharacterInfoMenu.SetVisibility(false);
 		}
 		return true;
 	}

@@ -2,6 +2,7 @@
 
 #include <Engine.h>
 
+#include "Menus/CharacterInfoMenu.h"
 #include "Menus/PauseMenu.h"
 
 #include "Gameplay/Entities/Player.h"
@@ -34,6 +35,7 @@ private:
 private:
     Player m_Player;
 
+    CharacterInfoMenu m_CharacterInfoMenu;
     PauseMenu m_PauseMenu;
 };
 

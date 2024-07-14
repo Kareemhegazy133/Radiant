@@ -3,6 +3,9 @@
 // Definition of static members
 sf::Font GameTheme::s_Font;
 
+sf::Color GameTheme::s_LightTextColor;
+sf::Color GameTheme::s_DarkTextColor;
+
 /**** Button Properties ****/
 sf::Color GameTheme::s_ButtonTextColor;
 
@@ -18,9 +21,12 @@ void GameTheme::Initialize()
 {
     s_Font = FontManager::GetFont("Euljiro");
 
-    s_ButtonTextColor = sf::Color(41, 77, 89);
+    s_LightTextColor = sf::Color(102, 168, 191);
+    s_DarkTextColor = sf::Color(7, 11, 19);
 
     /**** Button Properties ****/
+    s_ButtonTextColor = sf::Color(41, 77, 89);
+
     //s_SmallButtonTextSize = ;
     s_MediumButtonTextSize = 42;
     s_LargeButtonTextSize = 55;

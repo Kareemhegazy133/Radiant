@@ -33,6 +33,10 @@ public:
 		TextureManager::LoadTexture("MainMenu", "Assets/UI/Menus/MainMenu.png");
 		TextureManager::LoadTexture("PauseMenu", "Assets/UI/Menus/PauseMenu.png");
 
+		TextureManager::LoadTexture("CharacterInfoMenu", "Assets/UI/Menus/CharacterInfoMenu.png");
+		TextureManager::LoadTexture("CloseButton", "Assets/UI/Buttons/CloseButton.png");
+		TextureManager::LoadTexture("CloseButtonHovered", "Assets/UI/Buttons/CloseButtonHovered.png");
+
 		GameTheme::Initialize();
 	}
 

@@ -11,6 +11,9 @@ public:
 
     inline static const sf::Font& GetFont() { return s_Font; }
 
+    inline static const sf::Color& GetLightTextColor() { return s_LightTextColor; }
+    inline static const sf::Color& GetDarkTextColor() { return s_DarkTextColor; }
+
     /**** Button Properties ****/
     inline static const sf::Color& GetButtonTextColor() { return s_ButtonTextColor; }
 
@@ -28,6 +31,9 @@ public:
 
 private:
     static sf::Font s_Font;
+
+    static sf::Color s_LightTextColor;
+    static sf::Color s_DarkTextColor;
 
     /**** Button Properties ****/
     static sf::Color s_ButtonTextColor;

@@ -26,7 +26,6 @@ void MainMenu::Initialize()
 	gameTitleText.SetPosition({ 65.f, 100.f });
 	gameTitleText.SetColor(sf::Color(41, 77, 89));
 
-
 	playGameButton.SetPosition({ 90.f, 300.f });
 	playGameButton.SetSize(GameTheme::GetMediumButtonSize());
 	Text playGameButtonText = Text("Play Game", GameTheme::GetFont(), GameTheme::GetMediumButtonTextSize(), GameTheme::GetButtonTextColor());
