@@ -19,7 +19,7 @@ public:
     void OnUpdate(Timestep ts) override;
     void OnRender() override;
 
-    inline void UpdatePauseMenu(Timestep ts) { m_PauseMenu.OnUpdate(ts); }
+    inline void RenderPauseMenu() { m_PauseMenu.OnRender(); }
 
     // TODO: Maybe add this function's implementation to Level.h with templates
     void OnEvent(Event& e) override;

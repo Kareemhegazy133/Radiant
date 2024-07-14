@@ -17,15 +17,15 @@ public:
 private:
 	bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
-	//void OnCloseButtonClicked();
-	//void OnMainMenuButtonClicked();
-	//void OnResumeButtonClicked();
-	//void OnSettingsButtonClicked();
+	void OnPlayGameButtonClicked();
+	void OnOptionsButtonClicked();
+	void OnQuitGameButtonClicked();
 private:
-	//Sprite& menuBackground = AddElement<Sprite>(TextureManager::GetTexture("MainMenu"));
-	Text& mainMenuText = AddElement<Text>();
-	Button& closeButton = AddElement<Button>();
-
+	Sprite& menuBackground = AddElement<Sprite>(TextureManager::GetTexture("MainMenu"));
+	Text& gameTitleText = AddElement<Text>();
+	Button& playGameButton = AddElement<Button>();
+	Button& optionsButton = AddElement<Button>();
+	Button& quitGameButton = AddElement<Button>();
 
 };
 

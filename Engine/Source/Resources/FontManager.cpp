@@ -52,6 +52,7 @@ namespace Engine {
         return defaultFont;
         */
         ENGINE_ERROR("Font not found: {0}", name);
+        ENGINE_ASSERT(false);
         return sf::Font();
     }
 }

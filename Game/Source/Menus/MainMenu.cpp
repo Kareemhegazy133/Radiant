@@ -1,5 +1,7 @@
 #include "MainMenu.h"
 
+#include "Layers/GameLayer.h"
+
 using namespace Engine;
 
 MainMenu::MainMenu()
@@ -14,31 +16,34 @@ MainMenu::~MainMenu()
 
 void MainMenu::Initialize()
 {
-	/*gamePausedText.SetText("GAME PAUSED");
-	gamePausedText.SetFont(FontManager::GetFont("Dimbo_Regular"));
-	gamePausedText.SetCharacterSize(50);
-	gamePausedText.SetPosition({ 521.f, 185.f });
-	gamePausedText.SetColor(sf::Color::White);
+	// TODO: Abstract Colors
+	sf::Color TextColor = sf::Color(41, 77, 89);
+	gameTitleText.SetText("THE REAPER");
+	gameTitleText.SetFont(FontManager::GetFont("Euljiro"));
+	gameTitleText.SetCharacterSize(63);
+	gameTitleText.SetPosition({ 65.f, 100.f });
+	gameTitleText.SetColor(TextColor);
 
-	closeButton.SetPosition({ 810.f, 172.f });
-	closeButton.SetSize({ 48.f, 51.f });
-	closeButton.SetButtonCallback(std::bind(&PauseMenu::OnCloseButtonClicked, this));
-	closeButton.SetTexture(&TextureManager::GetTexture("CloseButton"));
+	playGameButton.SetPosition({ 90.f, 300.f });
+	playGameButton.SetSize({ 280.f, 90.f });
+	Text playGameButtonText = Text("Play Game", FontManager::GetFont("Euljiro"), 42, TextColor);
+	playGameButton.SetText(playGameButtonText);
+	playGameButton.SetButtonCallback(std::bind(&MainMenu::OnPlayGameButtonClicked, this));
+	playGameButton.SetTexture(&TextureManager::GetTexture("MediumButton"));
 
-	mainMenuButton.SetPosition({ 450.f, 306.f });
-	mainMenuButton.SetSize({ 101.f, 108.f });
-	mainMenuButton.SetButtonCallback(std::bind(&PauseMenu::OnMainMenuButtonClicked, this));
-	mainMenuButton.SetTexture(&TextureManager::GetTexture("MainMenuButton"));
+	optionsButton.SetPosition({ 90.f, 425.f });
+	optionsButton.SetSize({ 280.f, 90.f });
+	Text optionsButtonText = Text("Options", FontManager::GetFont("Euljiro"), 42, TextColor);
+	optionsButton.SetText(optionsButtonText);
+	optionsButton.SetButtonCallback(std::bind(&MainMenu::OnOptionsButtonClicked, this));
+	optionsButton.SetTexture(&TextureManager::GetTexture("MediumButton"));
 
-	resumeButton.SetPosition({ 589.f, 306.f });
-	resumeButton.SetSize({ 102.f, 108.f });
-	resumeButton.SetButtonCallback(std::bind(&PauseMenu::OnResumeButtonClicked, this));
-	resumeButton.SetTexture(&TextureManager::GetTexture("ResumeButton"));
-
-	settingsButton.SetPosition({ 729.f, 306.f });
-	settingsButton.SetSize({ 101.f, 108.f });
-	settingsButton.SetButtonCallback(std::bind(&PauseMenu::OnSettingsButtonClicked, this));
-	settingsButton.SetTexture(&TextureManager::GetTexture("SettingsButton"));*/
+	quitGameButton.SetPosition({ 90.f, 550.f });
+	quitGameButton.SetSize({ 280.f, 90.f });
+	Text quitGameButtonText = Text("Quit Game", FontManager::GetFont("Euljiro"), 42, TextColor);
+	quitGameButton.SetText(quitGameButtonText);
+	quitGameButton.SetButtonCallback(std::bind(&MainMenu::OnQuitGameButtonClicked, this));
+	quitGameButton.SetTexture(&TextureManager::GetTexture("MediumButton"));
 
 }
 
@@ -72,22 +77,20 @@ bool MainMenu::OnMouseButtonPressed(MouseButtonPressedEvent& e)
 	return false;
 }
 
-//void MainMenu::OnCloseButtonClicked()
-//{
-//	GAME_INFO("Close Button Clicked!");
-//}
-//
-//void MainMenu::OnMainMenuButtonClicked()
-//{
-//	GAME_INFO("MainMenu Button Clicked!");
-//}
-//
-//void MainMenu::OnResumeButtonClicked()
-//{
-//	GAME_INFO("Resume Button Clicked!");
-//}
-//
-//void MainMenu::OnSettingsButtonClicked()
-//{
-//	GAME_INFO("Settings Button Clicked!");
-//}
+void MainMenu::OnPlayGameButtonClicked()
+{
+	GAME_INFO("Play Game Button Clicked!");
+	SetVisibility(false);
+	GameLayer::SetGameState(GameLayer::GameState::Playing);
+}
+
+void MainMenu::OnOptionsButtonClicked()
+{
+	GAME_INFO("Options Button Clicked!");
+}
+
+void MainMenu::OnQuitGameButtonClicked()
+{
+	GAME_INFO("Quit Game Button Clicked!");
+	GameApplication::GetWindow().Shutdown();
+}

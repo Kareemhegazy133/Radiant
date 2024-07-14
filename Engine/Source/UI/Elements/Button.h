@@ -3,8 +3,16 @@
 #include <SFML/Graphics.hpp>
 
 #include "UI/UIElement.h"
+#include "Text.h"
 
 namespace Engine {
+
+	enum class ButtonSize
+	{
+		Small = 0,
+		Medium,
+		Large
+	};
 
 	class Button : public UIElement
 	{
@@ -21,14 +29,19 @@ namespace Engine {
 
 		void SetButtonCallback(std::function<void()> callback);
 		void SetTexture(const sf::Texture* texture);
+		void SetText(Text& textElement);
 		void SetFillColor(const sf::Color& color);
 		void SetOutlineColor(const sf::Color& color);
 		void SetOutlineThickness(float thickness);
 
+		sf::FloatRect GetLocalBounds();
+
 		bool IsHovered(const sf::Vector2i& mousePos) const;
 		void OnClick();
 
-		inline sf::RectangleShape& GetDrawable() override { return m_Rectangle; }
+		inline sf::Drawable& GetDrawable() override { return m_Rectangle; }
+
+		void OnRender(sf::RenderWindow* renderWindow) override;
 
 		operator const sf::RectangleShape& () { return m_Rectangle; }
 		operator sf::RectangleShape& () { return m_Rectangle; }
@@ -36,5 +49,10 @@ namespace Engine {
 	private:
 		sf::RectangleShape m_Rectangle;
 		std::function<void()> m_OnClick;
+		bool m_IsHovered = false;
+		ButtonSize m_ButtonSize;
+		Text m_ButtonText;
+
+		friend class Text;
 	};
 }

@@ -15,8 +15,8 @@ namespace Engine {
 	Physics2D::Physics2D()
 		: m_PhysicsWorld(new b2World({ 0.0f, 9.8f }))
 	{
-		ENGINE_ASSERT(!s_Instance, "Physics System already exists!");
 		s_Instance = this;
+		std::cout << "Physics System Instance: " << s_Instance << std::endl;
 
 		m_PhysicsWorld->SetContactListener(&m_CollisionListener);
 		m_PhysicsWorld->SetContactFilter(&m_CollisionListener);
@@ -25,6 +25,7 @@ namespace Engine {
 	Physics2D::~Physics2D()
 	{
 		delete m_PhysicsWorld;
+		std::cout << "Physics System Destroyed: " << this << std::endl;
 	}
 
 	void Physics2D::OnUpdate(Timestep ts)

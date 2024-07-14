@@ -4,6 +4,7 @@
 
 MainMenuLevel::MainMenuLevel()
 {
+	m_MainMenu.SetVisibility(true);
 	std::cout << "MainMenuLevel Created!" << std::endl;
 }
 
@@ -14,27 +15,16 @@ MainMenuLevel::~MainMenuLevel()
 
 void MainMenuLevel::OnUpdate(Timestep ts)
 {
-	m_MainMenu.OnUpdate(ts);
+	
 }
 
 void MainMenuLevel::OnRender()
 {
-
+	m_MainMenu.OnRender();
 }
 
 void MainMenuLevel::OnEvent(Event& e)
 {
-	EventDispatcher dispatcher(e);
-	dispatcher.Dispatch<KeyPressedEvent>(ENGINE_BIND_EVENT_FN(MainMenuLevel::OnKeyPressed));
-	if (e.Handled) return;
+	m_MainMenu.OnEvent(e);
 }
 
-bool MainMenuLevel::OnKeyPressed(KeyPressedEvent& e)
-{
-	if (e.GetKeyCode() == Key::X)
-	{
-		GameLayer::SetGameState(GameLayer::GameState::Playing);
-		return true;
-	}
-	return false;
-}

@@ -47,7 +47,8 @@ namespace Engine {
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
 
-		inline Window& GetWindow() { return *m_Window; }
+		inline static Window& GetWindow() { return *(s_Instance->m_Window); }
+		inline static sf::RenderWindow* GetRenderWindow() { return static_cast<sf::RenderWindow*>(s_Instance->GetWindow().GetNativeWindow()); }
 		inline float SFMLGetTime() { return clock.getElapsedTime().asSeconds(); }
 
 		inline static GameApplication& Get() { return *s_Instance; }

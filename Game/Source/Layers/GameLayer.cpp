@@ -32,7 +32,7 @@ void GameLayer::OnUpdate(Timestep ts)
         if (m_CurrentState == GameState::Paused)
         {
             GameLevel* gameLevel = static_cast<GameLevel*>(m_CurrentLevel.get());
-            gameLevel->UpdatePauseMenu(ts);
+            gameLevel->RenderPauseMenu();
             return;
         }
 
@@ -52,6 +52,11 @@ void GameLayer::SetGameStateInternal(GameState newState)
     switch (newState)
     {
     case GameState::MainMenu:
+        if (m_CurrentState == GameState::Paused)
+        {
+            m_CurrentLevel.reset();
+        }
+
         m_CurrentLevel = CreateScope<MainMenuLevel>();
         m_CurrentState = GameState::MainMenu;
         break;

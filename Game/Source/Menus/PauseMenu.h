@@ -17,18 +17,17 @@ public:
 private:
 	bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
-	void OnCloseButtonClicked();
-	void OnMainMenuButtonClicked();
 	void OnResumeButtonClicked();
-	void OnSettingsButtonClicked();
+	void OnOptionsButtonClicked();
+	void OnMainMenuButtonClicked();
+	void OnQuitGameButtonClicked();
 private:
 	Sprite& menuBackground = AddElement<Sprite>(TextureManager::GetTexture("PauseMenu"));
-	Text& gamePausedText = AddElement<Text>();
-	Button& closeButton = AddElement<Button>();
-	Button& mainMenuButton = AddElement<Button>();
+	Text& pausedTitleText = AddElement<Text>();
 	Button& resumeButton = AddElement<Button>();
-	Button& settingsButton = AddElement<Button>();
-	
+	Button& optionsButton = AddElement<Button>();
+	Button& mainMenuButton = AddElement<Button>();
+	Button& quitGameButton = AddElement<Button>();
 	
 };
 

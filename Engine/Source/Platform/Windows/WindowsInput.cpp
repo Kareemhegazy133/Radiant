@@ -7,19 +7,19 @@ namespace Engine {
 
 	bool Input::IsKeyPressed(KeyCode key)
 	{
-		auto window = static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow());
+		auto window = GameApplication::GetRenderWindow();
 		return window->hasFocus() && sf::Keyboard::isKeyPressed(static_cast<sf::Keyboard::Key>(key));
 	}
 
 	bool Input::IsMouseButtonPressed(MouseCode button)
 	{
-		auto window = static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow());
+		auto window = GameApplication::GetRenderWindow();
 		return window->hasFocus() && sf::Mouse::isButtonPressed(static_cast<sf::Mouse::Button>(button));
 	}
 
 	std::pair<float, float> Input::GetMousePosition()
 	{
-		auto window = static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow());
+		auto window = GameApplication::GetRenderWindow();
 		sf::Vector2i pos = sf::Mouse::getPosition(*window);
 
 		return { static_cast<float>(pos.x), static_cast<float>(pos.y) };

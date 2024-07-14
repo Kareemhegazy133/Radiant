@@ -17,7 +17,9 @@ namespace Engine {
 		void SetScale(const sf::Vector2f& factors);
 		void SetScale(float factorX, float factorY);
 
-		inline sf::Sprite& GetDrawable() override { return m_Sprite; }
+		inline sf::Drawable& GetDrawable() override { return m_Sprite; }
+
+		void OnRender(sf::RenderWindow* renderWindow) override;
 
 		operator const sf::Sprite& () { return m_Sprite; }
 		operator sf::Sprite& () { return m_Sprite; }

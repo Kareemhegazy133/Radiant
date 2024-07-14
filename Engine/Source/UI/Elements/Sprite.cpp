@@ -29,4 +29,10 @@ namespace Engine {
 	{
 		m_Sprite.setScale(factorX, factorY);
 	}
+
+	void Sprite::OnRender(sf::RenderWindow* renderWindow)
+	{
+		renderWindow->draw(m_Sprite);
+	}
+
 }

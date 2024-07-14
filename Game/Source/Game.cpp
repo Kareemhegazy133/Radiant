@@ -16,16 +16,20 @@ public:
 
 	void InitializeSystems()
 	{
-		FontManager::LoadFont("Dimbo_Regular", "Assets/Font/Dimbo_Regular.ttf");
+		FontManager::LoadFont("Euljiro", "Assets/Font/Euljiro.ttf");
 
 		TextureManager::LoadTexture("Player", "Assets/Player/Reaper/Reaper_Idle.png");
 		TextureManager::LoadTexture("Fireball", "Assets/Abilities/Fireball.png");
 		TextureManager::LoadTexture("Platform", "Assets/Platform.png");
+
+		TextureManager::LoadTexture("LargeButton", "Assets/UI/Buttons/LargeButton.png");
+		TextureManager::LoadTexture("LargeButtonHovered", "Assets/UI/Buttons/LargeButtonHovered.png");
+		TextureManager::LoadTexture("MediumButton", "Assets/UI/Buttons/MediumButton.png");
+		TextureManager::LoadTexture("MediumButtonHovered", "Assets/UI/Buttons/MediumButtonHovered.png");
+
+		TextureManager::LoadTexture("MainMenu", "Assets/UI/Menus/MainMenu.png");
 		TextureManager::LoadTexture("PauseMenu", "Assets/UI/Menus/PauseMenu.png");
-		TextureManager::LoadTexture("ResumeButton", "Assets/UI/Buttons/ResumeButton.png");
-		TextureManager::LoadTexture("CloseButton", "Assets/UI/Buttons/CloseButton.png");
-		TextureManager::LoadTexture("SettingsButton", "Assets/UI/Buttons/SettingsButton.png");
-		TextureManager::LoadTexture("MainMenuButton", "Assets/UI/Buttons/MainMenuButton.png");
+
 	}
 };
 

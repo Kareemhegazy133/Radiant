@@ -10,7 +10,7 @@ namespace Engine {
     {
     public:
         Level()
-            : m_RenderWindow(static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow())) {}
+            : m_RenderWindow(GameApplication::GetRenderWindow()) {}
         virtual ~Level() = default;
 
         virtual void OnUpdate(Timestep ts) = 0;

@@ -2,6 +2,8 @@
 
 #include "Button.h"
 
+#include "Resources/TextureManager.h"
+
 namespace Engine {
 
     Button::Button(const sf::Vector2f& position, const sf::Vector2f& size)
@@ -13,6 +15,19 @@ namespace Engine {
     void Button::SetSize(const sf::Vector2f& size)
     {
         m_Rectangle.setSize(size);
+
+        if (size.x >= 340.f)
+        {
+            m_ButtonSize = ButtonSize::Large;
+        }
+        else if (size.x >= 280.f)
+        {
+            m_ButtonSize = ButtonSize::Medium;
+        }
+        else
+        {
+            m_ButtonSize = ButtonSize::Small;
+        }
     }
 
     const sf::Vector2f& Button::GetSize() const
@@ -45,6 +60,16 @@ namespace Engine {
         m_Rectangle.setTexture(texture);
     }
 
+    void Button::SetText(Text& textElement)
+    {
+        m_ButtonText = textElement;
+        // Center the text to the button
+        sf::FloatRect textBounds = m_ButtonText.GetLocalBounds();
+        sf::FloatRect buttonBounds = m_Rectangle.getLocalBounds();
+        m_ButtonText.SetOrigin({ textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f });
+        m_ButtonText.SetPosition({ m_Rectangle.getPosition().x + buttonBounds.width / 2.0f, m_Rectangle.getPosition().y + buttonBounds.height / 2.0f });
+    }
+
     void Button::SetFillColor(const sf::Color& color)
     {
         m_Rectangle.setFillColor(color);
@@ -60,6 +85,11 @@ namespace Engine {
         m_Rectangle.setOutlineThickness(thickness);
     }
 
+    sf::FloatRect Button::GetLocalBounds()
+    {
+        return m_Rectangle.getLocalBounds();
+    }
+
     bool Button::IsHovered(const sf::Vector2i& mousePos) const
     {
         return m_Rectangle.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos));
@@ -71,6 +101,46 @@ namespace Engine {
         {
             m_OnClick();
         }
+    }
+
+    void Button::OnRender(sf::RenderWindow* renderWindow)
+    {
+        sf::Vector2i mousePos = sf::Mouse::getPosition(*renderWindow);
+        bool isCurrentlyHovered = IsHovered(mousePos);
+
+        if (isCurrentlyHovered && !m_IsHovered)
+        {
+            m_IsHovered = true;
+            switch (m_ButtonSize)
+            {
+            case ButtonSize::Small:
+                break;
+            case ButtonSize::Medium:
+                SetTexture(&TextureManager::GetTexture("MediumButtonHovered"));
+                break;
+            case ButtonSize::Large:
+                SetTexture(&TextureManager::GetTexture("LargeButtonHovered"));
+                break;
+            }
+            
+        }
+        else if (!isCurrentlyHovered && m_IsHovered)
+        {
+            m_IsHovered = false;
+            switch (m_ButtonSize)
+            {
+            case ButtonSize::Small:
+                break;
+            case ButtonSize::Medium:
+                SetTexture(&TextureManager::GetTexture("MediumButton"));
+                break;
+            case ButtonSize::Large:
+                SetTexture(&TextureManager::GetTexture("LargeButton"));
+                break;
+            }
+        }
+        renderWindow->draw(m_Rectangle);
+        renderWindow->draw(m_ButtonText.GetDrawable());
     }
 
 }

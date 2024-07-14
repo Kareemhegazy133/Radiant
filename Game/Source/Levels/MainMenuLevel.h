@@ -20,9 +20,6 @@ public:
     void OnEvent(Event& e) override;
 
 private:
-    bool OnKeyPressed(KeyPressedEvent& e);
-
-private:
     MainMenu m_MainMenu;
 };
 

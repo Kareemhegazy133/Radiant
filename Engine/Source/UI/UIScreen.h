@@ -35,14 +35,16 @@ namespace Engine {
 			return *element;
 		}
 
-		virtual void OnUpdate(Timestep ts)
+		//virtual void OnUpdate(Timestep ts) = 0;
+
+		virtual void OnRender()
 		{
 			for (auto& pair : m_Elements)
 			{
 				for (UIElement* element : pair.second)
 				{
 					ENGINE_ASSERT(element, "Element must not be nullptr!");
-					m_RenderWindow->draw(element->GetDrawable());
+					element->OnRender(m_RenderWindow);
 				}
 			}
 		}
@@ -53,7 +55,7 @@ namespace Engine {
 		inline virtual bool IsVisible() const { return m_IsVisible; }
 		
 	protected:
-		sf::RenderWindow* m_RenderWindow = static_cast<sf::RenderWindow*>(GameApplication::Get().GetWindow().GetNativeWindow());
+		sf::RenderWindow* m_RenderWindow = GameApplication::GetRenderWindow();
 		bool m_IsVisible = false;
 
 		std::unordered_map<std::type_index, std::vector<UIElement*>> m_Elements;
