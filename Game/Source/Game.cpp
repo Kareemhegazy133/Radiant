@@ -37,6 +37,10 @@ public:
 		TextureManager::LoadTexture("CharacterInfoMenu", "Assets/UI/Menus/CharacterInfoMenu.png");
 		TextureManager::LoadTexture("CloseButton", "Assets/UI/Buttons/CloseButton.png");
 		TextureManager::LoadTexture("CloseButtonHovered", "Assets/UI/Buttons/CloseButtonHovered.png");
+		TextureManager::LoadTexture("RightArrowButton", "Assets/UI/Buttons/RightArrowButton.png");
+		TextureManager::LoadTexture("RightArrowButtonHovered", "Assets/UI/Buttons/RightArrowButtonHovered.png");
+		TextureManager::LoadTexture("LeftArrowButton", "Assets/UI/Buttons/LeftArrowButton.png");
+		TextureManager::LoadTexture("LeftArrowButtonHovered", "Assets/UI/Buttons/LeftArrowButtonHovered.png");
 		TextureManager::LoadTexture("CoinIcon", "Assets/UI/Icons/CoinIcon.png");
 		TextureManager::LoadTexture("DiamondIcon", "Assets/UI/Icons/DiamondIcon.png");
 

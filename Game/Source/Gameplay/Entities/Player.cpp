@@ -13,8 +13,6 @@ Player::Player()
     m_FrameHeightPadding = 40;
     m_FrameCount = 18;
 
-    character.Speed = 200.f;
-
 	SetupAnimation("Idle", m_FrameCount, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.05f, true);
 	animation.SetAnimation("Idle");
 
@@ -23,17 +21,25 @@ Player::Player()
 
     AddComponent<BoxCollider2DComponent>();
 
-    attributes.SetAttribute(Attributes::Health, 100.f);
-    attributes.SetAttribute(Attributes::Stamina, 100.f);
-    attributes.SetAttribute(Attributes::Strength, 10.f);
-    attributes.SetAttribute(Attributes::Defense, 10.f);
-    attributes.SetAttribute(Attributes::Magic, 10.f);
+    attributes.SetAttribute(Attributes::Health, 100.f, 10);
+    attributes.SetAttribute(Attributes::Stamina, 100.f, 5);
+    attributes.SetAttribute(Attributes::Strength, 10.f, 4);
+    attributes.SetAttribute(Attributes::Defense, 10.f, 7);
+    attributes.SetAttribute(Attributes::Magic, 10.f, 3);
 
     GAME_INFO("Health: {0}", attributes.GetAttribute(Attributes::Health));
 
     abilities.AddAbility<Fireball>();
 
     metadata.OnUpdate = BIND_MEMBER_FUNCTION(Player::OnUpdate, this);
+
+    // Starting Stats
+    character.Level = 1;
+    character.Coins = 0;
+    character.Diamonds = 0;
+    character.CurrentHealth = attributes.GetAttribute(Attributes::Health);
+    character.CurrentStamina = attributes.GetAttribute(Attributes::Stamina);
+    character.Speed = 200.f;
 }
 
 Player::~Player()

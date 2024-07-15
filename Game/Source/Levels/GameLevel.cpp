@@ -42,6 +42,11 @@ void GameLevel::OnUpdate(Timestep ts)
 		Entity entity(entityHandle, this);
 		entity.OnUpdate(ts);
 
+		if (metadata.Tag == "Player" && m_CharacterInfoMenu.IsVisible())
+		{
+			m_CharacterInfoMenu.UpdatePlayerInfo(entity.GetComponent<AttributesComponent>(), entity.GetComponent<CharacterComponent>());
+		}
+
 		// Update Physics Colliders of all entities
 		m_Physics.UpdateBoxColliderFixture(bc2d, transform, sprite);
 
