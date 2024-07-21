@@ -33,6 +33,7 @@ namespace Engine {
 
 		void SetButtonCallback(std::function<void()> callback);
 		void SetTexture(const sf::Texture* texture);
+		void SetNormalTexture(const sf::Texture* texture);
 		void SetHoveredTexture(const sf::Texture* texture);
 		void SetDisabledTexture(const sf::Texture* texture);
 		void SetText(Text& textElement);

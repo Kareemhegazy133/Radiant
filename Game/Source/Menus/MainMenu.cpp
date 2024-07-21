@@ -31,21 +31,21 @@ void MainMenu::Initialize()
 	Text playGameButtonText = Text("Play Game", GameTheme::GetFont(), GameTheme::GetMediumButtonTextSize(), GameTheme::GetLightTextColor());
 	playGameButton.SetText(playGameButtonText);
 	playGameButton.SetButtonCallback(std::bind(&MainMenu::OnPlayGameButtonClicked, this));
-	playGameButton.SetTexture(GameTheme::GetMediumButtonNormalTexture());
+	playGameButton.SetNormalTexture(GameTheme::GetMediumButtonNormalTexture());
 
 	optionsButton.SetPosition({ 90.f, 425.f });
 	optionsButton.SetSize(GameTheme::GetMediumButtonSize());
 	Text optionsButtonText = Text("Options", GameTheme::GetFont(), GameTheme::GetMediumButtonTextSize(), GameTheme::GetLightTextColor());
 	optionsButton.SetText(optionsButtonText);
 	optionsButton.SetButtonCallback(std::bind(&MainMenu::OnOptionsButtonClicked, this));
-	optionsButton.SetTexture(GameTheme::GetMediumButtonNormalTexture());
+	optionsButton.SetNormalTexture(GameTheme::GetMediumButtonNormalTexture());
 
 	quitGameButton.SetPosition({ 90.f, 550.f });
 	quitGameButton.SetSize(GameTheme::GetMediumButtonSize());
 	Text quitGameButtonText = Text("Quit Game", GameTheme::GetFont(), GameTheme::GetMediumButtonTextSize(), GameTheme::GetLightTextColor());
 	quitGameButton.SetText(quitGameButtonText);
 	quitGameButton.SetButtonCallback(std::bind(&MainMenu::OnQuitGameButtonClicked, this));
-	quitGameButton.SetTexture(GameTheme::GetMediumButtonNormalTexture());
+	quitGameButton.SetNormalTexture(GameTheme::GetMediumButtonNormalTexture());
 
 }
 

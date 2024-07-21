@@ -29,28 +29,28 @@ void PauseMenu::Initialize()
 	Text resumeButtonText = Text("Resume", GameTheme::GetFont(), GameTheme::GetLargeButtonTextSize(), GameTheme::GetLightTextColor());
 	resumeButton.SetText(resumeButtonText);
 	resumeButton.SetButtonCallback(std::bind(&PauseMenu::OnResumeButtonClicked, this));
-	resumeButton.SetTexture(GameTheme::GetLargeButtonNormalTexture());
+	resumeButton.SetNormalTexture(GameTheme::GetLargeButtonNormalTexture());
 
 	optionsButton.SetPosition({ 470.f, 285.f });
 	optionsButton.SetSize(GameTheme::GetLargeButtonSize());
 	Text optionsButtonText = Text("Options", GameTheme::GetFont(), GameTheme::GetLargeButtonTextSize(), GameTheme::GetLightTextColor());
 	optionsButton.SetText(optionsButtonText);
 	optionsButton.SetButtonCallback(std::bind(&PauseMenu::OnOptionsButtonClicked, this));
-	optionsButton.SetTexture(GameTheme::GetLargeButtonNormalTexture());
+	optionsButton.SetNormalTexture(GameTheme::GetLargeButtonNormalTexture());
 
 	mainMenuButton.SetPosition({ 470.f, 410.f });
 	mainMenuButton.SetSize(GameTheme::GetLargeButtonSize());
 	Text mainMenuButtonText = Text("Main Menu", GameTheme::GetFont(), GameTheme::GetLargeButtonTextSize(), GameTheme::GetLightTextColor());
 	mainMenuButton.SetText(mainMenuButtonText);
 	mainMenuButton.SetButtonCallback(std::bind(&PauseMenu::OnMainMenuButtonClicked, this));
-	mainMenuButton.SetTexture(GameTheme::GetLargeButtonNormalTexture());
+	mainMenuButton.SetNormalTexture(GameTheme::GetLargeButtonNormalTexture());
 
 	quitGameButton.SetPosition({ 470.f, 535.f });
 	quitGameButton.SetSize(GameTheme::GetLargeButtonSize());
 	Text quitGameButtonText = Text("Quit Game", GameTheme::GetFont(), GameTheme::GetLargeButtonTextSize(), GameTheme::GetLightTextColor());
 	quitGameButton.SetText(quitGameButtonText);
 	quitGameButton.SetButtonCallback(std::bind(&PauseMenu::OnQuitGameButtonClicked, this));
-	quitGameButton.SetTexture(GameTheme::GetLargeButtonNormalTexture());
+	quitGameButton.SetNormalTexture(GameTheme::GetLargeButtonNormalTexture());
 
 }
 

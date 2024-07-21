@@ -58,7 +58,16 @@ namespace Engine {
 
     void Button::SetDisabled(bool disable)
     {
-        m_IsDisabled = disable;
+        if (disable && !m_IsDisabled)
+        {
+            m_IsDisabled = true;
+            SetTexture(m_DisabledTexture);
+        }
+        else if(!disable && m_IsDisabled)
+        {
+            m_IsDisabled = false;
+            SetTexture(m_NormalTexture);
+        }
     }
 
     void Button::SetButtonCallback(std::function<void()> callback)
@@ -71,11 +80,15 @@ namespace Engine {
         m_Rectangle.setTexture(texture);
     }
 
+    void Button::SetNormalTexture(const sf::Texture* texture)
+    {
+        m_NormalTexture = texture;
+        SetTexture(m_NormalTexture);
+    }
+
     void Button::SetHoveredTexture(const sf::Texture* texture)
     {
         m_HoveredTexture = texture;
-        // Store the normal texture
-        m_NormalTexture = m_Rectangle.getTexture();
     }
 
     void Button::SetDisabledTexture(const sf::Texture* texture)
@@ -135,76 +148,56 @@ namespace Engine {
     {
         sf::Vector2i mousePos = sf::Mouse::getPosition(*renderWindow);
         bool isCurrentlyHovered = IsHovered(mousePos);
-
-        // if button is disabled then set its disabled texture
-        if (IsDisabled())
+        if (!m_IsDisabled)
         {
-            switch (m_ButtonSize)
+            // if is now hovered and wasnt hovered last frame
+            if (isCurrentlyHovered && !m_IsHovered)
             {
-            case ButtonSize::Common:
-                SetTexture(&TextureManager::GetTexture("CommonButtonDisabled"));
-                break;
-            case ButtonSize::Small:
-                //SetTexture(&TextureManager::GetTexture("SmallButtonDisabled"));
-                break;
-            case ButtonSize::Medium:
-                //SetTexture(&TextureManager::GetTexture("MediumButtonDisabled"));
-                break;
-            case ButtonSize::Large:
-                //SetTexture(&TextureManager::GetTexture("LargeButtonDisabled"));
-                break;
-            case ButtonSize::Custom:
-                SetTexture(m_DisabledTexture);
-                break;
+                m_IsHovered = true;
+                switch (m_ButtonSize)
+                {
+                case ButtonSize::Common:
+                    SetTexture(&TextureManager::GetTexture("CommonButtonHovered"));
+                    break;
+                case ButtonSize::Small:
+                    //SetTexture(&TextureManager::GetTexture("SmallButtonHovered"));
+                    break;
+                case ButtonSize::Medium:
+                    SetTexture(&TextureManager::GetTexture("MediumButtonHovered"));
+                    break;
+                case ButtonSize::Large:
+                    SetTexture(&TextureManager::GetTexture("LargeButtonHovered"));
+                    break;
+                case ButtonSize::Custom:
+                    SetTexture(m_HoveredTexture);
+                    break;
+                }
+            }
+            // else if is now not hovered and was hovered last frame
+            else if (!isCurrentlyHovered && m_IsHovered)
+            {
+                m_IsHovered = false;
+                switch (m_ButtonSize)
+                {
+                case ButtonSize::Common:
+                    SetTexture(&TextureManager::GetTexture("CommonButton"));
+                    break;
+                case ButtonSize::Small:
+                    //SetTexture(&TextureManager::GetTexture("SmallButton"));
+                    break;
+                case ButtonSize::Medium:
+                    SetTexture(&TextureManager::GetTexture("MediumButton"));
+                    break;
+                case ButtonSize::Large:
+                    SetTexture(&TextureManager::GetTexture("LargeButton"));
+                    break;
+                case ButtonSize::Custom:
+                    SetTexture(m_NormalTexture);
+                    break;
+                }
             }
         }
-        // if is now hovered and wasnt hovered last frame
-        else if (isCurrentlyHovered && !m_IsHovered)
-        {
-            m_IsHovered = true;
-            switch (m_ButtonSize)
-            {
-            case ButtonSize::Common:
-                SetTexture(&TextureManager::GetTexture("CommonButtonHovered"));
-                break;
-            case ButtonSize::Small:
-                //SetTexture(&TextureManager::GetTexture("SmallButtonHovered"));
-                break;
-            case ButtonSize::Medium:
-                SetTexture(&TextureManager::GetTexture("MediumButtonHovered"));
-                break;
-            case ButtonSize::Large:
-                SetTexture(&TextureManager::GetTexture("LargeButtonHovered"));
-                break;
-            case ButtonSize::Custom:
-                SetTexture(m_HoveredTexture);
-                break;
-            }
-            
-        }
-        // else if is now not hovered and was hovered last frame
-        else if (!isCurrentlyHovered && m_IsHovered)
-        {
-            m_IsHovered = false;
-            switch (m_ButtonSize)
-            {
-            case ButtonSize::Common:
-                SetTexture(&TextureManager::GetTexture("CommonButton"));
-                break;
-            case ButtonSize::Small:
-                //SetTexture(&TextureManager::GetTexture("SmallButton"));
-                break;
-            case ButtonSize::Medium:
-                SetTexture(&TextureManager::GetTexture("MediumButton"));
-                break;
-            case ButtonSize::Large:
-                SetTexture(&TextureManager::GetTexture("LargeButton"));
-                break;
-            case ButtonSize::Custom:
-                SetTexture(m_NormalTexture);
-                break;
-            }
-        }
+        
         renderWindow->draw(m_Rectangle);
         renderWindow->draw(m_ButtonText.GetDrawable());
     }
