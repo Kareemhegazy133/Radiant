@@ -14,6 +14,9 @@ public:
 
     void OnUpdate(Timestep ts) override;
 
+    inline AttributesComponent* GetAttributesComponent() const { return &attributes; }
+    inline CharacterComponent* GetCharacterComponent() const { return &character; }
+
     void OnCollisionBegin(Entity& other) override;
     void OnCollisionEnd(Entity& other) override;
 

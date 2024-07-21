@@ -9,7 +9,8 @@ namespace Engine {
 
 	enum class ButtonSize
 	{
-		Small = 0,
+		Common = 0,
+		Small,
 		Medium,
 		Large,
 		Custom
@@ -28,9 +29,12 @@ namespace Engine {
 		void SetPosition(float x, float y);
 		const sf::Vector2f& GetPosition() const;
 
+		void SetDisabled(bool disable);
+
 		void SetButtonCallback(std::function<void()> callback);
 		void SetTexture(const sf::Texture* texture);
 		void SetHoveredTexture(const sf::Texture* texture);
+		void SetDisabledTexture(const sf::Texture* texture);
 		void SetText(Text& textElement);
 		void SetFillColor(const sf::Color& color);
 		void SetOutlineColor(const sf::Color& color);
@@ -40,6 +44,7 @@ namespace Engine {
 		sf::FloatRect GetLocalBounds();
 
 		bool IsHovered(const sf::Vector2i& mousePos) const;
+		bool IsDisabled() const;
 		void OnClick();
 
 		inline sf::Drawable& GetDrawable() override { return m_Rectangle; }
@@ -53,8 +58,10 @@ namespace Engine {
 		sf::RectangleShape m_Rectangle;
 		std::function<void()> m_OnClick;
 		bool m_IsHovered = false;
+		bool m_IsDisabled = false;
 		const sf::Texture* m_NormalTexture = nullptr;
 		const sf::Texture* m_HoveredTexture = nullptr;
+		const sf::Texture* m_DisabledTexture = nullptr;
 		ButtonSize m_ButtonSize;
 		Text m_ButtonText;
 	};

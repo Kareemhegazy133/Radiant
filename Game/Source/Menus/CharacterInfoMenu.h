@@ -7,16 +7,17 @@ using namespace Engine;
 class CharacterInfoMenu : public UIScreen
 {
 public:
-	CharacterInfoMenu();
+	CharacterInfoMenu(AttributesComponent& playerAttributes, CharacterComponent& playerStats);
 	virtual ~CharacterInfoMenu();
 
 	void Initialize() override;
 
-	void UpdatePlayerInfo(AttributesComponent& playerAttributes, CharacterComponent& playerStats);
+	void UpdatePlayerInfo();
 
 	void OnEvent(Event& e) override;
 
 private:
+
 	bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
 	void OnHealthLeftArrowButtonClicked();
@@ -29,6 +30,8 @@ private:
 	void OnDefenseRightArrowButtonClicked();
 	void OnMagicLeftArrowButtonClicked();
 	void OnMagicRightArrowButtonClicked();
+
+	void OnConfirmAttributePointsButtonClicked();
 
 	void OnCloseButtonClicked();
 
@@ -44,7 +47,7 @@ private:
 	Sprite& diamondsIcon = AddElement<Sprite>(TextureManager::GetTexture("DiamondIcon"));
 	Text& characterDiamondsText = AddElement<Text>();
 	Text& characterLevelText = AddElement<Text>();
-	Text& characterLivesText = AddElement<Text>();
+	Text& characterAttributePointsText = AddElement<Text>();
 
 	Text& attributePointsTitleText = AddElement<Text>();
 	Text& healthPointsText = AddElement<Text>();
@@ -62,7 +65,7 @@ private:
 	Text& magicPointsText = AddElement<Text>();
 	Button& magicLeftArrowButton = AddElement<Button>();
 	Button& magicRightArrowButton = AddElement<Button>();
-	
+	Button& confirmAttributePointsButton = AddElement<Button>();
 
 	Text& baseStatsTitleText = AddElement<Text>();
 	Text& healthStatText = AddElement<Text>();
@@ -72,4 +75,13 @@ private:
 	Text& magicStatText = AddElement<Text>();
 	Text& speedStatText = AddElement<Text>();
 
+	AttributesComponent& m_playerAttributes;
+	CharacterComponent& m_playerStats;
+
+	int m_AttributePointsToSpend = 0;
+	int m_HealthPointsToAdd = 0;
+	int m_StaminaPointsToAdd = 0;
+	int m_StrengthPointsToAdd = 0;
+	int m_DefensePointsToAdd = 0;
+	int m_MagicPointsToAdd = 0;
 };

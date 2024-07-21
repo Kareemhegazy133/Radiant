@@ -3,6 +3,7 @@
 #include "Layers/GameLayer.h"
 
 GameLevel::GameLevel()
+	: m_CharacterInfoMenu(m_Player.GetComponent<AttributesComponent>(), m_Player.GetComponent<CharacterComponent>())
 {
 	std::cout << "GameLevel Created!" << std::endl;
 
@@ -44,7 +45,7 @@ void GameLevel::OnUpdate(Timestep ts)
 
 		if (metadata.Tag == "Player" && m_CharacterInfoMenu.IsVisible())
 		{
-			m_CharacterInfoMenu.UpdatePlayerInfo(entity.GetComponent<AttributesComponent>(), entity.GetComponent<CharacterComponent>());
+			m_CharacterInfoMenu.UpdatePlayerInfo();
 		}
 
 		// Update Physics Colliders of all entities

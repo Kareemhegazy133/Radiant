@@ -16,7 +16,7 @@ namespace Engine {
         EnsureCapacity(id + 1); // Ensure capacity for at least id + 1 elements
         m_Values[id] = std::make_pair(value, true);
         m_AttributePointsSpent[id] = points;
-        m_TotalPoints += points;
+        m_TotalPointsSpent += points;
     }
 
     float AttributesComponent::GetAttribute(Attributes attribute) const
@@ -37,12 +37,19 @@ namespace Engine {
 
     void AttributesComponent::UpgradeAttribute(Attributes attribute)
     {
+        if (m_AttributePointsAvailable <= 0)
+        {
+            GAME_INFO("Not Enough Attribute Points available to upgrade attribute");
+            return;
+        }
+
         int id = static_cast<int>(attribute);
 
         m_Values[id].first = CalculateUpgradeValue(attribute);
         m_Values[id].second = true;
+        m_AttributePointsAvailable -= 1;
         m_AttributePointsSpent[id] += 1;
-        m_TotalPoints += 1;
+        m_TotalPointsSpent += 1;
     }
 
     float AttributesComponent::CalculateUpgradeValue(Attributes attribute) const
@@ -53,6 +60,11 @@ namespace Engine {
         int currentLevel = m_AttributePointsSpent[id];
 
         return currentValue * pow(1 + m_GrowthRate, currentLevel + 1);
+    }
+
+    void AttributesComponent::AddAttributePoints(int amount)
+    {
+        m_AttributePointsAvailable += amount;
     }
 
     int AttributesComponent::GetAttributePointsSpent(Attributes attribute) const

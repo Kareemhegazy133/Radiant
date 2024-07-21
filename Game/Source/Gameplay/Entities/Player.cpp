@@ -35,6 +35,7 @@ Player::Player()
 
     // Starting Stats
     character.Level = 1;
+    attributes.AddAttributePoints(4);
     character.Coins = 0;
     character.Diamonds = 0;
     character.CurrentHealth = attributes.GetAttribute(Attributes::Health);
