@@ -35,7 +35,7 @@ namespace Engine {
         throw std::out_of_range("Attribute ID out of range");
     }
 
-    void AttributesComponent::UpgradeAttribute(Attributes attribute)
+    void AttributesComponent::UpgradeAttribute(Attributes attribute, int points)
     {
         if (m_AttributePointsAvailable <= 0)
         {
@@ -45,21 +45,34 @@ namespace Engine {
 
         int id = static_cast<int>(attribute);
 
-        m_Values[id].first = CalculateUpgradeValue(attribute);
+        m_Values[id].first = CalculateUpgradeValue(attribute, points);
         m_Values[id].second = true;
-        m_AttributePointsAvailable -= 1;
-        m_AttributePointsSpent[id] += 1;
-        m_TotalPointsSpent += 1;
+        m_AttributePointsAvailable -= points;
+        m_AttributePointsSpent[id] += points;
+        m_TotalPointsSpent += points;
     }
 
-    float AttributesComponent::CalculateUpgradeValue(Attributes attribute) const
+    float AttributesComponent::CalculateUpgradeValue(Attributes attribute, int levels) const
     {
         int id = static_cast<int>(attribute);
 
         float currentValue = m_Values[id].first;
         int currentLevel = m_AttributePointsSpent[id];
 
-        return currentValue * pow(1 + m_GrowthRate, currentLevel + 1);
+        if (levels == 0)
+        {
+            return currentValue + ((currentLevel + 1) * m_GrowthRate);
+        }
+
+        float result = 0.0f;
+        for (int i = 0; i < levels; i++)
+        {
+            result += currentValue + ((currentLevel + 1) * m_GrowthRate);
+            currentValue = result;
+            currentLevel++;
+        }
+
+        return result;
     }
 
     void AttributesComponent::AddAttributePoints(int amount)

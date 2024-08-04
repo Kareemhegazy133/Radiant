@@ -15,8 +15,9 @@ namespace Engine {
         void SetAttribute(Attributes attribute, float value, int points);
         float GetAttribute(Attributes attribute) const;
         
-        void UpgradeAttribute(Attributes attribute);
-        float CalculateUpgradeValue(Attributes attribute) const;
+        void UpgradeAttribute(Attributes attribute, int points = 1);
+        //float CalculateUpgradeValue(Attributes attribute) const;
+        float CalculateUpgradeValue(Attributes attribute, int levels = 0) const;
 
         void AddAttributePoints(int amount);
         inline int GetAttributePointsAvailable() const { return m_AttributePointsAvailable; }
@@ -29,7 +30,7 @@ namespace Engine {
 
     private:
         // Growth rate of 10% for upgrading attributes
-        float m_GrowthRate = 0.1f;
+        float m_GrowthRate = 0.35f;
         // Pair of float (max value of attribute) and bool (whether set or not)
         std::vector<std::pair<float, bool>> m_Values;
 

@@ -257,41 +257,6 @@ void CharacterInfoMenu::UpdatePlayerInfo()
 		+ std::to_string(static_cast<int>(m_playerAttributes.GetAttributePointsSpent(Attributes::Magic) + m_MagicPointsToAdd))
 	);
 
-	healthStatText.SetText("Health : " 
-		+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Health)))
-		+ "      -->   "
-		+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Health)))
-	);
-
-	staminaStatText.SetText("Stamina : "
-		+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Stamina)))
-		+ "   -->   "
-		+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Stamina)))
-	);
-
-	strengthStatText.SetText("Strength : "
-		+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Strength)))
-		+ "    -->   "
-		+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Strength)))
-	);
-
-	defenseStatText.SetText("Defense : "
-		+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Defense)))
-		+ "     -->   "
-		+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Defense)))
-	);
-
-	magicStatText.SetText("Magic : "
-		+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Magic)))
-		+ "         -->   "
-		+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Magic)))
-	);
-
-	speedStatText.SetText("Speed : "
-		+ std::to_string(static_cast<int>(m_playerStats.Speed))
-		+ "      -->   "
-	);
-
 	if (m_AttributePointsToSpend == m_playerAttributes.GetAttributePointsAvailable())
 	{
 		healthRightArrowButton.SetDisabled(true);
@@ -308,6 +273,88 @@ void CharacterInfoMenu::UpdatePlayerInfo()
 		defenseRightArrowButton.SetDisabled(false);
 		magicRightArrowButton.SetDisabled(false);
 	}
+
+	if (m_HealthPointsToAdd == 0)
+	{
+		healthStatText.SetText("Health : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Health)))
+		);
+	}
+	else
+	{
+		healthStatText.SetText("Health : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Health)))
+			+ "      -->   "
+			+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Health, m_HealthPointsToAdd)))
+		);
+	}
+
+	if (m_StaminaPointsToAdd == 0)
+	{
+
+		staminaStatText.SetText("Stamina : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Stamina)))
+		);
+	}
+	else
+	{
+		staminaStatText.SetText("Stamina : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Stamina)))
+			+ "   -->   "
+			+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Stamina, m_StaminaPointsToAdd)))
+		);
+	}
+
+	if (m_StrengthPointsToAdd == 0)
+	{
+		strengthStatText.SetText("Strength : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Strength)))
+		);
+	}
+	else
+	{
+		strengthStatText.SetText("Strength : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Strength)))
+			+ "    -->   "
+			+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Strength, m_StrengthPointsToAdd)))
+		);
+	}
+
+	if (m_DefensePointsToAdd == 0)
+	{
+		defenseStatText.SetText("Defense : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Defense)))
+		);
+	}
+	else
+	{
+		defenseStatText.SetText("Defense : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Defense)))
+			+ "     -->   "
+			+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Defense, m_DefensePointsToAdd)))
+		);
+	}
+
+	if (m_MagicPointsToAdd == 0)
+	{
+		magicStatText.SetText("Magic : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Magic)))
+		);
+	}
+	else
+	{
+		magicStatText.SetText("Magic : "
+			+ std::to_string(static_cast<int>(m_playerAttributes.GetAttribute(Attributes::Magic)))
+			+ "         -->   "
+			+ std::to_string(static_cast<int>(m_playerAttributes.CalculateUpgradeValue(Attributes::Magic, m_MagicPointsToAdd)))
+		);
+	}
+
+	speedStatText.SetText("Speed : "
+		+ std::to_string(static_cast<int>(m_playerStats.Speed))
+	);
+
+	m_AttributePointsToSpend == 0 ? confirmAttributePointsButton.SetDisabled(true) : confirmAttributePointsButton.SetDisabled(false);
 
 	m_HealthPointsToAdd > 0 ? healthLeftArrowButton.SetDisabled(false) : healthLeftArrowButton.SetDisabled(true);
 	m_StaminaPointsToAdd > 0 ? staminaLeftArrowButton.SetDisabled(false) : staminaLeftArrowButton.SetDisabled(true);;
@@ -504,15 +551,56 @@ void CharacterInfoMenu::OnMagicRightArrowButtonClicked()
 	);
 
 	magicLeftArrowButton.SetDisabled(false);
+
 }
 
 void CharacterInfoMenu::OnConfirmAttributePointsButtonClicked()
 {
 	GAME_INFO("Confirm Attributes Button Clicked");
+
+	if (m_HealthPointsToAdd > 0)
+	{
+		m_playerAttributes.UpgradeAttribute(Attributes::Health, m_HealthPointsToAdd);
+		m_HealthPointsToAdd = 0;
+	}
+
+	if (m_StaminaPointsToAdd > 0)
+	{
+		m_playerAttributes.UpgradeAttribute(Attributes::Stamina, m_StaminaPointsToAdd);
+		m_StaminaPointsToAdd = 0;
+	}
+
+	if(m_StrengthPointsToAdd > 0)
+	{
+		m_playerAttributes.UpgradeAttribute(Attributes::Strength, m_StrengthPointsToAdd);
+		m_StrengthPointsToAdd = 0;
+	}
+
+	if (m_DefensePointsToAdd > 0)
+	{
+		m_playerAttributes.UpgradeAttribute(Attributes::Defense, m_DefensePointsToAdd);
+		m_DefensePointsToAdd = 0;
+	}
+	
+	if (m_MagicPointsToAdd > 0)
+	{
+		m_playerAttributes.UpgradeAttribute(Attributes::Magic, m_MagicPointsToAdd);
+		m_MagicPointsToAdd = 0;
+	}
+
+	m_AttributePointsToSpend = 0;
 }
 
 void CharacterInfoMenu::OnCloseButtonClicked()
 {
 	GAME_INFO("Close Button Clicked!");
+
+	m_AttributePointsToSpend = 0;
+	m_HealthPointsToAdd = 0;
+	m_StaminaPointsToAdd = 0;
+	m_StrengthPointsToAdd = 0;
+	m_DefensePointsToAdd = 0;
+	m_MagicPointsToAdd = 0;
+
 	SetVisibility(false);
 }
