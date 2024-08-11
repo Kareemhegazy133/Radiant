@@ -8,15 +8,19 @@
 
 #include "Enginepch.h"
 
+enum class CharacterAnimationState;
+enum class AbilityAnimationState;
+
 namespace Engine {
 
     class AnimationComponent : public Component
     {
     public:
-
         AnimationComponent();
 
-        void AddAnimation(const std::string& name,
+        template<typename T>
+        void AddAnimation(T state,
+            const std::string& textureIdentifier,
             const std::vector<sf::IntRect>& frames,
             uint8_t frameWidthPadding,
             uint8_t frameHeightPadding,
@@ -24,7 +28,8 @@ namespace Engine {
             bool enableLooping
         );
 
-        void SetAnimation(const std::string& name);
+        template<typename T>
+        void SetAnimation(T state);
 
         // Update the animation frame based on the elapsed time
         void Update(Timestep ts);
@@ -34,6 +39,7 @@ namespace Engine {
     public:
         struct Animation
         {
+            std::string TextureIdentifier;
             std::vector<sf::IntRect> Frames;
             float FrameDuration;
             bool Loop = true;
@@ -42,13 +48,14 @@ namespace Engine {
 
             Animation() = default;
 
-            Animation(const std::vector<sf::IntRect>& frames,
+            Animation(const std::string& textureIdentifier, const std::vector<sf::IntRect>& frames,
                 float frameDuration,
                 uint8_t frameWidthPadding = 0,
                 uint8_t frameHeightPadding = 0,
                 bool enableLooping = true
             )
-                : Frames(frames),
+                : TextureIdentifier(textureIdentifier),
+                Frames(frames),
                 FrameDuration(frameDuration),
                 FrameWidthPadding(frameWidthPadding),
                 FrameHeightPadding(frameHeightPadding),
@@ -56,10 +63,10 @@ namespace Engine {
             {}
         };
 
-        std::unordered_map<std::string, Animation> Animations;
+        std::unordered_map<int, Animation> Animations;
         SpriteComponent* Sprite = nullptr;
     private:
-        std::string m_CurrentAnimation;
+        int m_CurrentAnimation = -1;
         float m_ElapsedTime;
         unsigned int m_CurrentFrame;
     };

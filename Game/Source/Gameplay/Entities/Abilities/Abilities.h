@@ -2,4 +2,4 @@
 
 // Single header file for all gameplay abilities
 
-#include "Abilities/Fireball.h"
+#include "Gameplay/Entities/Abilities/Fireball.h"

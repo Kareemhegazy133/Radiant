@@ -5,7 +5,7 @@
 #include "Menus/CharacterInfoMenu.h"
 #include "Menus/PauseMenu.h"
 
-#include "Gameplay/Entities/Player.h"
+#include "Gameplay/Entities/Characters/Player.h"
 
 using namespace Engine;
 

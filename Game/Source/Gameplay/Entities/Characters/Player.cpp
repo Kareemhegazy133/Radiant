@@ -1,6 +1,7 @@
 #include "Player.h"
 #include "Gameplay/Attributes.h"
 #include "Gameplay/Entities/Abilities/Abilities.h"
+#include "Gameplay/Entities/AnimationStates.h"
 
 using namespace Engine;
 
@@ -12,9 +13,27 @@ Player::Player()
     m_FrameWidthPadding = 60;
     m_FrameHeightPadding = 40;
 
-	SetupAnimation("PlayerIdle", 18, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.05f, true);
-    SetupAnimation("PlayerWalk", 24, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.05f, true);
-	animation.SetAnimation("PlayerWalk");
+	SetupAnimation(CharacterAnimationState::Idle,
+        "PlayerIdle", 
+        18, 
+        m_FrameWidth, 
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.05f,
+        true
+    );
+    SetupAnimation(CharacterAnimationState::Walk,
+        "PlayerWalk",
+        24,
+        m_FrameWidth,
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.05f,
+        true
+    );
+	animation.SetAnimation(CharacterAnimationState::Idle);
 
     rb2d.OnCollisionBegin = BIND_MEMBER_FUNCTION(Player::OnCollisionBegin, this);
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Player::OnCollisionEnd, this);

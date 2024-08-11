@@ -24,7 +24,7 @@ public:
 		TextureManager::LoadTexture("PlayerIdle", "Assets/Player/Reaper/ReaperIdle.png");
 		TextureManager::LoadTexture("PlayerWalk", "Assets/Player/Reaper/ReaperWalk.png");
 		TextureManager::LoadTexture("PlayerIcon", "Assets/Player/Reaper/ReaperIcon.png");
-		TextureManager::LoadTexture("Fireball", "Assets/Abilities/Fireball.png");
+		TextureManager::LoadTexture("FireballActive", "Assets/Abilities/Fireball.png");
 		TextureManager::LoadTexture("Platform", "Assets/Platform.png");
 
 		TextureManager::LoadTexture("LargeButton", "Assets/UI/Buttons/LargeButton.png");

@@ -2,6 +2,8 @@
 
 #include "Levels/GameLevel.h"
 
+#include "Gameplay/Entities/AnimationStates.h"
+
 using namespace Engine;
 
 Fireball::Fireball()
@@ -17,8 +19,17 @@ Fireball::Fireball()
     ability.Cooldown = 4.f;
     ability.LastActivatedTime = -ability.Cooldown;
 
-    SetupAnimation("Fireball", 41, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.025f, false);
-    animation.SetAnimation("Fireball");
+    SetupAnimation(AbilityAnimationState::Active,
+        "FireballActive",
+        41,
+        m_FrameWidth,
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.025f,
+        false
+    );
+    animation.SetAnimation(AbilityAnimationState::Active);
 
     rb2d.OnCollisionBegin = BIND_MEMBER_FUNCTION(Fireball::OnCollisionBegin, this);
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Fireball::OnCollisionEnd, this);

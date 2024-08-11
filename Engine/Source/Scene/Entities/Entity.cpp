@@ -22,7 +22,8 @@ namespace Engine {
 
 	}
 
-	void Entity::SetupAnimation(const std::string& animationName, int frameCount, int frameWidth, int frameHeight,
+	template<typename T>
+	void Entity::SetupAnimation(T state, const std::string& textureIdentifier, int frameCount, int frameWidth, int frameHeight,
 		int frameWidthPadding, int frameHeightPadding, float frameDuration, bool enableLooping)
 	{
 		std::vector<sf::IntRect> frames;
@@ -37,7 +38,11 @@ namespace Engine {
 		}
 
 		auto& animationComponent = GetComponent<AnimationComponent>();
-		animationComponent.AddAnimation(animationName, frames, frameWidthPadding, frameHeightPadding, frameDuration, enableLooping);
+		animationComponent.AddAnimation(state, textureIdentifier, frames, frameWidthPadding, frameHeightPadding, frameDuration, enableLooping);
 
 	}
+
+	// Explicit template instantiation
+	template void Entity::SetupAnimation<CharacterAnimationState>(CharacterAnimationState, const std::string&, int, int, int, int, int, float, bool);
+	template void Entity::SetupAnimation<AbilityAnimationState>(AbilityAnimationState, const std::string&, int, int, int, int, int, float, bool);
 }

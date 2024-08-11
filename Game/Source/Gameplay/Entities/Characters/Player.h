@@ -8,7 +8,6 @@ class Player : public Character
 {
 
 public:
-
     Player();
     ~Player();
 
@@ -21,6 +20,5 @@ public:
     void OnCollisionEnd(Entity& other) override;
 
 private:
-
     Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
 };

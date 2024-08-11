@@ -2,6 +2,9 @@
 
 #include "Scene/GameObject.h"
 
+enum class CharacterAnimationState;
+enum class AbilityAnimationState;
+
 namespace Engine {
 
 	class Entity : public GameObject
@@ -17,7 +20,8 @@ namespace Engine {
 		virtual void OnCollisionBegin(Entity& other);
 		virtual void OnCollisionEnd(Entity& other);
 
-		void SetupAnimation(const std::string& animationName, int frameCount, int frameWidth, int frameHeight,
+		template<typename T>
+		void SetupAnimation(T state, const std::string& textureIdentifier, int frameCount, int frameWidth, int frameHeight,
 			int frameWidthPadding, int frameHeightPadding, float frameDuration, bool enableLooping);
 
 	protected:

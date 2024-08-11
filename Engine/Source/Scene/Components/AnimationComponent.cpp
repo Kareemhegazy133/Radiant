@@ -9,7 +9,9 @@ namespace Engine {
     {
     }
 
-    void AnimationComponent::AddAnimation(const std::string& name,
+    template<typename T>
+    void AnimationComponent::AddAnimation(T state,
+        const std::string& textureIdentifier,
         const std::vector<sf::IntRect>& frames,
         uint8_t frameWidthPadding,
         uint8_t frameHeightPadding,
@@ -17,28 +19,33 @@ namespace Engine {
         bool enableLooping
     )
     {
-        Animations[name] = Animation(frames, frameDuration, frameWidthPadding, frameHeightPadding, enableLooping);
+        ENGINE_ASSERT(std::is_enum<T>::value, "T must be an enum type");
+
+        int stateKey = static_cast<int>(state);
+        Animations[stateKey] = Animation(textureIdentifier, frames, frameDuration, frameWidthPadding, frameHeightPadding, enableLooping);
     }
 
-    void AnimationComponent::SetAnimation(const std::string& name)
+    template<typename T>
+    void AnimationComponent::SetAnimation(T state)
     {
-        if (Animations.find(name) != Animations.end())
-        {
-            m_CurrentAnimation = name;
+        ENGINE_ASSERT(std::is_enum<T>::value, "T must be an enum type");
+
+        int stateKey = static_cast<int>(state);
+        if (Animations.find(stateKey) != Animations.end()) {
+            m_CurrentAnimation = stateKey;
             m_CurrentFrame = 0;
             m_ElapsedTime = 0.0f;
-            Sprite->SetTextureIdentifier(name);
+            Sprite->SetTextureIdentifier(Animations[m_CurrentAnimation].TextureIdentifier);
         }
-        else
-        {
-            // Handle the error case where the animation name is not found
-            ENGINE_ASSERT("Animation named: {0} is not found!", name);
+        else {
+            ENGINE_ASSERT("Animation state not found!");
         }
     }
 
     void AnimationComponent::Update(Timestep ts)
     {
-        if (m_CurrentAnimation.empty()) return;
+        // No animation
+        if (m_CurrentAnimation == -1) return;
 
         m_ElapsedTime += ts;
         const Animation& animation = Animations[m_CurrentAnimation];
@@ -57,4 +64,28 @@ namespace Engine {
     {
         return Animations.at(m_CurrentAnimation).Frames[m_CurrentFrame];
     }
+
+    // Explicit template instantiation
+    template void AnimationComponent::AddAnimation<CharacterAnimationState>(
+        CharacterAnimationState,
+        const std::string&,
+        const std::vector<sf::IntRect>&,
+        uint8_t,
+        uint8_t,
+        float,
+        bool
+    );
+
+    template void AnimationComponent::AddAnimation<AbilityAnimationState>(
+        AbilityAnimationState,
+        const std::string&,
+        const std::vector<sf::IntRect>&,
+        uint8_t,
+        uint8_t,
+        float,
+        bool
+    );
+
+    template void AnimationComponent::SetAnimation<CharacterAnimationState>(CharacterAnimationState);
+    template void AnimationComponent::SetAnimation<AbilityAnimationState>(AbilityAnimationState);
 }
