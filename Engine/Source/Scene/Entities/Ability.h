@@ -7,11 +7,14 @@ namespace Engine {
 	class Ability : public Entity
 	{
 	public:
-		Ability(const std::string& entityName, const std::string& textureIdentifier);
+		Ability(const std::string& entityName);
 		virtual ~Ability();
 
 		virtual void Activate(Entity& caster) = 0;
 		virtual void Deactivate() = 0;
+
+		virtual void CreatePhysicsBoxCollider();
+		virtual void DestroyPhysicsBoxCollider();
 
 		bool OnCooldown() const;
 
@@ -24,7 +27,7 @@ namespace Engine {
 		MetadataComponent& metadata = GetComponent<MetadataComponent>();
 		TransformComponent& transform = GetComponent<TransformComponent>();
 		AbilityComponent& ability = AddComponent<AbilityComponent>();
-		SpriteComponent& sprite;
+		SpriteComponent& sprite = AddComponent<SpriteComponent>();
 		AnimationComponent& animation = AddComponent<AnimationComponent>();
 	};
 }

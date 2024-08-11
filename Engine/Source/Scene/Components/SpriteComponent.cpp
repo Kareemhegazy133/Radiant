@@ -7,20 +7,13 @@
 namespace Engine {
 
     SpriteComponent::SpriteComponent()
-        : Animation(nullptr)
     {
     }
 
-    SpriteComponent::SpriteComponent(const std::string& textureIdentifier, AnimationComponent* animation)
-        : Sprite(), TextureIdentifier(textureIdentifier), Animation(animation)
+    SpriteComponent::SpriteComponent(const std::string& textureIdentifier)
+        : Sprite(), TextureIdentifier(textureIdentifier)
     {
-        // Set the texture using the TextureManager
         Sprite.setTexture(TextureManager::GetTexture(textureIdentifier));
-
-        // If there's an animation, set the initial texture rectangle
-        if (Animation) {
-            Sprite.setTextureRect(Animation->GetCurrentFrame());
-        }
     }
 
     void SpriteComponent::SetTextureIdentifier(const std::string& textureIdentifier)
@@ -36,14 +29,7 @@ namespace Engine {
 
     sf::Vector2f SpriteComponent::GetTextureSize() const
     {
-        sf::Vector2i size;
-        if (Animation) {
-            size = Animation->GetCurrentFrameSize();
-        }
-        else 
-        {
-            size = Sprite.getTextureRect().getSize();
-        }
+        sf::Vector2i size = Sprite.getTextureRect().getSize();
         return sf::Vector2f(static_cast<float>(size.x), static_cast<float>(size.y));
     }
 
@@ -82,12 +68,4 @@ namespace Engine {
         Sprite.setScale(factorX, factorY);
     }
 
-    void SpriteComponent::Update(Timestep ts)
-    {
-        if (Animation)
-        {
-            Animation->Update(ts);
-            Sprite.setTextureRect(Animation->GetCurrentFrame());
-        }
-    }
 }

@@ -3,7 +3,6 @@
 #include "SFML/Graphics/Sprite.hpp"
 
 #include "Scene/Components/Component.h"
-#include "Scene/Components/AnimationComponent.h"
 
 namespace Engine {
 
@@ -12,7 +11,7 @@ namespace Engine {
     public:
 
         SpriteComponent();
-        SpriteComponent(const std::string& textureIdentifier, AnimationComponent* animation = nullptr);
+        SpriteComponent(const std::string& textureIdentifier);
 
         // Function to set the texture identifier and update the texture of the sprite
         void SetTextureIdentifier(const std::string& textureIdentifier);
@@ -33,15 +32,10 @@ namespace Engine {
         void SetScale(const sf::Vector2f& scale);
         void SetScale(float factorX, float factorY);
 
-        // Update the sprite's animation
-        void Update(Timestep ts);
-
         operator const sf::Sprite& () { return Sprite; }
         operator sf::Sprite& () { return Sprite; }
 
-    public:
-        // Pointer to an AnimationComponent (optional)
-        AnimationComponent* Animation;
+
     private:
         sf::Sprite Sprite;
         // Identifier for the texture in the TextureManager

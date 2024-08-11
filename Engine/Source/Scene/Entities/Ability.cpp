@@ -6,8 +6,8 @@
 
 namespace Engine {
 
-    Ability::Ability(const std::string& entityName, const std::string& textureIdentifier)
-        : Entity(Scene::GetScene().CreateGameObject(entityName), &Scene::GetScene()), sprite(AddComponent<SpriteComponent>(textureIdentifier))
+    Ability::Ability(const std::string& entityName)
+        : Entity(Scene::GetScene().CreateGameObject(entityName), &Scene::GetScene())
     {
 
     }
@@ -15,6 +15,16 @@ namespace Engine {
     Ability::~Ability()
     {
 
+    }
+
+    void Ability::CreatePhysicsBoxCollider()
+    {
+        AddComponent<BoxCollider2DComponent>();
+    }
+
+    void Ability::DestroyPhysicsBoxCollider()
+    {
+        RemoveComponent<BoxCollider2DComponent>();
     }
 
     bool Ability::OnCooldown() const

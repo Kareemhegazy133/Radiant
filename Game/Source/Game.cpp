@@ -21,7 +21,8 @@ public:
 	{
 		FontManager::LoadFont("Euljiro", "Assets/Font/Euljiro.ttf");
 
-		TextureManager::LoadTexture("Player", "Assets/Player/Reaper/ReaperIdle.png");
+		TextureManager::LoadTexture("PlayerIdle", "Assets/Player/Reaper/ReaperIdle.png");
+		TextureManager::LoadTexture("PlayerWalk", "Assets/Player/Reaper/ReaperWalk.png");
 		TextureManager::LoadTexture("PlayerIcon", "Assets/Player/Reaper/ReaperIcon.png");
 		TextureManager::LoadTexture("Fireball", "Assets/Abilities/Fireball.png");
 		TextureManager::LoadTexture("Platform", "Assets/Platform.png");

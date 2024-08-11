@@ -3,6 +3,7 @@
 #include "Core/Timestep.h"
 
 #include "CollisionListener.h"
+#include "DebugDraw.h"
 
 #include "Scene/Components.h"
 
@@ -22,8 +23,10 @@ namespace Engine {
 		void OnUpdate(Timestep ts);
 
 		void CreatePhysicsBody(GameObject gameObject, Rigidbody2DComponent& component);
+
 		void CreateBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component);
 		void UpdateBoxColliderFixture(BoxCollider2DComponent& bc2d, TransformComponent& transform, SpriteComponent& sprite);
+		void DestroyBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component);
 
 		inline static Physics2D& Get() { return *s_Instance; }
 
@@ -32,5 +35,8 @@ namespace Engine {
 		b2World* m_PhysicsWorld;
 
 		CollisionListener m_CollisionListener;
+
+		// For debugging purposes
+		DebugDraw m_DebugDraw;
 	};
 }

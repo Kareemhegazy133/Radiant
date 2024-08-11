@@ -4,8 +4,8 @@
 
 namespace Engine {
 
-    Character::Character(const std::string& entityName, const std::string& textureIdentifier, const sf::Vector2f& position)
-        : Entity(Scene::GetScene().CreateGameObject(entityName), &Scene::GetScene()), sprite(AddComponent<SpriteComponent>(textureIdentifier))
+    Character::Character(const std::string& entityName, const sf::Vector2f& position)
+        : Entity(Scene::GetScene().CreateGameObject(entityName), &Scene::GetScene())
     {
         transform.SetPosition(position);
     }

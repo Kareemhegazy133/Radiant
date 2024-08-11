@@ -7,7 +7,7 @@ namespace Engine {
     class Character : public Entity
     {
     public:
-        Character(const std::string& entityName, const std::string& textureIdentifier, const sf::Vector2f& position);
+        Character(const std::string& entityName, const sf::Vector2f& position);
         virtual ~Character();
 
         virtual void OnUpdate(Timestep ts) = 0;
@@ -19,7 +19,7 @@ namespace Engine {
         MetadataComponent& metadata = GetComponent<MetadataComponent>();
         TransformComponent& transform = GetComponent<TransformComponent>();
         CharacterComponent& character = AddComponent<CharacterComponent>();
-        SpriteComponent& sprite;
+        SpriteComponent& sprite = AddComponent<SpriteComponent>();
         AnimationComponent& animation = AddComponent<AnimationComponent>();
 
         AttributesComponent& attributes = AddComponent<AttributesComponent>();

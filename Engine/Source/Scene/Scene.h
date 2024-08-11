@@ -31,6 +31,9 @@ namespace Engine {
 		template<typename T>
 		void OnComponentAdded(GameObject gameObject, T& component);
 
+		template<typename T>
+		void OnComponentRemoved(GameObject gameObject, T& component);
+
 	private:
 		static Scene* s_Instance;
 		entt::registry m_Registry;

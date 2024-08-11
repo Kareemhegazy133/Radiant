@@ -561,30 +561,35 @@ void CharacterInfoMenu::OnConfirmAttributePointsButtonClicked()
 	if (m_HealthPointsToAdd > 0)
 	{
 		m_playerAttributes.UpgradeAttribute(Attributes::Health, m_HealthPointsToAdd);
+		m_playerStats.Level += m_HealthPointsToAdd;
 		m_HealthPointsToAdd = 0;
 	}
 
 	if (m_StaminaPointsToAdd > 0)
 	{
 		m_playerAttributes.UpgradeAttribute(Attributes::Stamina, m_StaminaPointsToAdd);
+		m_playerStats.Level += m_StaminaPointsToAdd;
 		m_StaminaPointsToAdd = 0;
 	}
 
 	if(m_StrengthPointsToAdd > 0)
 	{
 		m_playerAttributes.UpgradeAttribute(Attributes::Strength, m_StrengthPointsToAdd);
+		m_playerStats.Level += m_StrengthPointsToAdd;
 		m_StrengthPointsToAdd = 0;
 	}
 
 	if (m_DefensePointsToAdd > 0)
 	{
 		m_playerAttributes.UpgradeAttribute(Attributes::Defense, m_DefensePointsToAdd);
+		m_playerStats.Level += m_DefensePointsToAdd;
 		m_DefensePointsToAdd = 0;
 	}
 	
 	if (m_MagicPointsToAdd > 0)
 	{
 		m_playerAttributes.UpgradeAttribute(Attributes::Magic, m_MagicPointsToAdd);
+		m_playerStats.Level += m_MagicPointsToAdd;
 		m_MagicPointsToAdd = 0;
 	}
 
@@ -594,13 +599,6 @@ void CharacterInfoMenu::OnConfirmAttributePointsButtonClicked()
 void CharacterInfoMenu::OnCloseButtonClicked()
 {
 	GAME_INFO("Close Button Clicked!");
-
-	m_AttributePointsToSpend = 0;
-	m_HealthPointsToAdd = 0;
-	m_StaminaPointsToAdd = 0;
-	m_StrengthPointsToAdd = 0;
-	m_DefensePointsToAdd = 0;
-	m_MagicPointsToAdd = 0;
 
 	SetVisibility(false);
 }

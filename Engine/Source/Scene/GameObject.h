@@ -25,6 +25,14 @@ namespace Engine {
 			return component;
 		}
 
+		template<typename T, typename... Args>
+		T& AddOrReplaceComponent(Args&&... args)
+		{
+			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_GameObjectHandle, std::forward<Args>(args)...);
+			m_Scene->OnComponentAdded<T>(*this, component);
+			return component;
+		}
+
 		template<typename T>
 		T& GetComponent()
 		{
@@ -47,7 +55,8 @@ namespace Engine {
 		template<typename T>
 		void RemoveComponent()
 		{
-			ENGINE_ASSERT(HasComponent<T>(), "GameObject does not have component!");
+			T& component = GetComponent<T>();
+			m_Scene->OnComponentRemoved<T>(*this, component);
 			m_Scene->m_Registry.remove<T>(m_GameObjectHandle);
 		}
 

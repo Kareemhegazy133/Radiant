@@ -1,28 +1,27 @@
 #include "Fireball.h"
 
+#include "Levels/GameLevel.h"
+
 using namespace Engine;
 
 Fireball::Fireball()
-    : Ability("Fireball", "Fireball")
+    : Ability("Fireball")
 {
     m_FrameWidth = 128;
     m_FrameHeight = 128;
-    m_FrameWidthPadding = 0;
-    m_FrameHeightPadding = 0;
-    m_FrameCount = 41;
+    m_FrameWidthPadding = 20;
+    m_FrameHeightPadding = 30;
 
     ability.Speed = 200.f;
     ability.MaxDuration = 2.f;
     ability.Cooldown = 4.f;
     ability.LastActivatedTime = -ability.Cooldown;
 
-    SetupAnimation("Fireball", m_FrameCount, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.025f, false);
+    SetupAnimation("Fireball", 41, m_FrameWidth, m_FrameHeight, m_FrameWidthPadding, m_FrameHeightPadding, 0.025f, false);
     animation.SetAnimation("Fireball");
 
     rb2d.OnCollisionBegin = BIND_MEMBER_FUNCTION(Fireball::OnCollisionBegin, this);
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Fireball::OnCollisionEnd, this);
-
-    AddComponent<BoxCollider2DComponent>();
 
     metadata.IsActive = false;
     metadata.OnUpdate = BIND_MEMBER_FUNCTION(Fireball::OnUpdate, this);
@@ -45,18 +44,22 @@ void Fireball::Activate(Entity& caster)
     );
     
     metadata.IsActive = true;
+    CreatePhysicsBoxCollider();
     GAME_INFO("Fireball Activated!");
 }
 
 void Fireball::Deactivate()
 {
     metadata.IsActive = false;
+    DestroyPhysicsBoxCollider();
     m_ActiveDuration = 0.0f;
     GAME_INFO("Fireball Deactivated!");
 }
 
 void Fireball::OnUpdate(Timestep ts)
 {
+    animation.Update(ts);
+
     // Update timer
     m_ActiveDuration += ts;
     if (m_ActiveDuration >= ability.MaxDuration) {

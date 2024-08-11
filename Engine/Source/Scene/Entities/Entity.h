@@ -21,7 +21,6 @@ namespace Engine {
 			int frameWidthPadding, int frameHeightPadding, float frameDuration, bool enableLooping);
 
 	protected:
-		uint8_t m_FrameCount;
 		uint16_t m_FrameWidth;
 		uint16_t m_FrameHeight;
 		uint8_t m_FrameWidthPadding = 0;

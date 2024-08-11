@@ -51,6 +51,11 @@ namespace Engine {
 		//static_assert(false);
 	}
 
+	template<typename T>
+	void Scene::OnComponentRemoved(GameObject gameObject, T& component)
+	{
+	}
+
 	template<>
 	void Scene::OnComponentAdded<MetadataComponent>(GameObject gameObject, MetadataComponent& component)
 	{
@@ -69,8 +74,11 @@ namespace Engine {
 	template<>
 	void Scene::OnComponentAdded<AnimationComponent>(GameObject gameObject, AnimationComponent& component)
 	{
-		auto& spriteComponent = gameObject.GetComponent<SpriteComponent>();
-		spriteComponent.Animation = &component;
+		if (!gameObject.HasComponent<SpriteComponent>())
+		{
+			gameObject.AddComponent<SpriteComponent>();
+		}
+		component.Sprite = &gameObject.GetComponent<SpriteComponent>();
 	}
 
 	template<>
@@ -83,6 +91,12 @@ namespace Engine {
 	void Scene::OnComponentAdded<BoxCollider2DComponent>(GameObject gameObject, BoxCollider2DComponent& component)
 	{
 		Physics2D::Get().CreateBoxColliderFixture(gameObject, component);
+	}
+
+	template<>
+	void Scene::OnComponentRemoved<BoxCollider2DComponent>(GameObject gameObject, BoxCollider2DComponent& component)
+	{
+		Physics2D::Get().DestroyBoxColliderFixture(gameObject, component);
 	}
 
 	template<>

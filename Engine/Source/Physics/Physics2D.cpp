@@ -20,6 +20,10 @@ namespace Engine {
 
 		m_PhysicsWorld->SetContactListener(&m_CollisionListener);
 		m_PhysicsWorld->SetContactFilter(&m_CollisionListener);
+
+		// For debugging purposes
+		m_PhysicsWorld->SetDebugDraw(&m_DebugDraw);
+		m_DebugDraw.SetFlags(b2Draw::e_aabbBit);
 	}
 
 	Physics2D::~Physics2D()
@@ -33,6 +37,8 @@ namespace Engine {
 		const int32_t velocityIterations = 6;
 		const int32_t positionIterations = 3;
 		m_PhysicsWorld->Step(ts, velocityIterations, positionIterations);
+		// For debugging purposes
+		m_PhysicsWorld->DebugDraw();
 	}
 
 	static b2BodyType Rigidbody2DTypeToBox2DBody(Rigidbody2DComponent::BodyType bodyType)
@@ -73,17 +79,9 @@ namespace Engine {
 		b2PolygonShape boxShape;
 		// Offsetting the Center because SFML to Box2d Coordinate System's Y Axis is Mirrored
 		boxShape.SetAsBox(
-			sprite.GetTextureSize().x * transform.GetScale().x * 0.5f,
-			sprite.GetTextureSize().y * transform.GetScale().y * 0.5f,
+			sprite.GetTextureSize().x * 0.5f,
+			sprite.GetTextureSize().y * 0.5f,
 			b2Vec2(sprite.GetTextureSize().x * 0.5f, sprite.GetTextureSize().y * 0.5f), DEG_TO_RAD(transform.GetRotation()));
-
-		/*ENGINE_INFO("Sprite x: {0}, y: {1}, transform x: {2}, y: {3}, Rect x: {4}, y: {5}",
-			sprite.GetTextureSize().x,
-			sprite.GetTextureSize().y,
-			transform.GetScale().x,
-			transform.GetScale().y,
-			sprite.GetTextureSize().x * transform.GetScale().x * 0.5f,
-			sprite.GetTextureSize().y * transform.GetScale().y * 0.5f);*/
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &boxShape;
@@ -99,17 +97,17 @@ namespace Engine {
 
 	void Physics2D::UpdateBoxColliderFixture(BoxCollider2DComponent& bc2d, TransformComponent& transform, SpriteComponent& sprite)
 	{
+		if (!bc2d.RuntimeFixture) return;
+
 		b2Fixture* fixture = static_cast<b2Fixture*>(bc2d.RuntimeFixture);
 
 		// Create a new shape
 		b2PolygonShape boxShape;
 		// Offsetting the Center because SFML to Box2d Coordinate System's Y Axis is Mirrored
 		boxShape.SetAsBox(
-			sprite.GetTextureSize().x * transform.GetScale().x * 0.5f,
-			sprite.GetTextureSize().y * transform.GetScale().y * 0.5f,
+			sprite.GetTextureSize().x * 0.5f,
+			sprite.GetTextureSize().y * 0.5f,
 			b2Vec2(sprite.GetTextureSize().x * 0.5f, sprite.GetTextureSize().y * 0.5f), DEG_TO_RAD(transform.GetRotation()));
-
-		//ENGINE_INFO("Centroid x: {0}, y: {1}", boxShape.m_centroid.x, boxShape.m_centroid.y);
 
 		// Create a new fixture definition
 		b2FixtureDef fixtureDef;
@@ -124,4 +122,13 @@ namespace Engine {
 		rb2d->DestroyFixture(fixture);
 		bc2d.RuntimeFixture = rb2d->CreateFixture(&fixtureDef);
 	}
+
+	void Physics2D::DestroyBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component)
+	{
+		b2Fixture* fixture = static_cast<b2Fixture*>(component.RuntimeFixture);
+		b2Body* rb2d = fixture->GetBody();
+		rb2d->DestroyFixture(fixture);
+		component.RuntimeFixture = nullptr;
+	}
+
 }
