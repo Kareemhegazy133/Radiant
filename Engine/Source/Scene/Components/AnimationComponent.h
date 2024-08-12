@@ -8,8 +8,8 @@
 
 #include "Enginepch.h"
 
-enum class CharacterAnimationState;
-enum class AbilityAnimationState;
+enum class CharacterState;
+enum class AbilityState;
 
 namespace Engine {
 

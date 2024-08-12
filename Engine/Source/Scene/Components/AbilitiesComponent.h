@@ -19,7 +19,7 @@ namespace Engine {
             m_Abilities.emplace_back(CreateRef<T>(std::forward<Args>(args)...));
         }
 
-        void ActivateAbility(size_t index, Entity& caster);
+        bool ActivateAbility(size_t index, Entity& caster);
 
         const std::vector<Ref<Ability>>& GetAbilities() const;
 

@@ -1,13 +1,14 @@
 #pragma once
 
-enum class CharacterAnimationState {
+enum class CharacterState {
     Idle = 0,
     Walk,
     Run,
     Jump,
+    Throw,
     Attack
 };
 
-enum class AbilityAnimationState {
+enum class AbilityState {
     Active = 0
 };

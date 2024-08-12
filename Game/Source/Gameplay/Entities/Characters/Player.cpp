@@ -1,7 +1,6 @@
 #include "Player.h"
 #include "Gameplay/Attributes.h"
 #include "Gameplay/Entities/Abilities/Abilities.h"
-#include "Gameplay/Entities/AnimationStates.h"
 
 using namespace Engine;
 
@@ -13,27 +12,8 @@ Player::Player()
     m_FrameWidthPadding = 60;
     m_FrameHeightPadding = 40;
 
-	SetupAnimation(CharacterAnimationState::Idle,
-        "PlayerIdle", 
-        18, 
-        m_FrameWidth, 
-        m_FrameHeight,
-        m_FrameWidthPadding,
-        m_FrameHeightPadding,
-        0.05f,
-        true
-    );
-    SetupAnimation(CharacterAnimationState::Walk,
-        "PlayerWalk",
-        24,
-        m_FrameWidth,
-        m_FrameHeight,
-        m_FrameWidthPadding,
-        m_FrameHeightPadding,
-        0.05f,
-        true
-    );
-	animation.SetAnimation(CharacterAnimationState::Idle);
+    SetupAnimations();
+    SetState(CharacterState::Idle);
 
     rb2d.OnCollisionBegin = BIND_MEMBER_FUNCTION(Player::OnCollisionBegin, this);
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Player::OnCollisionEnd, this);
@@ -66,6 +46,42 @@ Player::~Player()
 {
 }
 
+void Player::SetupAnimations()
+{
+    SetupAnimation(CharacterState::Idle,
+        "PlayerIdle",
+        18,
+        m_FrameWidth,
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.025f,
+        true
+    );
+
+    SetupAnimation(CharacterState::Walk,
+        "PlayerWalk",
+        24,
+        m_FrameWidth,
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.025f,
+        true
+    );
+
+    SetupAnimation(CharacterState::Throw,
+        "PlayerThrow",
+        12,
+        m_FrameWidth,
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.1f,
+        false
+    );
+}
+
 void Player::OnUpdate(Timestep ts)
 {
     animation.Update(ts);
@@ -82,6 +98,14 @@ void Player::OnUpdate(Timestep ts)
     if (Input::IsKeyPressed(Key::D))
         velocity.x += character.Speed;
 
+    if (velocity.x != 0.f)
+    {
+        SetState(CharacterState::Walk);
+    }
+    else {
+        SetState(CharacterState::Idle);
+    }
+
     transform.SetPosition(
         transform.GetPosition().x + velocity.x * ts,
         transform.GetPosition().y + velocity.y * ts
@@ -89,7 +113,45 @@ void Player::OnUpdate(Timestep ts)
 
     // TODO: Add Keybinds functionality
     if (Input::IsKeyPressed(Key::Num1))
-        abilities.ActivateAbility(0, *this);
+    {
+        bool casted = abilities.ActivateAbility(0, *this);
+        if (casted)
+        {
+            // TODO: Stay on this state till throw animation is done
+            SetState(CharacterState::Throw);
+        }
+    }
+}
+
+void Player::SetState(CharacterState newState)
+{
+    if (newState == m_CurrentState) return;
+
+    OnExitState(m_CurrentState);
+
+    m_CurrentState = newState;
+
+    OnEnterState(m_CurrentState);
+}
+
+void Player::OnEnterState(CharacterState state)
+{
+    switch (state)
+    {
+    case CharacterState::Idle:
+        animation.SetAnimation(CharacterState::Idle);
+        break;
+    case CharacterState::Walk:
+        animation.SetAnimation(CharacterState::Walk);
+        break;
+    case CharacterState::Throw:
+        animation.SetAnimation(CharacterState::Throw);
+        break;
+    }
+}
+
+void Player::OnExitState(CharacterState state)
+{
 }
 
 void Player::OnCollisionBegin(Entity& other)

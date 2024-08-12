@@ -10,19 +10,21 @@ class TheReaper : public Engine::GameApplication
 {
 
 public:
+	// TODO Support Multiple Resolutions
 	TheReaper(GameApplicationCommandLineArgs args)
 		: GameApplication("The Reaper", 1280, 720, args)
 	{
-		InitializeSystems();
+		LoadAssets();
 		PushLayer(new GameLayer());
 	}
 
-	void InitializeSystems()
+	void LoadAssets()
 	{
 		FontManager::LoadFont("Euljiro", "Assets/Font/Euljiro.ttf");
 
 		TextureManager::LoadTexture("PlayerIdle", "Assets/Player/Reaper/ReaperIdle.png");
 		TextureManager::LoadTexture("PlayerWalk", "Assets/Player/Reaper/ReaperWalk.png");
+		TextureManager::LoadTexture("PlayerThrow", "Assets/Player/Reaper/ReaperThrow.png");
 		TextureManager::LoadTexture("PlayerIcon", "Assets/Player/Reaper/ReaperIcon.png");
 		TextureManager::LoadTexture("FireballActive", "Assets/Abilities/Fireball.png");
 		TextureManager::LoadTexture("Platform", "Assets/Platform.png");

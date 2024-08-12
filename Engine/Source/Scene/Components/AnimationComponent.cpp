@@ -66,8 +66,8 @@ namespace Engine {
     }
 
     // Explicit template instantiation
-    template void AnimationComponent::AddAnimation<CharacterAnimationState>(
-        CharacterAnimationState,
+    template void AnimationComponent::AddAnimation<CharacterState>(
+        CharacterState,
         const std::string&,
         const std::vector<sf::IntRect>&,
         uint8_t,
@@ -76,8 +76,8 @@ namespace Engine {
         bool
     );
 
-    template void AnimationComponent::AddAnimation<AbilityAnimationState>(
-        AbilityAnimationState,
+    template void AnimationComponent::AddAnimation<AbilityState>(
+        AbilityState,
         const std::string&,
         const std::vector<sf::IntRect>&,
         uint8_t,
@@ -86,6 +86,6 @@ namespace Engine {
         bool
     );
 
-    template void AnimationComponent::SetAnimation<CharacterAnimationState>(CharacterAnimationState);
-    template void AnimationComponent::SetAnimation<AbilityAnimationState>(AbilityAnimationState);
+    template void AnimationComponent::SetAnimation<CharacterState>(CharacterState);
+    template void AnimationComponent::SetAnimation<AbilityState>(AbilityState);
 }
