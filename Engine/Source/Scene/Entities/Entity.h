@@ -2,7 +2,7 @@
 
 #include "Scene/GameObject.h"
 
-enum class CharacterState;
+enum class PlayerState;
 enum class AbilityState;
 
 namespace Engine {

@@ -1,14 +1,14 @@
 #pragma once
 
+#include "Enginepch.h"
+
 #include "SFML/Graphics/Rect.hpp"
 
 #include "Core/Timestep.h"
 #include "Scene/Components/Component.h"
 #include "Scene/Components/SpriteComponent.h"
 
-#include "Enginepch.h"
-
-enum class CharacterState;
+enum class PlayerState;
 enum class AbilityState;
 
 namespace Engine {
@@ -33,6 +33,12 @@ namespace Engine {
 
         // Update the animation frame based on the elapsed time
         void Update(Timestep ts);
+
+        // Reset the animation (Mainly for abilities' use)
+        void ResetAnimation();
+
+        // Check if the current animation has finished
+        bool IsFinished() const;
 
         const sf::IntRect& GetCurrentFrame() const;
 

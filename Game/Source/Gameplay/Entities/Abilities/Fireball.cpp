@@ -2,8 +2,6 @@
 
 #include "Levels/GameLevel.h"
 
-#include "Gameplay/Entities/EntityStates.h"
-
 using namespace Engine;
 
 Fireball::Fireball()
@@ -26,7 +24,7 @@ Fireball::Fireball()
         m_FrameHeight,
         m_FrameWidthPadding,
         m_FrameHeightPadding,
-        0.025f,
+        0.045f,
         false
     );
     animation.SetAnimation(AbilityState::Active);
@@ -64,6 +62,7 @@ void Fireball::Deactivate()
     metadata.IsActive = false;
     DestroyPhysicsBoxCollider();
     m_ActiveDuration = 0.0f;
+    animation.ResetAnimation();
     GAME_INFO("Fireball Deactivated!");
 }
 

@@ -2,23 +2,26 @@
 
 #include <Engine.h>
 
-#include "Gameplay/Entities/EntityStates.h"
-
 using namespace Engine;
+
+enum class PlayerState
+{
+    Idle = 0,
+    Walking,
+    Running,
+    Jumping,
+    Throwing,
+    Attacking
+};
 
 class Player : public Character
 {
-
+    
 public:
     Player();
     ~Player();
     
-    void SetupAnimations();
     void OnUpdate(Timestep ts) override;
-
-    void SetState(CharacterState newState);
-    void OnEnterState(CharacterState state);
-    void OnExitState(CharacterState state);
 
     inline AttributesComponent* GetAttributesComponent() const { return &attributes; }
     inline CharacterComponent* GetCharacterComponent() const { return &character; }
@@ -27,7 +30,10 @@ public:
     void OnCollisionEnd(Entity& other) override;
 
 private:
-    Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
+    void SetupAnimations();
+    void SetupStateMachine();
 
-    CharacterState m_CurrentState;
+private:
+    Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
+    StateMachine m_StateMachine;
 };

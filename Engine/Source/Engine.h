@@ -28,6 +28,8 @@
 #include "Scene/Entities/Character.h"
 #include "Scene/Entities/Ability.h"
 
+#include "AI/StateMachine.h"
+
 #include "UI/UIElement.h"
 #include "UI/Elements.h"
 #include "UI/UIScreen.h"

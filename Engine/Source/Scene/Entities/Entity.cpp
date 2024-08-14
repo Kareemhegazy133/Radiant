@@ -43,6 +43,6 @@ namespace Engine {
 	}
 
 	// Explicit template instantiation
-	template void Entity::SetupAnimation<CharacterState>(CharacterState, const std::string&, int, int, int, int, int, float, bool);
+	template void Entity::SetupAnimation<PlayerState>(PlayerState, const std::string&, int, int, int, int, int, float, bool);
 	template void Entity::SetupAnimation<AbilityState>(AbilityState, const std::string&, int, int, int, int, int, float, bool);
 }

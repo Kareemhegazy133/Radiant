@@ -4,6 +4,11 @@
 
 using namespace Engine;
 
+enum class AbilityState
+{
+    Active = 0
+};
+
 class Fireball : public Ability
 {
 

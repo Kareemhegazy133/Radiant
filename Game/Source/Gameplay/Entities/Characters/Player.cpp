@@ -13,7 +13,7 @@ Player::Player()
     m_FrameHeightPadding = 40;
 
     SetupAnimations();
-    SetState(CharacterState::Idle);
+    SetupStateMachine();
 
     rb2d.OnCollisionBegin = BIND_MEMBER_FUNCTION(Player::OnCollisionBegin, this);
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Player::OnCollisionEnd, this);
@@ -46,42 +46,6 @@ Player::~Player()
 {
 }
 
-void Player::SetupAnimations()
-{
-    SetupAnimation(CharacterState::Idle,
-        "PlayerIdle",
-        18,
-        m_FrameWidth,
-        m_FrameHeight,
-        m_FrameWidthPadding,
-        m_FrameHeightPadding,
-        0.025f,
-        true
-    );
-
-    SetupAnimation(CharacterState::Walk,
-        "PlayerWalk",
-        24,
-        m_FrameWidth,
-        m_FrameHeight,
-        m_FrameWidthPadding,
-        m_FrameHeightPadding,
-        0.025f,
-        true
-    );
-
-    SetupAnimation(CharacterState::Throw,
-        "PlayerThrow",
-        12,
-        m_FrameWidth,
-        m_FrameHeight,
-        m_FrameWidthPadding,
-        m_FrameHeightPadding,
-        0.1f,
-        false
-    );
-}
-
 void Player::OnUpdate(Timestep ts)
 {
     animation.Update(ts);
@@ -100,10 +64,10 @@ void Player::OnUpdate(Timestep ts)
 
     if (velocity.x != 0.f)
     {
-        SetState(CharacterState::Walk);
+        m_StateMachine.SetState(PlayerState::Walking);
     }
     else {
-        SetState(CharacterState::Idle);
+        m_StateMachine.SetState(PlayerState::Idle);
     }
 
     transform.SetPosition(
@@ -118,40 +82,104 @@ void Player::OnUpdate(Timestep ts)
         if (casted)
         {
             // TODO: Stay on this state till throw animation is done
-            SetState(CharacterState::Throw);
+            m_StateMachine.SetState(PlayerState::Throwing);
         }
     }
+
+    m_StateMachine.Update();
 }
 
-void Player::SetState(CharacterState newState)
+void Player::SetupAnimations()
 {
-    if (newState == m_CurrentState) return;
+    SetupAnimation(PlayerState::Idle,
+        "PlayerIdle",
+        18,
+        m_FrameWidth,
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.025f,
+        true
+    );
 
-    OnExitState(m_CurrentState);
+    SetupAnimation(PlayerState::Walking,
+        "PlayerWalk",
+        24,
+        m_FrameWidth,
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.025f,
+        true
+    );
 
-    m_CurrentState = newState;
-
-    OnEnterState(m_CurrentState);
+    SetupAnimation(PlayerState::Throwing,
+        "PlayerThrow",
+        12,
+        m_FrameWidth,
+        m_FrameHeight,
+        m_FrameWidthPadding,
+        m_FrameHeightPadding,
+        0.05f,
+        false
+    );
 }
 
-void Player::OnEnterState(CharacterState state)
+void Player::SetupStateMachine()
 {
-    switch (state)
-    {
-    case CharacterState::Idle:
-        animation.SetAnimation(CharacterState::Idle);
-        break;
-    case CharacterState::Walk:
-        animation.SetAnimation(CharacterState::Walk);
-        break;
-    case CharacterState::Throw:
-        animation.SetAnimation(CharacterState::Throw);
-        break;
-    }
-}
+    m_StateMachine.AddState(PlayerState::Idle,
+        [this]() {
+            // OnEnter Idle State
+            animation.SetAnimation(PlayerState::Idle);
+        },
+        [this]() {
+            // OnUpdate Idle State
+            // You can add Idle-specific logic here
+        },
+        []() {
+            // OnExit Idle State
+        },
+        false
+        );
 
-void Player::OnExitState(CharacterState state)
-{
+    m_StateMachine.AddState(PlayerState::Walking,
+        [this]() {
+            // OnEnter Walking State
+            animation.SetAnimation(PlayerState::Walking);
+        },
+        [this]() {
+            // OnUpdate Walking State
+            // You can add Walking-specific logic here
+        },
+        []() {
+            // OnExit Walking State
+        },
+        false
+        );
+
+    m_StateMachine.AddState(PlayerState::Throwing,
+        [this]() {
+            // OnEnter Throwing State
+            animation.SetAnimation(PlayerState::Throwing);
+        },
+        [this]() {
+            GAME_INFO("Throwing");
+            // OnUpdate Throwing State
+            // Check if the throw animation is done
+            if (animation.IsFinished())
+            {
+                // Transition back to Idle state once the animation is done
+                m_StateMachine.SetLocked(false);
+                m_StateMachine.SetState(PlayerState::Idle);
+            }
+        },
+        []() {
+            // OnExit Throwing State
+        },
+        true
+        );
+
+    m_StateMachine.SetState(PlayerState::Idle); // Start with Idle state
 }
 
 void Player::OnCollisionBegin(Entity& other)
