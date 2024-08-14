@@ -22,5 +22,6 @@ namespace Engine {
         float CurrentStamina = 0.f;
         float Speed;
 
+        sf::Vector2f Direction;
     };
 }

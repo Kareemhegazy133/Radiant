@@ -40,6 +40,8 @@ Player::Player()
     character.CurrentHealth = attributes.GetAttribute(Attributes::Health);
     character.CurrentStamina = attributes.GetAttribute(Attributes::Stamina);
     character.Speed = 200.f;
+
+    character.Direction.x = 1.f;
 }
 
 Player::~Player()
@@ -70,10 +72,12 @@ void Player::OnUpdate(Timestep ts)
         if (velocity.x < 0.f)
         {
             sprite.SetScale(-1.f, 1.f); // Turn left
+            character.Direction.x = -1.f;
         }
         else if (velocity.x > 0.f)
         {
             sprite.SetScale(1.f, 1.f); // Turn right
+            character.Direction.x = 1.f;
         }
     }
     else {
@@ -91,7 +95,6 @@ void Player::OnUpdate(Timestep ts)
         bool casted = abilities.ActivateAbility(0, *this);
         if (casted)
         {
-            // TODO: Stay on this state till throw animation is done
             m_StateMachine.SetState(PlayerState::Throwing);
         }
     }
@@ -173,7 +176,6 @@ void Player::SetupStateMachine()
             animation.SetAnimation(PlayerState::Throwing);
         },
         [this]() {
-            GAME_INFO("Throwing");
             // OnUpdate Throwing State
             // Check if the throw animation is done
             if (animation.IsFinished())

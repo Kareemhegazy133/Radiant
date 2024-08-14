@@ -47,6 +47,13 @@ void Fireball::Activate(Entity& caster)
     ability.Caster = &caster;
     if (metadata.IsActive) return;
 
+    m_Direction = caster.GetComponent<CharacterComponent>().Direction;
+
+    if ((m_SocketOffset.x < 0.f && m_Direction.x > 0.f) || (m_SocketOffset.x > 0.f && m_Direction.x < 0.f))
+    {
+        m_SocketOffset.x *= -1.f;
+    }
+
     auto& casterTransform = caster.GetComponent<TransformComponent>();
     transform.SetPosition(
         casterTransform.GetPosition() + m_SocketOffset
@@ -78,7 +85,10 @@ void Fireball::OnUpdate(Timestep ts)
     }
 
     sf::Vector2f velocity = { 0.0f, 0.0f };
-    velocity.x += ability.Speed;
+    velocity.x += ability.Speed * m_Direction.x;
+
+    // Flip the sprite based on direction
+    sprite.SetScale(m_Direction.x, 1.f);
 
     transform.SetPosition(
         transform.GetPosition().x + velocity.x * ts,
