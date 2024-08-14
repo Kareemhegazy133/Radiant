@@ -33,13 +33,11 @@ namespace Engine {
 			int top = frameHeightPadding;
 			int width = frameWidth - frameWidthPadding * 2;
 			int height = frameHeight - frameHeightPadding * 2;
-
 			frames.emplace_back(sf::IntRect(left, top, width, height));
 		}
 
 		auto& animationComponent = GetComponent<AnimationComponent>();
 		animationComponent.AddAnimation(state, textureIdentifier, frames, frameWidthPadding, frameHeightPadding, frameDuration, enableLooping);
-
 	}
 
 	// Explicit template instantiation

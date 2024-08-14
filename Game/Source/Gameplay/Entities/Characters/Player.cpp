@@ -65,6 +65,16 @@ void Player::OnUpdate(Timestep ts)
     if (velocity.x != 0.f)
     {
         m_StateMachine.SetState(PlayerState::Walking);
+
+        // Flip the sprite based on direction
+        if (velocity.x < 0.f)
+        {
+            sprite.SetScale(-1.f, 1.f); // Turn left
+        }
+        else if (velocity.x > 0.f)
+        {
+            sprite.SetScale(1.f, 1.f); // Turn right
+        }
     }
     else {
         m_StateMachine.SetState(PlayerState::Idle);

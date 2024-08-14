@@ -32,6 +32,11 @@ namespace Engine {
         void SetScale(const sf::Vector2f& scale);
         void SetScale(float factorX, float factorY);
 
+        void SetOrigin(const sf::Vector2f& origin);
+        void SetOrigin(float originX, float originY);
+
+        const sf::Vector2f& GetScale() const;
+
         operator const sf::Sprite& () { return Sprite; }
         operator sf::Sprite& () { return Sprite; }
 

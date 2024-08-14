@@ -81,7 +81,9 @@ namespace Engine {
 		boxShape.SetAsBox(
 			sprite.GetTextureSize().x * 0.5f,
 			sprite.GetTextureSize().y * 0.5f,
-			b2Vec2(sprite.GetTextureSize().x * 0.5f, sprite.GetTextureSize().y * 0.5f), DEG_TO_RAD(transform.GetRotation()));
+			b2Vec2(component.Offset.x, component.Offset.y),
+			DEG_TO_RAD(transform.GetRotation())
+		);
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &boxShape;
@@ -107,7 +109,9 @@ namespace Engine {
 		boxShape.SetAsBox(
 			sprite.GetTextureSize().x * 0.5f,
 			sprite.GetTextureSize().y * 0.5f,
-			b2Vec2(sprite.GetTextureSize().x * 0.5f, sprite.GetTextureSize().y * 0.5f), DEG_TO_RAD(transform.GetRotation()));
+			b2Vec2(bc2d.Offset.x, bc2d.Offset.y),
+			DEG_TO_RAD(transform.GetRotation())
+		);
 
 		// Create a new fixture definition
 		b2FixtureDef fixtureDef;

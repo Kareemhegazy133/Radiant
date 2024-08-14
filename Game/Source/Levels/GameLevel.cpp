@@ -63,7 +63,10 @@ void GameLevel::OnRender()
 		// Apply the transform to the sprite
 		sprite.SetPosition(transform.GetPosition());
 		sprite.SetRotation(transform.GetRotation());
-		sprite.SetScale(transform.GetScale());
+		sprite.SetScale(
+			{ transform.GetScale().x * sprite.GetScale().x,
+			transform.GetScale().y * sprite.GetScale().y }
+		);
 
 		// Draw the sprite to the render window
 		m_RenderWindow->draw(sprite);
