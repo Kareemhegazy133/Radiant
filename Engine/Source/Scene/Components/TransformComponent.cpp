@@ -61,6 +61,11 @@ namespace Engine {
         return Transform.getRotation();
     }
 
+    void TransformComponent::SetScale(const sf::Vector2f& scale)
+    {
+        Transform.setScale(scale);
+    }
+
     void TransformComponent::SetScale(float scaleX, float scaleY)
     {
         Transform.setScale(scaleX, scaleY);

@@ -7,13 +7,13 @@ GameLevel::GameLevel()
 {
 	std::cout << "GameLevel Created!" << std::endl;
 
-	auto platform = CreateGameObject("Platform");
-	platform.AddComponent<SpriteComponent>("Platform");
-	auto& platform_transform = platform.GetComponent<TransformComponent>();
-	platform_transform.SetPosition(300.f, 600.f);
+	//auto platform = CreateGameObject("Platform");
+	//platform.AddComponent<SpriteComponent>("Platform");
+	//auto& platform_transform = platform.GetComponent<TransformComponent>();
+	//platform_transform.SetPosition(300.f, 600.f);
 
-	platform.AddComponent<Rigidbody2DComponent>();
-	platform.AddComponent<BoxCollider2DComponent>();
+	//platform.AddComponent<Rigidbody2DComponent>();
+	//platform.AddComponent<BoxCollider2DComponent>();
 
 }
 
@@ -128,7 +128,7 @@ bool GameLevel::OnKeyPressed(KeyPressedEvent& e)
 	if (e.GetKeyCode() == Key::X)
 	{
 		SceneSerializer serializer(&Scene::GetScene());
-		serializer.Serialize("Saves/GameLevel.sav");
+		serializer.Deserialize("Saves/GameLevel.sav");
 		return true;
 	}
 

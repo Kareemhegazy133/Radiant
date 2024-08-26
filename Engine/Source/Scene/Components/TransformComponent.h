@@ -21,6 +21,7 @@ namespace Engine {
         void SetRotation(float angle);
         float GetRotation();
 
+        void SetScale(const sf::Vector2f& scale);
         void SetScale(float scaleX, float scaleY);
         sf::Vector2f GetScale() const;
 
