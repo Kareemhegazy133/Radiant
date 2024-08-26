@@ -4,3 +4,6 @@
 [submodule "Engine/Vendor/box2d"]
 	path = Engine/Vendor/box2d
 	url = https://github.com/thecherno/box2d
+[submodule "Engine/Vendor/yaml-cpp"]
+	path = Engine/Vendor/yaml-cpp
+	url = https://github.com/TheCherno/yaml-cpp

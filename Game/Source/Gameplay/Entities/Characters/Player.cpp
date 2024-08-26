@@ -26,7 +26,7 @@ Player::Player()
     attributes.SetAttribute(Attributes::Defense, 10.f, 7);
     attributes.SetAttribute(Attributes::Magic, 10.f, 3);
 
-    GAME_INFO("Health: {0}", attributes.GetAttribute(Attributes::Health));
+    GAME_INFO("Player Health: {0}", attributes.GetAttribute(Attributes::Health));
 
     abilities.AddAbility<Fireball>();
 
@@ -131,7 +131,7 @@ void Player::SetupAnimations()
         12,
         m_FrameWidth,
         m_FrameHeight,
-        m_FrameWidthPadding,
+        m_FrameWidthPadding - 15,
         m_FrameHeightPadding,
         0.05f,
         false

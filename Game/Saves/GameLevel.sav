@@ -1,0 +1,64 @@
+Scene: Untitled
+Game Objects:
+  - Game Object: 2671737646832376863
+    MetadataComponent:
+      Tag: Platform
+    TransformComponent:
+      Translation: [300, 600]
+      Rotation: 0
+      Scale: [1, 1]
+    SpriteComponent:
+      Texture Identifier: Platform
+      Texture Size: [512, 32]
+    Rigidbody2DComponent:
+      BodyType: Static
+      FixedRotation: true
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0
+  - Game Object: 14055858668450798192
+    MetadataComponent:
+      Tag: Fireball
+    TransformComponent:
+      Translation: [0, 0]
+      Rotation: 0
+      Scale: [1, 1]
+    SpriteComponent:
+      Texture Identifier: FireballActive
+      Texture Size: [5248, 128]
+    Rigidbody2DComponent:
+      BodyType: Kinematic
+      FixedRotation: true
+  - Game Object: 15318135911220314187
+    MetadataComponent:
+      Tag: Player
+    TransformComponent:
+      Translation: [300, 222.665146]
+      Rotation: 0
+      Scale: [1, 1]
+    SpriteComponent:
+      Texture Identifier: PlayerIdle
+      Texture Size: [136, 176]
+    Rigidbody2DComponent:
+      BodyType: Dynamic
+      FixedRotation: true
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0
+    CharacterComponent:
+      Level: 1
+      Coins: 0
+      Diamonds: 0
+      Current Health: 100
+      Current Stamina: 100
+      Speed: 200
+      Direction: [1, 0]
+    AttributesComponent:
+      Total Attribute Points Spent: 29
+      Attribute Points Available: 4

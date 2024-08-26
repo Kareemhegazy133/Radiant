@@ -7,7 +7,6 @@ workspace "TheReaper"
    filter "system:windows"
       defines { "_CRT_SECURE_NO_WARNINGS" }
 	  disablewarnings { "4996" }
-      buildoptions { "/EHsc", "/Zc:preprocessor", "/Zc:__cplusplus" }
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
@@ -17,9 +16,11 @@ IncludeDir["spdlog"] = "Engine/Vendor/spdlog/include"
 IncludeDir["sfml"] = "Engine/Vendor/sfml/include"
 IncludeDir["entt"] = "Engine/Vendor/entt/include"
 IncludeDir["box2d"] = "Engine/Vendor/box2d/include"
+IncludeDir["yaml_cpp"] = "Engine/Vendor/yaml-cpp/include"
 
 group "Dependencies"
 	include "Engine/Vendor/box2d"
+	include "Engine/Vendor/yaml-cpp"
 	
 group ""
 
@@ -46,7 +47,8 @@ project "Engine"
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.sfml}",
 		"%{IncludeDir.entt}",
-		"%{IncludeDir.box2d}"
+		"%{IncludeDir.box2d}",
+		"%{IncludeDir.yaml_cpp}"
 	}
 
 	libdirs
@@ -56,7 +58,13 @@ project "Engine"
 	
 	links
 	{
-		"box2d"
+		"box2d",
+		"yaml-cpp"
+	}
+	
+	defines
+	{
+		"YAML_CPP_STATIC_DEFINE"
 	}
 
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
@@ -103,7 +111,8 @@ project "Game"
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.sfml}",
 		"%{IncludeDir.entt}",
-		"%{IncludeDir.box2d}"
+		"%{IncludeDir.box2d}",
+		"%{IncludeDir.yaml_cpp}"
 	}
 
 	libdirs

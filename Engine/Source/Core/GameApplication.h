@@ -12,8 +12,8 @@
 
 #include "Core/Timestep.h"
 
-#include "Resources/TextureManager.h"
-#include "Resources/FontManager.h"
+#include "Utils/TextureManager.h"
+#include "Utils/FontManager.h"
 
 int main(int argc, char** argv);
 

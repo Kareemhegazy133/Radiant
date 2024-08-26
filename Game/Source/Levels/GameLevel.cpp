@@ -12,7 +12,7 @@ GameLevel::GameLevel()
 	auto& platform_transform = platform.GetComponent<TransformComponent>();
 	platform_transform.SetPosition(300.f, 600.f);
 
-	auto& platform_rb2d = platform.AddComponent<Rigidbody2DComponent>();
+	platform.AddComponent<Rigidbody2DComponent>();
 	platform.AddComponent<BoxCollider2DComponent>();
 
 }
@@ -122,6 +122,13 @@ bool GameLevel::OnKeyPressed(KeyPressedEvent& e)
 		{
 			m_CharacterInfoMenu.SetVisibility(false);
 		}
+		return true;
+	}
+
+	if (e.GetKeyCode() == Key::X)
+	{
+		SceneSerializer serializer(&Scene::GetScene());
+		serializer.Serialize("Saves/GameLevel.sav");
 		return true;
 	}
 

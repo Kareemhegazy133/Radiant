@@ -26,6 +26,8 @@ public:
 		TextureManager::LoadTexture("PlayerWalk", "Assets/Player/Reaper/ReaperWalk.png");
 		TextureManager::LoadTexture("PlayerThrow", "Assets/Player/Reaper/ReaperThrow.png");
 		TextureManager::LoadTexture("PlayerIcon", "Assets/Player/Reaper/ReaperIcon.png");
+
+		TextureManager::LoadTexture("ZombieIdle", "Assets/Enemies/Zombie/ZombieIdle.png");
 		TextureManager::LoadTexture("FireballActive", "Assets/Abilities/Fireball.png");
 		TextureManager::LoadTexture("Platform", "Assets/Platform.png");
 

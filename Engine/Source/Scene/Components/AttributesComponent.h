@@ -31,7 +31,7 @@ namespace Engine {
     private:
         // Growth rate of 10% for upgrading attributes
         float m_GrowthRate = 0.35f;
-        // Pair of float (max value of attribute) and bool (whether set or not)
+        // Pair of float (value of attribute) and bool (whether set or not)
         std::vector<std::pair<float, bool>> m_Values;
 
         int m_AttributePointsAvailable = 0;

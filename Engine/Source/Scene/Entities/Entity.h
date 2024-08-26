@@ -4,6 +4,7 @@
 
 enum class PlayerState;
 enum class AbilityState;
+enum class EnemyState;
 
 namespace Engine {
 

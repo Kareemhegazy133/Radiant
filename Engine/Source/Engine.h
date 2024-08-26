@@ -27,6 +27,7 @@
 #include "Scene/Entities/Entity.h"
 #include "Scene/Entities/Character.h"
 #include "Scene/Entities/Ability.h"
+#include "Scene/SceneSerializer.h"
 
 #include "AI/StateMachine.h"
 
@@ -34,4 +35,5 @@
 #include "UI/Elements.h"
 #include "UI/UIScreen.h"
 
-#include "Resources/TextureManager.h"
+#include "Utils/TextureManager.h"
+#include "Utils/FontManager.h"

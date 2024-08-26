@@ -124,6 +124,17 @@ namespace Engine {
         bool
     );
 
+    template void AnimationComponent::AddAnimation<EnemyState>(
+        EnemyState,
+        const std::string&,
+        const std::vector<sf::IntRect>&,
+        uint8_t,
+        uint8_t,
+        float,
+        bool
+    );
+
     template void AnimationComponent::SetAnimation<PlayerState>(PlayerState);
     template void AnimationComponent::SetAnimation<AbilityState>(AbilityState);
+    template void AnimationComponent::SetAnimation<EnemyState>(EnemyState);
 }

@@ -3,6 +3,8 @@
 #include "entt.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 
+#include "Core/UUID.h"
+
 namespace Engine {
 
 	class GameObject;
@@ -41,6 +43,7 @@ namespace Engine {
 		std::unordered_map<UUID, entt::entity> m_GameObjectMap;
 
 		friend class GameObject;
+		friend class SceneSerializer;
 	};
 
 }
