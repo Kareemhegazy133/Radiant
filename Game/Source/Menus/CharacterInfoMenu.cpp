@@ -68,16 +68,16 @@ void CharacterInfoMenu::Initialize()
 	healthLeftArrowButton.SetPosition({ 400.f, 356.f });
 	healthLeftArrowButton.SetSize({ 27.f, 27.f });
 	healthLeftArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnHealthLeftArrowButtonClicked, this));
-	healthLeftArrowButton.SetNormalTexture(&TextureManager::GetTexture("LeftArrowButton"));
-	healthLeftArrowButton.SetHoveredTexture(&TextureManager::GetTexture("LeftArrowButtonHovered"));
-	healthLeftArrowButton.SetDisabledTexture(&TextureManager::GetTexture("LeftArrowButtonDisabled"));
+	healthLeftArrowButton.SetNormalTexture(&ResourceManager::GetTexture("LeftArrowButton"));
+	healthLeftArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("LeftArrowButtonHovered"));
+	healthLeftArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("LeftArrowButtonDisabled"));
 
 	healthRightArrowButton.SetPosition({ 465.f, 356.f });
 	healthRightArrowButton.SetSize({ 27.f, 27.f });
 	healthRightArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnHealthRightArrowButtonClicked, this));
-	healthRightArrowButton.SetNormalTexture(&TextureManager::GetTexture("RightArrowButton"));
-	healthRightArrowButton.SetHoveredTexture(&TextureManager::GetTexture("RightArrowButtonHovered"));
-	healthRightArrowButton.SetDisabledTexture(&TextureManager::GetTexture("RightArrowButtonDisabled"));
+	healthRightArrowButton.SetNormalTexture(&ResourceManager::GetTexture("RightArrowButton"));
+	healthRightArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("RightArrowButtonHovered"));
+	healthRightArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("RightArrowButtonDisabled"));
 
 	staminaPointsText.SetFont(GameTheme::GetFont());
 	staminaPointsText.SetCharacterSize(21);
@@ -87,16 +87,16 @@ void CharacterInfoMenu::Initialize()
 	staminaLeftArrowButton.SetPosition({ 400.f, 406.f });
 	staminaLeftArrowButton.SetSize({ 27.f, 27.f });
 	staminaLeftArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnStaminaLeftArrowButtonClicked, this));
-	staminaLeftArrowButton.SetNormalTexture(&TextureManager::GetTexture("LeftArrowButton"));
-	staminaLeftArrowButton.SetHoveredTexture(&TextureManager::GetTexture("LeftArrowButtonHovered"));
-	staminaLeftArrowButton.SetDisabledTexture(&TextureManager::GetTexture("LeftArrowButtonDisabled"));
+	staminaLeftArrowButton.SetNormalTexture(&ResourceManager::GetTexture("LeftArrowButton"));
+	staminaLeftArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("LeftArrowButtonHovered"));
+	staminaLeftArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("LeftArrowButtonDisabled"));
 
 	staminaRightArrowButton.SetPosition({ 465.f, 406.f });
 	staminaRightArrowButton.SetSize({ 27.f, 27.f });
 	staminaRightArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnStaminaRightArrowButtonClicked, this));
-	staminaRightArrowButton.SetNormalTexture(&TextureManager::GetTexture("RightArrowButton"));
-	staminaRightArrowButton.SetHoveredTexture(&TextureManager::GetTexture("RightArrowButtonHovered"));
-	staminaRightArrowButton.SetDisabledTexture(&TextureManager::GetTexture("RightArrowButtonDisabled"));
+	staminaRightArrowButton.SetNormalTexture(&ResourceManager::GetTexture("RightArrowButton"));
+	staminaRightArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("RightArrowButtonHovered"));
+	staminaRightArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("RightArrowButtonDisabled"));
 
 	strengthPointsText.SetFont(GameTheme::GetFont());
 	strengthPointsText.SetCharacterSize(21);
@@ -106,16 +106,16 @@ void CharacterInfoMenu::Initialize()
 	strengthLeftArrowButton.SetPosition({ 400.f, 456.f });
 	strengthLeftArrowButton.SetSize({ 27.f, 27.f });
 	strengthLeftArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnStrengthLeftArrowButtonClicked, this));
-	strengthLeftArrowButton.SetNormalTexture(&TextureManager::GetTexture("LeftArrowButton"));
-	strengthLeftArrowButton.SetHoveredTexture(&TextureManager::GetTexture("LeftArrowButtonHovered"));
-	strengthLeftArrowButton.SetDisabledTexture(&TextureManager::GetTexture("LeftArrowButtonDisabled"));
+	strengthLeftArrowButton.SetNormalTexture(&ResourceManager::GetTexture("LeftArrowButton"));
+	strengthLeftArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("LeftArrowButtonHovered"));
+	strengthLeftArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("LeftArrowButtonDisabled"));
 
 	strengthRightArrowButton.SetPosition({ 465.f, 456.f });
 	strengthRightArrowButton.SetSize({ 27.f, 27.f });
 	strengthRightArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnStrengthRightArrowButtonClicked, this));
-	strengthRightArrowButton.SetNormalTexture(&TextureManager::GetTexture("RightArrowButton"));
-	strengthRightArrowButton.SetHoveredTexture(&TextureManager::GetTexture("RightArrowButtonHovered"));
-	strengthRightArrowButton.SetDisabledTexture(&TextureManager::GetTexture("RightArrowButtonDisabled"));
+	strengthRightArrowButton.SetNormalTexture(&ResourceManager::GetTexture("RightArrowButton"));
+	strengthRightArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("RightArrowButtonHovered"));
+	strengthRightArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("RightArrowButtonDisabled"));
 
 	defensePointsText.SetFont(GameTheme::GetFont());
 	defensePointsText.SetCharacterSize(21);
@@ -125,16 +125,16 @@ void CharacterInfoMenu::Initialize()
 	defenseLeftArrowButton.SetPosition({ 400.f, 508.f });
 	defenseLeftArrowButton.SetSize({ 27.f, 27.f });
 	defenseLeftArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnDefenseLeftArrowButtonClicked, this));
-	defenseLeftArrowButton.SetNormalTexture(&TextureManager::GetTexture("LeftArrowButton"));
-	defenseLeftArrowButton.SetHoveredTexture(&TextureManager::GetTexture("LeftArrowButtonHovered"));
-	defenseLeftArrowButton.SetDisabledTexture(&TextureManager::GetTexture("LeftArrowButtonDisabled"));
+	defenseLeftArrowButton.SetNormalTexture(&ResourceManager::GetTexture("LeftArrowButton"));
+	defenseLeftArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("LeftArrowButtonHovered"));
+	defenseLeftArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("LeftArrowButtonDisabled"));
 
 	defenseRightArrowButton.SetPosition({ 465.f, 508.f });
 	defenseRightArrowButton.SetSize({ 27.f, 27.f });
 	defenseRightArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnDefenseRightArrowButtonClicked, this));
-	defenseRightArrowButton.SetNormalTexture(&TextureManager::GetTexture("RightArrowButton"));
-	defenseRightArrowButton.SetHoveredTexture(&TextureManager::GetTexture("RightArrowButtonHovered"));
-	defenseRightArrowButton.SetDisabledTexture(&TextureManager::GetTexture("RightArrowButtonDisabled"));
+	defenseRightArrowButton.SetNormalTexture(&ResourceManager::GetTexture("RightArrowButton"));
+	defenseRightArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("RightArrowButtonHovered"));
+	defenseRightArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("RightArrowButtonDisabled"));
 
 	magicPointsText.SetFont(GameTheme::GetFont());
 	magicPointsText.SetCharacterSize(21);
@@ -144,16 +144,16 @@ void CharacterInfoMenu::Initialize()
 	magicLeftArrowButton.SetPosition({ 400.f, 558.f });
 	magicLeftArrowButton.SetSize({ 27.f, 27.f });
 	magicLeftArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnMagicLeftArrowButtonClicked, this));
-	magicLeftArrowButton.SetNormalTexture(&TextureManager::GetTexture("LeftArrowButton"));
-	magicLeftArrowButton.SetHoveredTexture(&TextureManager::GetTexture("LeftArrowButtonHovered"));
-	magicLeftArrowButton.SetDisabledTexture(&TextureManager::GetTexture("LeftArrowButtonDisabled"));
+	magicLeftArrowButton.SetNormalTexture(&ResourceManager::GetTexture("LeftArrowButton"));
+	magicLeftArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("LeftArrowButtonHovered"));
+	magicLeftArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("LeftArrowButtonDisabled"));
 
 	magicRightArrowButton.SetPosition({ 465.f, 558.f });
 	magicRightArrowButton.SetSize({ 27.f, 27.f });
 	magicRightArrowButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnMagicRightArrowButtonClicked, this));
-	magicRightArrowButton.SetNormalTexture(&TextureManager::GetTexture("RightArrowButton"));
-	magicRightArrowButton.SetHoveredTexture(&TextureManager::GetTexture("RightArrowButtonHovered"));
-	magicRightArrowButton.SetDisabledTexture(&TextureManager::GetTexture("RightArrowButtonDisabled"));
+	magicRightArrowButton.SetNormalTexture(&ResourceManager::GetTexture("RightArrowButton"));
+	magicRightArrowButton.SetHoveredTexture(&ResourceManager::GetTexture("RightArrowButtonHovered"));
+	magicRightArrowButton.SetDisabledTexture(&ResourceManager::GetTexture("RightArrowButtonDisabled"));
 
 	confirmAttributePointsButton.SetPosition({ 285.f, 615.f });
 	confirmAttributePointsButton.SetSize(GameTheme::GetCommonButtonSize());
@@ -173,8 +173,8 @@ void CharacterInfoMenu::Initialize()
 	closeButton.SetPosition({ 1035.f, 190.f });
 	closeButton.SetSize({ 80.f, 80.f });
 	closeButton.SetButtonCallback(std::bind(&CharacterInfoMenu::OnCloseButtonClicked, this));
-	closeButton.SetNormalTexture(&TextureManager::GetTexture("CloseButton"));
-	closeButton.SetHoveredTexture(&TextureManager::GetTexture("CloseButtonHovered"));
+	closeButton.SetNormalTexture(&ResourceManager::GetTexture("CloseButton"));
+	closeButton.SetHoveredTexture(&ResourceManager::GetTexture("CloseButtonHovered"));
 
 	healthStatText.SetFont(GameTheme::GetFont());
 	healthStatText.SetCharacterSize(21);

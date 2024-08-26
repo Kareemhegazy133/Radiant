@@ -2,7 +2,7 @@
 
 #include "Button.h"
 
-#include "Utils/TextureManager.h"
+#include "Utils/ResourceManager.h"
 
 namespace Engine {
 
@@ -157,16 +157,16 @@ namespace Engine {
                 switch (m_ButtonSize)
                 {
                 case ButtonSize::Common:
-                    SetTexture(&TextureManager::GetTexture("CommonButtonHovered"));
+                    SetTexture(&ResourceManager::GetTexture("CommonButtonHovered"));
                     break;
                 case ButtonSize::Small:
-                    //SetTexture(&TextureManager::GetTexture("SmallButtonHovered"));
+                    //SetTexture(&ResourceManager::GetTexture("SmallButtonHovered"));
                     break;
                 case ButtonSize::Medium:
-                    SetTexture(&TextureManager::GetTexture("MediumButtonHovered"));
+                    SetTexture(&ResourceManager::GetTexture("MediumButtonHovered"));
                     break;
                 case ButtonSize::Large:
-                    SetTexture(&TextureManager::GetTexture("LargeButtonHovered"));
+                    SetTexture(&ResourceManager::GetTexture("LargeButtonHovered"));
                     break;
                 case ButtonSize::Custom:
                     SetTexture(m_HoveredTexture);
@@ -180,16 +180,16 @@ namespace Engine {
                 switch (m_ButtonSize)
                 {
                 case ButtonSize::Common:
-                    SetTexture(&TextureManager::GetTexture("CommonButton"));
+                    SetTexture(&ResourceManager::GetTexture("CommonButton"));
                     break;
                 case ButtonSize::Small:
-                    //SetTexture(&TextureManager::GetTexture("SmallButton"));
+                    //SetTexture(&ResourceManager::GetTexture("SmallButton"));
                     break;
                 case ButtonSize::Medium:
-                    SetTexture(&TextureManager::GetTexture("MediumButton"));
+                    SetTexture(&ResourceManager::GetTexture("MediumButton"));
                     break;
                 case ButtonSize::Large:
-                    SetTexture(&TextureManager::GetTexture("LargeButton"));
+                    SetTexture(&ResourceManager::GetTexture("LargeButton"));
                     break;
                 case ButtonSize::Custom:
                     SetTexture(m_NormalTexture);

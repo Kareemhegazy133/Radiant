@@ -23,7 +23,7 @@ sf::Vector2f GameTheme::s_LargeButtonSize;
 
 void GameTheme::Initialize()
 {
-    s_Font = FontManager::GetFont("Euljiro");
+    s_Font = ResourceManager::GetFont("Euljiro");
 
     s_LightTextColor = sf::Color(102, 168, 191);
     s_DarkTextColor = sf::Color(7, 11, 19);

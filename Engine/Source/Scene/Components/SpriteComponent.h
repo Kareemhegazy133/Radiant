@@ -43,7 +43,7 @@ namespace Engine {
 
     private:
         sf::Sprite Sprite;
-        // Identifier for the texture in the TextureManager
+        // Identifier for the texture in the ResourceManager
         std::string TextureIdentifier;
 
     };

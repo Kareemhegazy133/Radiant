@@ -37,14 +37,14 @@ private:
 
 private:
 	Button& closeButton = AddElement<Button>();
-	Sprite& menuBackground = AddElement<Sprite>(TextureManager::GetTexture("CharacterInfoMenu"));
+	Sprite& menuBackground = AddElement<Sprite>(ResourceManager::GetTexture("CharacterInfoMenu"));
 
-	Sprite& characterIcon = AddElement<Sprite>(TextureManager::GetTexture("PlayerIcon"));
+	Sprite& characterIcon = AddElement<Sprite>(ResourceManager::GetTexture("PlayerIcon"));
 	Text& characterHealthText = AddElement<Text>();
 	Text& characterStaminaText = AddElement<Text>();
-	Sprite& coinsIcon = AddElement<Sprite>(TextureManager::GetTexture("CoinIcon"));
+	Sprite& coinsIcon = AddElement<Sprite>(ResourceManager::GetTexture("CoinIcon"));
 	Text& characterCoinsText = AddElement<Text>();
-	Sprite& diamondsIcon = AddElement<Sprite>(TextureManager::GetTexture("DiamondIcon"));
+	Sprite& diamondsIcon = AddElement<Sprite>(ResourceManager::GetTexture("DiamondIcon"));
 	Text& characterDiamondsText = AddElement<Text>();
 	Text& characterLevelText = AddElement<Text>();
 	Text& characterAttributePointsText = AddElement<Text>();

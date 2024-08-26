@@ -17,7 +17,7 @@ public:
     };
 
 	GameLayer();
-	virtual ~GameLayer() = default;
+	~GameLayer();
 
 	virtual void OnAttach() override;
 	virtual void OnDetach() override;
@@ -29,10 +29,12 @@ public:
 	inline static GameState& GetGameState() { return s_Instance->m_CurrentState; }
 
 private:
+	void LoadAssets();
 	void SetGameStateInternal(GameState newState);
 
 private:
 	static GameLayer* s_Instance;
+
 	Scope<Level> m_CurrentLevel;
 	GameState m_CurrentState;
 

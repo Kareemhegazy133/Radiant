@@ -35,5 +35,4 @@
 #include "UI/Elements.h"
 #include "UI/UIScreen.h"
 
-#include "Utils/TextureManager.h"
-#include "Utils/FontManager.h"
+#include "Utils/ResourceManager.h"

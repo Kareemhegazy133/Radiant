@@ -22,7 +22,7 @@ private:
 	void OnMainMenuButtonClicked();
 	void OnQuitGameButtonClicked();
 private:
-	Sprite& menuBackground = AddElement<Sprite>(TextureManager::GetTexture("PauseMenu"));
+	Sprite& menuBackground = AddElement<Sprite>(ResourceManager::GetTexture("PauseMenu"));
 	Text& pausedTitleText = AddElement<Text>();
 	Button& resumeButton = AddElement<Button>();
 	Button& optionsButton = AddElement<Button>();

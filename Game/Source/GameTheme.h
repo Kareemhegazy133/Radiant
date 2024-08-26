@@ -29,12 +29,12 @@ public:
     inline static const sf::Vector2f& GetMediumButtonSize() { return s_MediumButtonSize; }
     inline static const sf::Vector2f& GetLargeButtonSize() { return s_LargeButtonSize; }
 
-    inline static const sf::Texture* GetCommonButtonNormalTexture() { return &TextureManager::GetTexture("CommonButton"); }
-    inline static const sf::Texture* GetCommonButtonHoveredTexture() { return &TextureManager::GetTexture("CommonButtonHovered"); }
-    inline static const sf::Texture* GetCommonButtonDisabledTexture() { return &TextureManager::GetTexture("CommonButtonDisabled"); }
-    //inline static const sf::Texture* GetSmallButtonNormalTexture() { return &TextureManager::GetTexture("SmallButton"); }
-    inline static const sf::Texture* GetMediumButtonNormalTexture() { return &TextureManager::GetTexture("MediumButton"); }
-    inline static const sf::Texture* GetLargeButtonNormalTexture() { return &TextureManager::GetTexture("LargeButton"); }
+    inline static const sf::Texture* GetCommonButtonNormalTexture() { return &ResourceManager::GetTexture("CommonButton"); }
+    inline static const sf::Texture* GetCommonButtonHoveredTexture() { return &ResourceManager::GetTexture("CommonButtonHovered"); }
+    inline static const sf::Texture* GetCommonButtonDisabledTexture() { return &ResourceManager::GetTexture("CommonButtonDisabled"); }
+    //inline static const sf::Texture* GetSmallButtonNormalTexture() { return &ResourceManager::GetTexture("SmallButton"); }
+    inline static const sf::Texture* GetMediumButtonNormalTexture() { return &ResourceManager::GetTexture("MediumButton"); }
+    inline static const sf::Texture* GetLargeButtonNormalTexture() { return &ResourceManager::GetTexture("LargeButton"); }
 
 private:
     static sf::Font s_Font;

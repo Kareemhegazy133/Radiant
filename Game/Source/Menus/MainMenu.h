@@ -21,7 +21,7 @@ private:
 	void OnOptionsButtonClicked();
 	void OnQuitGameButtonClicked();
 private:
-	Sprite& menuBackground = AddElement<Sprite>(TextureManager::GetTexture("MainMenu"));
+	Sprite& menuBackground = AddElement<Sprite>(ResourceManager::GetTexture("MainMenu"));
 	Text& gameTitleText = AddElement<Text>();
 	Button& playGameButton = AddElement<Button>();
 	Button& optionsButton = AddElement<Button>();

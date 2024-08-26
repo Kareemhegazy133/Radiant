@@ -12,8 +12,7 @@
 
 #include "Core/Timestep.h"
 
-#include "Utils/TextureManager.h"
-#include "Utils/FontManager.h"
+#include "Utils/ResourceManager.h"
 
 int main(int argc, char** argv);
 
@@ -66,8 +65,6 @@ namespace Engine {
 		float m_LastFrameTime = 0.0f;
 	private:
 		static GameApplication* s_Instance;
-		Scope<TextureManager> m_TextureManager;
-		Scope<FontManager> m_FontManager;
 		friend int ::main(int argc, char** argv);
 	};
 

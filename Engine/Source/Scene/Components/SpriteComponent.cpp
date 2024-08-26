@@ -2,7 +2,7 @@
 
 #include "SpriteComponent.h"
 
-#include "Utils/TextureManager.h"
+#include "Utils/ResourceManager.h"
 
 namespace Engine {
 
@@ -13,14 +13,14 @@ namespace Engine {
     SpriteComponent::SpriteComponent(const std::string& textureIdentifier)
         : Sprite(), TextureIdentifier(textureIdentifier)
     {
-        Sprite.setTexture(TextureManager::GetTexture(textureIdentifier));
+        Sprite.setTexture(ResourceManager::GetTexture(textureIdentifier));
         Sprite.setOrigin(GetTextureSize() / 2.f);
     }
 
     void SpriteComponent::SetTextureIdentifier(const std::string& textureIdentifier)
     {
         TextureIdentifier = textureIdentifier;
-        Sprite.setTexture(TextureManager::GetTexture(textureIdentifier));
+        Sprite.setTexture(ResourceManager::GetTexture(textureIdentifier));
         Sprite.setOrigin(GetTextureSize() / 2.f);
     }
 

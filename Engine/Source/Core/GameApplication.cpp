@@ -12,9 +12,6 @@ namespace Engine {
 		s_Instance = this;
 		m_Window = Window::Create(WindowProps(name, width, height));
 		m_Window->SetEventCallback(ENGINE_BIND_EVENT_FN(GameApplication::OnEvent));
-
-		m_TextureManager = CreateScope<TextureManager>();
-		m_FontManager = CreateScope<FontManager>();
 	}
 
 	GameApplication::~GameApplication()
