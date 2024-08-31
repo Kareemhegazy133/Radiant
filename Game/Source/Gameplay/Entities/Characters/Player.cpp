@@ -1,16 +1,21 @@
 #include "Player.h"
-#include "Gameplay/Attributes.h"
+
 #include "Gameplay/Entities/Abilities/Abilities.h"
 
 using namespace Engine;
 
-Player::Player()
-    : Character("Player", sf::Vector2f(300.f, 200.f))
+void Player::OnCreate()
 {
+    // TODO: Revisit
+    m_CharacterInfoMenu = new CharacterInfoMenu(this);
+    m_AttributeSet = new GameAttributeSet();
+
     m_FrameWidth = 256;
     m_FrameHeight = 256;
     m_FrameWidthPadding = 60;
     m_FrameHeightPadding = 40;
+
+    transform.SetPosition({ 300.f, 200.f });
 
     SetupAnimations();
     SetupStateMachine();
@@ -20,32 +25,26 @@ Player::Player()
 
     AddComponent<BoxCollider2DComponent>();
 
-    attributes.SetAttribute(Attributes::Health, 100.f, 10);
-    attributes.SetAttribute(Attributes::Stamina, 100.f, 5);
-    attributes.SetAttribute(Attributes::Strength, 10.f, 4);
-    attributes.SetAttribute(Attributes::Defense, 10.f, 7);
-    attributes.SetAttribute(Attributes::Magic, 10.f, 3);
+    m_AttributeSet->SetAttribute(Attributes::Health, 100.f, 10);
+    m_AttributeSet->SetAttribute(Attributes::Stamina, 100.f, 5);
+    m_AttributeSet->SetAttribute(Attributes::Strength, 10.f, 4);
+    m_AttributeSet->SetAttribute(Attributes::Defense, 10.f, 7);
+    m_AttributeSet->SetAttribute(Attributes::Magic, 10.f, 3);
 
-    GAME_INFO("Player Health: {0}", attributes.GetAttribute(Attributes::Health));
+    GAME_INFO("Player Health: {0}", m_AttributeSet->GetAttribute(Attributes::Health));
 
-    abilities.AddAbility<Fireball>();
-
-    metadata.OnUpdate = BIND_MEMBER_FUNCTION(Player::OnUpdate, this);
+    abilities.AddAbility<Fireball>(this);
 
     // Starting Stats
-    character.Level = 1;
-    attributes.AddAttributePoints(4);
-    character.Coins = 0;
-    character.Diamonds = 0;
-    character.CurrentHealth = attributes.GetAttribute(Attributes::Health);
-    character.CurrentStamina = attributes.GetAttribute(Attributes::Stamina);
-    character.Speed = 200.f;
+    Level = 1;
+    m_AttributeSet->AddAttributePoints(4);
+    Coins = 0;
+    Diamonds = 0;
+    CurrentHealth = m_AttributeSet->GetAttribute(Attributes::Health);
+    CurrentStamina = m_AttributeSet->GetAttribute(Attributes::Stamina);
+    Speed = 200.f;
 
-    character.Direction.x = 1.f;
-}
-
-Player::~Player()
-{
+    Direction.x = 1.f;
 }
 
 void Player::OnUpdate(Timestep ts)
@@ -56,13 +55,13 @@ void Player::OnUpdate(Timestep ts)
     sf::Vector2f velocity = { 0.0f, 0.0f };
 
     if (Input::IsKeyPressed(Key::W))
-        velocity.y -= character.Speed;
+        velocity.y -= Speed;
     if (Input::IsKeyPressed(Key::S))
-        velocity.y += character.Speed;
+        velocity.y += Speed;
     if (Input::IsKeyPressed(Key::A))
-        velocity.x -= character.Speed;
+        velocity.x -= Speed;
     if (Input::IsKeyPressed(Key::D))
-        velocity.x += character.Speed;
+        velocity.x += Speed;
 
     if (velocity.x != 0.f)
     {
@@ -72,12 +71,12 @@ void Player::OnUpdate(Timestep ts)
         if (velocity.x < 0.f)
         {
             sprite.SetScale(-1.f, 1.f); // Turn left
-            character.Direction.x = -1.f;
+            Direction.x = -1.f;
         }
         else if (velocity.x > 0.f)
         {
             sprite.SetScale(1.f, 1.f); // Turn right
-            character.Direction.x = 1.f;
+            Direction.x = 1.f;
         }
     }
     else {
@@ -92,7 +91,7 @@ void Player::OnUpdate(Timestep ts)
     // TODO: Add Keybinds functionality
     if (Input::IsKeyPressed(Key::Num1))
     {
-        bool casted = abilities.ActivateAbility(0, *this);
+        bool casted = abilities.ActivateAbility(0);
         if (casted)
         {
             m_StateMachine.SetState(PlayerState::Throwing);
@@ -100,6 +99,15 @@ void Player::OnUpdate(Timestep ts)
     }
 
     m_StateMachine.Update();
+}
+
+void Player::OnDestroy()
+{
+    delete m_CharacterInfoMenu;
+    m_CharacterInfoMenu = nullptr;
+
+    delete m_AttributeSet;
+    m_AttributeSet = nullptr;
 }
 
 void Player::SetupAnimations()

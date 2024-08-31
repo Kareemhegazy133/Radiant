@@ -1,19 +1,14 @@
 #include "PauseMenu.h"
 
-#include "Layers/GameLayer.h"
-
 #include "GameTheme.h"
+#include "Layers/GameLayer.h"
 
 using namespace Engine;
 
-PauseMenu::PauseMenu()
+PauseMenu::PauseMenu(GameLayer* gameLayer)
+	: m_GameLayer(gameLayer)
 {
 	Initialize();
-}
-
-PauseMenu::~PauseMenu()
-{
-
 }
 
 void PauseMenu::Initialize()
@@ -86,25 +81,23 @@ bool PauseMenu::OnMouseButtonPressed(MouseButtonPressedEvent& e)
 
 void PauseMenu::OnResumeButtonClicked()
 {
-	GAME_INFO("Resume Button Clicked!");
-	SetVisibility(false);
-	GameLayer::SetGameState(GameLayer::GameState::Playing);
+	//GAME_INFO("Resume Button Clicked!");
+	m_GameLayer->PopState();
 }
 
 void PauseMenu::OnOptionsButtonClicked()
 {
-	GAME_INFO("Options Button Clicked!");
+	//GAME_INFO("Options Button Clicked!");
 }
 
 void PauseMenu::OnMainMenuButtonClicked()
 {
-	GAME_INFO("Main Menu Button Clicked!");
-	SetVisibility(false);
-	GameLayer::SetGameState(GameLayer::GameState::MainMenu);
+	//GAME_INFO("Main Menu Button Clicked!");
+	m_GameLayer->ChangeState(m_GameLayer->GetMainMenuState());
 }
 
 void PauseMenu::OnQuitGameButtonClicked()
 {
-	GAME_INFO("Quit Game Button Clicked!");
+	//GAME_INFO("Quit Game Button Clicked!");
 	GameApplication::GetWindow().Shutdown();
 }

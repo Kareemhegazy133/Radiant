@@ -1,34 +1,31 @@
 #include "Enginepch.h"
 
-#include "box2d/b2_world.h"
-#include "box2d/b2_fixture.h"
-#include "box2d/b2_polygon_shape.h"
+#include <box2d/b2_world.h>
+#include <box2d/b2_fixture.h>
+#include <box2d/b2_polygon_shape.h>
 
-#include "Scene/GameObject.h"
+#include "ECS/Entity.h"
 
 #include "Physics2D.h"
 
 namespace Engine {
 
-	Physics2D* Physics2D::s_Instance = nullptr;
-
-	Physics2D::Physics2D()
-		: m_PhysicsWorld(new b2World({ 0.0f, 9.8f }))
+	Physics2D::Physics2D(Level* level)
+		: m_Level(level), m_PhysicsWorld(new b2World({ 0.0f, 9.8f })), m_CollisionListener(level)
 	{
-		s_Instance = this;
-		std::cout << "Physics System Instance: " << s_Instance << std::endl;
-
 		m_PhysicsWorld->SetContactListener(&m_CollisionListener);
 		m_PhysicsWorld->SetContactFilter(&m_CollisionListener);
 
 		// For debugging purposes
 		m_PhysicsWorld->SetDebugDraw(&m_DebugDraw);
 		m_DebugDraw.SetFlags(b2Draw::e_aabbBit);
+		std::cout << "Physics System Constructed: " << this << std::endl;
 	}
 
 	Physics2D::~Physics2D()
 	{
 		delete m_PhysicsWorld;
+		m_PhysicsWorld = nullptr;
 		std::cout << "Physics System Destroyed: " << this << std::endl;
 	}
 
@@ -54,16 +51,16 @@ namespace Engine {
 		return b2_staticBody;
 	}
 
-	void Physics2D::CreatePhysicsBody(GameObject gameObject, Rigidbody2DComponent& component)
+	void Physics2D::CreatePhysicsBody(Entity entity, Rigidbody2DComponent& component)
 	{
-		auto& transform = gameObject.GetComponent<TransformComponent>();
+		auto& transform = entity.GetComponent<TransformComponent>();
 
 		b2BodyDef bodyDef;
 		bodyDef.type = Rigidbody2DTypeToBox2DBody(component.Type);
 		bodyDef.position.Set(transform.GetPosition().x, transform.GetPosition().y);
 		bodyDef.angle = DEG_TO_RAD(transform.GetRotation());
 
-		bodyDef.userData.pointer = static_cast<uintptr_t>(uint32_t(gameObject));
+		bodyDef.userData.pointer = static_cast<uintptr_t>(uint32_t(entity));
 
 		b2Body* body = m_PhysicsWorld->CreateBody(&bodyDef);
 		body->SetFixedRotation(component.FixedRotation);
@@ -71,10 +68,10 @@ namespace Engine {
 		transform.RuntimeBody = body;
 	}
 
-	void Physics2D::CreateBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component)
+	void Physics2D::CreateBoxColliderFixture(Entity entity, BoxCollider2DComponent& component)
 	{
-		auto& transform = gameObject.GetComponent<TransformComponent>();
-		auto& sprite = gameObject.GetComponent<SpriteComponent>();
+		auto& transform = entity.GetComponent<TransformComponent>();
+		auto& sprite = entity.GetComponent<SpriteComponent>();
 
 		b2PolygonShape boxShape;
 		boxShape.SetAsBox(
@@ -91,7 +88,7 @@ namespace Engine {
 		fixtureDef.restitution = component.Restitution;
 		fixtureDef.restitutionThreshold = component.RestitutionThreshold;
 
-		auto& rb2d = gameObject.GetComponent<Rigidbody2DComponent>();
+		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
 		b2Fixture* fixture = static_cast<b2Body*>(rb2d.RuntimeBody)->CreateFixture(&fixtureDef);
 		component.RuntimeFixture = fixture;
 	}
@@ -125,7 +122,7 @@ namespace Engine {
 		bc2d.RuntimeFixture = rb2d->CreateFixture(&fixtureDef);
 	}
 
-	void Physics2D::DestroyBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component)
+	void Physics2D::DestroyBoxColliderFixture(Entity entity, BoxCollider2DComponent& component)
 	{
 		b2Fixture* fixture = static_cast<b2Fixture*>(component.RuntimeFixture);
 		b2Body* rb2d = fixture->GetBody();

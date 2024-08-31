@@ -1,19 +1,14 @@
 #include "MainMenu.h"
 
-#include "Layers/GameLayer.h"
-
 #include "GameTheme.h"
+#include "Layers/GameLayer.h"
 
 using namespace Engine;
 
-MainMenu::MainMenu()
+MainMenu::MainMenu(GameLayer* gameLayer)
+	: m_GameLayer(gameLayer)
 {
 	Initialize();
-}
-
-MainMenu::~MainMenu()
-{
-
 }
 
 void MainMenu::Initialize()
@@ -81,18 +76,17 @@ bool MainMenu::OnMouseButtonPressed(MouseButtonPressedEvent& e)
 
 void MainMenu::OnPlayGameButtonClicked()
 {
-	GAME_INFO("Play Game Button Clicked!");
-	SetVisibility(false);
-	GameLayer::SetGameState(GameLayer::GameState::Playing);
+	//GAME_INFO("Play Game Button Clicked!");
+	m_GameLayer->ChangeState(m_GameLayer->GetGameplayState());
 }
 
 void MainMenu::OnOptionsButtonClicked()
 {
-	GAME_INFO("Options Button Clicked!");
+	//GAME_INFO("Options Button Clicked!");
 }
 
 void MainMenu::OnQuitGameButtonClicked()
 {
-	GAME_INFO("Quit Game Button Clicked!");
+	//GAME_INFO("Quit Game Button Clicked!");
 	GameApplication::GetWindow().Shutdown();
 }

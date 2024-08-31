@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Engine.h>
+#include "Gameplay/Entities/Characters/Character.h"
+#include "Gameplay/GameAttributeSet.h"
 
 using namespace Engine;
 
@@ -18,13 +19,11 @@ class Zombie : public Character
 {
 
 public:
-    Zombie();
-    ~Zombie();
-
+    void OnCreate() override;
     void OnUpdate(Timestep ts) override;
+    void OnDestroy() override;
 
-    inline AttributesComponent* GetAttributesComponent() const { return &attributes; }
-    inline CharacterComponent* GetCharacterComponent() const { return &character; }
+    GameAttributeSet* GetAttributeSet() const { return m_AttributeSet; };
 
     void OnCollisionBegin(Entity& other) override;
     void OnCollisionEnd(Entity& other) override;
@@ -34,4 +33,5 @@ private:
 
 private:
     Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
+    GameAttributeSet* m_AttributeSet = nullptr;
 };

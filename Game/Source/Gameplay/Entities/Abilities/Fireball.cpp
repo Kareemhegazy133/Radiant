@@ -1,21 +1,18 @@
 #include "Fireball.h"
 
-#include "Levels/GameLevel.h"
-
 using namespace Engine;
 
-Fireball::Fireball()
-    : Ability("Fireball")
+void Fireball::OnCreate()
 {
     m_FrameWidth = 128;
     m_FrameHeight = 128;
     m_FrameWidthPadding = 20;
     m_FrameHeightPadding = 30;
 
-    ability.Speed = 200.f;
-    ability.MaxDuration = 2.f;
-    ability.Cooldown = 4.f;
-    ability.LastActivatedTime = -ability.Cooldown;
+    Speed = 200.f;
+    MaxDuration = 2.f;
+    Cooldown = 4.f;
+    LastActivatedTime = -Cooldown;
 
     SetupAnimation(AbilityState::Active,
         "FireballActive",
@@ -33,32 +30,56 @@ Fireball::Fireball()
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Fireball::OnCollisionEnd, this);
 
     metadata.IsActive = false;
-    metadata.OnUpdate = BIND_MEMBER_FUNCTION(Fireball::OnUpdate, this);
-    GAME_INFO("Fireball Constructed!");
+    GAME_INFO("Fireball Created!");
 }
 
-Fireball::~Fireball()
+void Fireball::OnUpdate(Timestep ts)
 {
+    animation.Update(ts);
+
+    // Update timer
+    m_ActiveDuration += ts;
+    if (m_ActiveDuration >= MaxDuration) {
+        Deactivate();
+        return;
+    }
+
+    sf::Vector2f velocity = { 0.0f, 0.0f };
+    velocity.x += Speed * m_Direction.x;
+
+    // Flip the sprite based on direction
+    sprite.SetScale(m_Direction.x, 1.f);
+
+    transform.SetPosition(
+        transform.GetPosition().x + velocity.x * ts,
+        transform.GetPosition().y + velocity.y * ts
+    );
 }
 
-void Fireball::Activate(Entity& caster)
+void Fireball::OnDestroy()
 {
-    ability.LastActivatedTime = GameApplication::Get().SFMLGetTime();
-    ability.Caster = &caster;
+
+}
+
+void Fireball::Activate()
+{
+    LastActivatedTime = GameApplication::Get().SFMLGetTime();
     if (metadata.IsActive) return;
 
-    m_Direction = caster.GetComponent<CharacterComponent>().Direction;
+    // TODO: 
+    //m_Direction = caster.GetComponent<CharacterComponent>().Direction;
+    m_Direction = { 1.f, 0.f };
 
     if ((m_SocketOffset.x < 0.f && m_Direction.x > 0.f) || (m_SocketOffset.x > 0.f && m_Direction.x < 0.f))
     {
         m_SocketOffset.x *= -1.f;
     }
 
-    auto& casterTransform = caster.GetComponent<TransformComponent>();
+    auto& casterTransform = Caster->GetComponent<TransformComponent>();
     transform.SetPosition(
         casterTransform.GetPosition() + m_SocketOffset
     );
-    
+
     metadata.IsActive = true;
     CreatePhysicsBoxCollider();
     GAME_INFO("Fireball Activated!");
@@ -71,29 +92,6 @@ void Fireball::Deactivate()
     m_ActiveDuration = 0.0f;
     animation.ResetAnimation();
     GAME_INFO("Fireball Deactivated!");
-}
-
-void Fireball::OnUpdate(Timestep ts)
-{
-    animation.Update(ts);
-
-    // Update timer
-    m_ActiveDuration += ts;
-    if (m_ActiveDuration >= ability.MaxDuration) {
-        Deactivate();
-        return;
-    }
-
-    sf::Vector2f velocity = { 0.0f, 0.0f };
-    velocity.x += ability.Speed * m_Direction.x;
-
-    // Flip the sprite based on direction
-    sprite.SetScale(m_Direction.x, 1.f);
-
-    transform.SetPosition(
-        transform.GetPosition().x + velocity.x * ts,
-        transform.GetPosition().y + velocity.y * ts
-    );
 }
 
 void Fireball::OnCollisionBegin(Entity& other)

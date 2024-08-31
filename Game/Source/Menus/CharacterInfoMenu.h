@@ -4,15 +4,18 @@
 
 using namespace Engine;
 
+class GameAttributeSet;
+class Player;
+
 class CharacterInfoMenu : public UIScreen
 {
 public:
-	CharacterInfoMenu(AttributesComponent& playerAttributes, CharacterComponent& playerStats);
-	virtual ~CharacterInfoMenu();
+	CharacterInfoMenu(Player* player);
+	virtual ~CharacterInfoMenu() = default;
 
 	void Initialize() override;
 
-	void UpdatePlayerInfo();
+	void OnUpdate(Timestep ts);
 
 	void OnEvent(Event& e) override;
 
@@ -75,13 +78,13 @@ private:
 	Text& magicStatText = AddElement<Text>();
 	Text& speedStatText = AddElement<Text>();
 
-	AttributesComponent& m_playerAttributes;
-	CharacterComponent& m_playerStats;
-
 	int m_AttributePointsToSpend = 0;
 	int m_HealthPointsToAdd = 0;
 	int m_StaminaPointsToAdd = 0;
 	int m_StrengthPointsToAdd = 0;
 	int m_DefensePointsToAdd = 0;
 	int m_MagicPointsToAdd = 0;
+
+	Player* m_Player = nullptr;
+	GameAttributeSet* m_PlayerAttributeSet = nullptr;
 };

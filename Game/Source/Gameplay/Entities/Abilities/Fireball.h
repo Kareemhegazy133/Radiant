@@ -13,14 +13,15 @@ class Fireball : public Ability
 {
 
 public:
+    // TODO: See if can move this up to Ability.h Constructor
+    Fireball(ScriptableEntity* caster) { Caster = caster; }
 
-    Fireball();
-    ~Fireball();
-
-    void Activate(Entity& caster) override;
-    void Deactivate() override;
-
+    void OnCreate() override;
     void OnUpdate(Timestep ts) override;
+    void OnDestroy() override;
+
+    void Activate() override;
+    void Deactivate() override;
 
     void OnCollisionBegin(Entity& other) override;
     void OnCollisionEnd(Entity& other) override;

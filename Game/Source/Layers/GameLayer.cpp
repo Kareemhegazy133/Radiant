@@ -2,61 +2,86 @@
 
 #include "GameTheme.h"
 
-#include "Levels/MainMenuLevel.h"
-#include "Levels/GameLevel.h"
-
 // TODO: Serialize and Deserialize the game layer
 
 using namespace Engine;
 
-GameLayer* GameLayer::s_Instance = nullptr;
-
 GameLayer::GameLayer() : Layer("GameLayer")
 {
-    ENGINE_ASSERT(!s_Instance, "GameLayer already exists!");
-    s_Instance = this;
-    ENGINE_INFO("GameLayer Init");
+    GAME_TRACE("GameLayer Init");
 
     ResourceManager::Init();
+    LoadAssets();
 }
 
 GameLayer::~GameLayer()
 {
     ResourceManager::Shutdown();
-    ENGINE_INFO("GameLayer Shutdown");
+    GAME_TRACE("GameLayer Shutdown");
 }
 
 void GameLayer::OnAttach()
 {
-    LoadAssets();
-    SetGameState(GameState::MainMenu);
+    // TODO: Look to implement on demand creation
+    m_MainMenuState = CreateRef<MainMenuState>(this);
+    m_GamePausedState = CreateRef<GamePausedState>(this);
+    m_GameplayState = CreateRef<GameplayState>(this);
+
+    PushState(m_MainMenuState);
 }
 
 void GameLayer::OnDetach()
 {
+    m_MainMenuState.reset();
+    m_GamePausedState.reset();
+    m_GameplayState.reset();
+
     // TODO: UnloadAssets();
+}
+
+void GameLayer::PushState(const Ref<GameState>& newState)
+{
+    if (newState)
+    {
+        newState->OnEnter();
+        m_StateStack.emplace_back(newState);
+    }
+}
+
+void GameLayer::PopState()
+{
+    if (!m_StateStack.empty())
+    {
+        m_StateStack.back()->OnExit();
+        m_StateStack.pop_back();
+    }
+}
+
+void GameLayer::ChangeState(const Ref<GameState>& newState)
+{
+    m_NextState = newState;
+    while (!m_StateStack.empty())
+    {
+        PopState();
+    }
+    PushState(newState);
 }
 
 void GameLayer::OnUpdate(Timestep ts)
 {
-    if (m_CurrentLevel)
+    if (!m_StateStack.empty())
     {
-        if (m_CurrentState == GameState::Paused)
-        {
-            GameLevel* gameLevel = static_cast<GameLevel*>(m_CurrentLevel.get());
-            gameLevel->RenderPauseMenu();
-            return;
-        }
-
-        m_CurrentLevel->OnUpdate(ts);
-        m_CurrentLevel->OnRender();
+        m_StateStack.back()->OnUpdate(ts);
     }
 }
 
 
 void GameLayer::OnEvent(Event& e)
 {
-    m_CurrentLevel->OnEvent(e);
+    if (!m_StateStack.empty())
+    {
+        m_StateStack.back()->OnEvent(e);
+    }
 }
 
 void GameLayer::LoadAssets()
@@ -97,35 +122,4 @@ void GameLayer::LoadAssets()
     ResourceManager::LoadTexture("DiamondIcon", "Assets/UI/Icons/DiamondIcon.png");
 
     GameTheme::Initialize();
-}
-
-void GameLayer::SetGameStateInternal(GameState newState)
-{
-    switch (newState)
-    {
-    case GameState::MainMenu:
-        if (m_CurrentState == GameState::Paused)
-        {
-            m_CurrentLevel.reset();
-        }
-
-        m_CurrentLevel = CreateScope<MainMenuLevel>();
-        m_CurrentState = GameState::MainMenu;
-        break;
-    case GameState::Playing:
-        if (m_CurrentState == GameState::MainMenu)
-        {
-            m_CurrentLevel.reset();
-            m_CurrentLevel = CreateScope<GameLevel>();
-            m_CurrentState = GameState::Playing;
-        }
-        else if (m_CurrentState == GameState::Paused)
-        {
-            m_CurrentState = GameState::Playing;
-        }
-        break;
-    case GameState::Paused:
-        m_CurrentState = GameState::Paused;
-        break;
-    }
 }

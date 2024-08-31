@@ -5,34 +5,32 @@
 #include "CollisionListener.h"
 #include "DebugDraw.h"
 
-#include "Scene/Components.h"
+#include "ECS/Components.h"
 
 class b2World;
 
 namespace Engine {
 
-	class GameObject;
+	class Entity;
 
 	class Physics2D
 	{
 	public:
 		
-		Physics2D();
+		Physics2D(Level* level);
 		~Physics2D();
 
 		void OnUpdate(Timestep ts);
 
-		void CreatePhysicsBody(GameObject gameObject, Rigidbody2DComponent& component);
+		void CreatePhysicsBody(Entity entity, Rigidbody2DComponent& component);
 
-		void CreateBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component);
+		void CreateBoxColliderFixture(Entity entity, BoxCollider2DComponent& component);
 		void UpdateBoxColliderFixture(BoxCollider2DComponent& bc2d, TransformComponent& transform, SpriteComponent& sprite);
-		void DestroyBoxColliderFixture(GameObject gameObject, BoxCollider2DComponent& component);
-
-		inline static Physics2D& Get() { return *s_Instance; }
+		void DestroyBoxColliderFixture(Entity entity, BoxCollider2DComponent& component);
 
 	private:
-		static Physics2D* s_Instance;
-		b2World* m_PhysicsWorld;
+		Level* m_Level = nullptr;
+		b2World* m_PhysicsWorld = nullptr;
 
 		CollisionListener m_CollisionListener;
 

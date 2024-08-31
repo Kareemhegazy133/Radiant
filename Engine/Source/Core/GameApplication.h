@@ -12,8 +12,6 @@
 
 #include "Core/Timestep.h"
 
-#include "Utils/ResourceManager.h"
-
 int main(int argc, char** argv);
 
 namespace Engine {

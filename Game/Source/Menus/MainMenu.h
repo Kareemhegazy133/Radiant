@@ -4,11 +4,13 @@
 
 using namespace Engine;
 
+class GameLayer;
+
 class MainMenu : public UIScreen
 {
 public:
-	MainMenu();
-	virtual ~MainMenu();
+	MainMenu(GameLayer* gameLayer);
+	~MainMenu() = default;
 
 	void Initialize() override;
 
@@ -27,5 +29,6 @@ private:
 	Button& optionsButton = AddElement<Button>();
 	Button& quitGameButton = AddElement<Button>();
 
+	GameLayer* m_GameLayer = nullptr;
 };
 

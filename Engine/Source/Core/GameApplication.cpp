@@ -10,13 +10,15 @@ namespace Engine {
 	{
 		ENGINE_ASSERT(!s_Instance, "GameApplication already exists!");
 		s_Instance = this;
+		ENGINE_TRACE("GameApplication Constructed");
+
 		m_Window = Window::Create(WindowProps(name, width, height));
 		m_Window->SetEventCallback(ENGINE_BIND_EVENT_FN(GameApplication::OnEvent));
 	}
 
 	GameApplication::~GameApplication()
 	{
-
+		ENGINE_TRACE("GameApplication Destructed");
 	}
 
 	void GameApplication::PushLayer(Layer* layer)

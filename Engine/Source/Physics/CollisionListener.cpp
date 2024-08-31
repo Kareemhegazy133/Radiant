@@ -3,12 +3,17 @@
 #include "box2d/b2_body.h"
 #include "box2d/b2_contact.h"
 
-#include "Scene/Entities/Entity.h"
-#include "Scene/Entities/Ability.h"
+#include "ECS/Level.h"
+#include "ECS/Entity.h"
 
 #include "CollisionListener.h"
 
 namespace Engine {
+	
+	CollisionListener::CollisionListener(Level* level)
+		: m_Level(level)
+	{
+	}
 
 	void CollisionListener::BeginContact(b2Contact* contact)
 	{
@@ -19,8 +24,8 @@ namespace Engine {
 		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
 		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
 
-		Entity entityA(entityAHandle, &Scene::GetScene());
-		Entity entityB(entityBHandle, &Scene::GetScene());
+		Entity entityA(entityAHandle, m_Level);
+		Entity entityB(entityBHandle, m_Level);
 
 		auto& entityARB2D = entityA.GetComponent<Rigidbody2DComponent>();
 		if (entityARB2D.OnCollisionBegin)
@@ -44,8 +49,8 @@ namespace Engine {
 		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
 		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
 
-		Entity entityA(entityAHandle, &Scene::GetScene());
-		Entity entityB(entityBHandle, &Scene::GetScene());
+		Entity entityA(entityAHandle, m_Level);
+		Entity entityB(entityBHandle, m_Level);
 
 		auto& entityARB2D = entityA.GetComponent<Rigidbody2DComponent>();
 		if (entityARB2D.OnCollisionEnd)
@@ -69,12 +74,13 @@ namespace Engine {
 		entt::entity entityAHandle = static_cast<entt::entity>(bodyA->GetUserData().pointer);
 		entt::entity entityBHandle = static_cast<entt::entity>(bodyB->GetUserData().pointer);
 
-		Entity entityA(entityAHandle, &Scene::GetScene());
-		Entity entityB(entityBHandle, &Scene::GetScene());
+		Entity entityA(entityAHandle, m_Level);
+		Entity entityB(entityBHandle, m_Level);
 
 		//ENGINE_INFO("Entity A: {0}, Entity B: {1}", entityA.GetComponent<MetadataComponent>().Tag, entityB.GetComponent<MetadataComponent>().Tag);
 
-		auto* entityAAbilityComponent = entityA.TryGetComponent<AbilityComponent>();
+		// TODO:: Ignore Ability Owner Collision
+		/*auto* entityAAbilityComponent = entityA.TryGetComponent<AbilityComponent>();
 		if (entityAAbilityComponent)
 		{
 			if (*(entityAAbilityComponent->Caster) == entityB) {
@@ -88,7 +94,7 @@ namespace Engine {
 			if (*(entityBAbilityComponent->Caster) == entityA) {
 				return false;
 			}
-		}
+		}*/
 
 		return true;
 	}

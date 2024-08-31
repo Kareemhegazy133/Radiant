@@ -4,11 +4,13 @@
 
 using namespace Engine;
 
+class GameLayer;
+
 class PauseMenu : public UIScreen
 {
 public:
-	PauseMenu();
-	virtual ~PauseMenu();
+	PauseMenu(GameLayer* gameLayer);
+	~PauseMenu() = default;
 
 	void Initialize() override;
 
@@ -28,6 +30,8 @@ private:
 	Button& optionsButton = AddElement<Button>();
 	Button& mainMenuButton = AddElement<Button>();
 	Button& quitGameButton = AddElement<Button>();
+
+	GameLayer* m_GameLayer = nullptr;
 	
 };
 

@@ -1,12 +1,13 @@
 #include "Zombie.h"
-#include "Gameplay/Attributes.h"
+
 #include "Gameplay/Entities/Abilities/Abilities.h"
 
 using namespace Engine;
 
-Zombie::Zombie()
-    : Character("Zombie", sf::Vector2f(500.f, 200.f))
+void Zombie::OnCreate()
 {
+    m_AttributeSet = new GameAttributeSet();
+
     m_FrameWidth = 256;
     m_FrameHeight = 256;
     m_FrameWidthPadding = 60;
@@ -19,32 +20,26 @@ Zombie::Zombie()
 
     AddComponent<BoxCollider2DComponent>();
 
-    attributes.SetAttribute(Attributes::Health, 100.f, 10);
-    attributes.SetAttribute(Attributes::Stamina, 100.f, 5);
-    attributes.SetAttribute(Attributes::Strength, 10.f, 4);
-    attributes.SetAttribute(Attributes::Defense, 10.f, 7);
-    attributes.SetAttribute(Attributes::Magic, 10.f, 3);
+    m_AttributeSet->SetAttribute(Attributes::Health, 100.f, 10);
+    m_AttributeSet->SetAttribute(Attributes::Stamina, 100.f, 5);
+    m_AttributeSet->SetAttribute(Attributes::Strength, 10.f, 4);
+    m_AttributeSet->SetAttribute(Attributes::Defense, 10.f, 7);
+    m_AttributeSet->SetAttribute(Attributes::Magic, 10.f, 3);
 
-    GAME_INFO("Zombie Health: {0}", attributes.GetAttribute(Attributes::Health));
+    GAME_INFO("Zombie Health: {0}", m_AttributeSet->GetAttribute(Attributes::Health));
 
-    abilities.AddAbility<Fireball>();
-
-    metadata.OnUpdate = BIND_MEMBER_FUNCTION(Zombie::OnUpdate, this);
+    abilities.AddAbility<Fireball>(this);
 
     // Starting Stats
-    character.Level = 1;
-    attributes.AddAttributePoints(4);
-    character.Coins = 0;
-    character.Diamonds = 0;
-    character.CurrentHealth = attributes.GetAttribute(Attributes::Health);
-    character.CurrentStamina = attributes.GetAttribute(Attributes::Stamina);
-    character.Speed = 200.f;
+    Level = 1;
+    m_AttributeSet->AddAttributePoints(4);
+    Coins = 0;
+    Diamonds = 0;
+    CurrentHealth = m_AttributeSet->GetAttribute(Attributes::Health);
+    CurrentStamina = m_AttributeSet->GetAttribute(Attributes::Stamina);
+    Speed = 200.f;
 
-    character.Direction.x = 1.f;
-}
-
-Zombie::~Zombie()
-{
+    Direction.x = 1.f;
 }
 
 void Zombie::OnUpdate(Timestep ts)
@@ -62,12 +57,12 @@ void Zombie::OnUpdate(Timestep ts)
         if (velocity.x < 0.f)
         {
             sprite.SetScale(-1.f, 1.f); // Turn left
-            character.Direction.x = -1.f;
+            Direction.x = -1.f;
         }
         else if (velocity.x > 0.f)
         {
             sprite.SetScale(1.f, 1.f); // Turn right
-            character.Direction.x = 1.f;
+            Direction.x = 1.f;
         }
     }
     else {
@@ -78,6 +73,12 @@ void Zombie::OnUpdate(Timestep ts)
         transform.GetPosition().x + velocity.x * ts,
         transform.GetPosition().y + velocity.y * ts
     );
+}
+
+void Zombie::OnDestroy()
+{
+    delete m_AttributeSet;
+    m_AttributeSet = nullptr;
 }
 
 void Zombie::SetupAnimations()

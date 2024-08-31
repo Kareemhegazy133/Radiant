@@ -28,7 +28,6 @@ namespace Engine {
         ~ResourceManager() = default;
 
     private:
-
         std::unordered_map<std::string, sf::Texture> m_Textures;
         std::unordered_map<std::string, sf::Font> m_Fonts;
     };

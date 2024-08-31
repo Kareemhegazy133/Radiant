@@ -6,6 +6,7 @@
 
 #include "Core/GameApplication.h"
 #include "Core/Layer.h"
+#include "Core/GameState.h"
 #include "Core/Log.h"
 
 #include "Core/Timestep.h"
@@ -20,14 +21,16 @@
 
 #include "Physics/Physics2D.h"
 
-#include "Scene/Scene.h"
-#include "Scene/Level.h"
-#include "Scene/Components.h"
-#include "Scene/GameObject.h"
-#include "Scene/Entities/Entity.h"
-#include "Scene/Entities/Character.h"
-#include "Scene/Entities/Ability.h"
-#include "Scene/SceneSerializer.h"
+#include "ECS/Level.h"
+#include "ECS/Components.h"
+#include "ECS/Entity.h"
+#include "ECS/ScriptableEntity.h"
+#include "ECS/LevelSerializer.h"
+
+#include "GAS/Ability.h"
+#include "GAS/AbilitySystemComponent.h"
+#include "GAS/AttributeSet.h"
+#include "GAS/GameplayEffect.h"
 
 #include "AI/StateMachine.h"
 
