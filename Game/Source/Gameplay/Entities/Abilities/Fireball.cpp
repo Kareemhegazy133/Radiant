@@ -53,7 +53,7 @@ void Fireball::OnUpdate(Timestep ts)
         return;
     }
 
-    sf::Vector2f velocity = { 0.0f, 0.0f };
+    glm::vec2 velocity = { 0.0f, 0.0f };
     velocity.x += Speed * m_Direction.x;
 
     auto& sprite = GetComponent<SpriteComponent>();

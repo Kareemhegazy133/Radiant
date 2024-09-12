@@ -370,6 +370,7 @@ bool CharacterInfoMenu::OnMouseButtonPressed(MouseButtonPressedEvent& e)
 {
 	if (e.GetMouseButton() == Mouse::Left)
 	{
+		// TODO: Use glm here when glfw implemented
 		sf::Vector2i mousePos = {
 			static_cast<int>(Input::GetMousePosition().first),
 			static_cast<int>(Input::GetMousePosition().second)

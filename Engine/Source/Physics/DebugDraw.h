@@ -26,7 +26,12 @@ namespace Engine {
         sf::RenderWindow* m_RenderWindow;
 
         sf::Color B2ColorToSFColor(const b2Color& color, int alpha = 255);
-        sf::Vector2f B2VecToSFVec(const b2Vec2& vector);
+
+        // Conversion functions between GLM and SFML
+        sf::Vector2f GLMVecToSFVec(const glm::vec2& vector);
+        sf::Vector2f GLMVecToSFVec(const glm::vec3& vector);
+        sf::Vector2f GLMVecToSFVec(const glm::vec4& vector);
+        glm::vec2 SFVecToGLMVec(const sf::Vector2f& vector);
     };
 }
 

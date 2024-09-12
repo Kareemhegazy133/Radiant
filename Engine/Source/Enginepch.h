@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <SFML/System/Vector2.hpp>
+#include <glm/glm.hpp>
 
 #include "Core/Base.h"
 

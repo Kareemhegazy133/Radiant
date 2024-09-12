@@ -12,7 +12,7 @@ namespace Engine {
     template<typename T>
     void AnimationComponent::AddAnimation(T state,
         const std::string& textureIdentifier,
-        const std::vector<sf::IntRect>& frames,
+        const std::vector<glm::ivec4>& frames,
         uint8_t frameWidthPadding,
         uint8_t frameHeightPadding,
         float frameDuration,
@@ -87,7 +87,6 @@ namespace Engine {
         }
     }
 
-
     bool AnimationComponent::IsFinished() const
     {
         // No animation or looping animation cannot be finished
@@ -98,7 +97,7 @@ namespace Engine {
         return m_CurrentFrame == Animations.at(m_CurrentAnimation).Frames.size() - 1;
     }
 
-    const sf::IntRect& AnimationComponent::GetCurrentFrame() const
+    const glm::ivec4& AnimationComponent::GetCurrentFrame() const
     {
         return Animations.at(m_CurrentAnimation).Frames[m_CurrentFrame];
     }
@@ -107,7 +106,7 @@ namespace Engine {
     template void AnimationComponent::AddAnimation<PlayerState>(
         PlayerState,
         const std::string&,
-        const std::vector<sf::IntRect>&,
+        const std::vector<glm::ivec4>&,
         uint8_t,
         uint8_t,
         float,
@@ -117,7 +116,7 @@ namespace Engine {
     template void AnimationComponent::AddAnimation<AbilityState>(
         AbilityState,
         const std::string&,
-        const std::vector<sf::IntRect>&,
+        const std::vector<glm::ivec4>&,
         uint8_t,
         uint8_t,
         float,
@@ -127,7 +126,7 @@ namespace Engine {
     template void AnimationComponent::AddAnimation<EnemyState>(
         EnemyState,
         const std::string&,
-        const std::vector<sf::IntRect>&,
+        const std::vector<glm::ivec4>&,
         uint8_t,
         uint8_t,
         float,

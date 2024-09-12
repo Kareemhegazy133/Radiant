@@ -54,7 +54,7 @@ void Zombie::OnUpdate(Timestep ts)
     animation.Update(ts);
 
     // Reset velocity each frame
-    sf::Vector2f velocity = { 0.0f, 0.0f };
+    glm::vec2 velocity = { 0.0f, 0.0f };
 
     if (velocity.x != 0.f)
     {

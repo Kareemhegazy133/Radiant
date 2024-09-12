@@ -20,14 +20,14 @@ namespace Engine {
 	{
 	public:
 		Button() = default;
-		Button(const sf::Vector2f& position, const sf::Vector2f& size);
+		Button(const glm::vec2& position, const glm::vec2& size);
 
-		void SetSize(const sf::Vector2f& size);
-		const sf::Vector2f& GetSize() const;
+		void SetSize(const glm::vec2& size);
+		const glm::vec2& GetSize() const;
 
-		void SetPosition(const sf::Vector2f& position);
+		void SetPosition(const glm::vec2& position);
 		void SetPosition(float x, float y);
-		const sf::Vector2f& GetPosition() const;
+		const glm::vec2& GetPosition() const;
 
 		void SetDisabled(bool disable);
 

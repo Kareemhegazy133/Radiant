@@ -1,25 +1,23 @@
 #include "Enginepch.h"
-
 #include "TransformComponent.h"
-
 #include "box2d/b2_body.h"
 
 namespace Engine {
 
-    TransformComponent::TransformComponent(const sf::Vector2f& position)
+    TransformComponent::TransformComponent(const glm::vec2& position)
         : Transform()
     {
         SetPosition(position);
     }
 
-    void TransformComponent::SetPosition(const sf::Vector2f& position)
+    void TransformComponent::SetPosition(const glm::vec2& position)
     {
         if (RuntimeBody)
         {
             b2Body* body = static_cast<b2Body*>(RuntimeBody);
             body->SetTransform(b2Vec2(position.x, position.y), DEG_TO_RAD(GetRotation()));
         }
-        Transform.setPosition(position);
+        Transform.setPosition(position.x, position.y);
     }
 
     void TransformComponent::SetPosition(float x, float y)
@@ -32,14 +30,16 @@ namespace Engine {
         Transform.setPosition(x, y);
     }
 
-    sf::Vector2f TransformComponent::GetPosition()
+    glm::vec2 TransformComponent::GetPosition()
     {
-        if (RuntimeBody) {
+        if (RuntimeBody)
+        {
             b2Body* body = static_cast<b2Body*>(RuntimeBody);
             const auto& position = body->GetPosition();
             Transform.setPosition(position.x, position.y);
         }
-        return Transform.getPosition();
+        auto position = Transform.getPosition();
+        return glm::vec2(position.x, position.y);
     }
 
     void TransformComponent::SetRotation(float angle)
@@ -61,9 +61,9 @@ namespace Engine {
         return Transform.getRotation();
     }
 
-    void TransformComponent::SetScale(const sf::Vector2f& scale)
+    void TransformComponent::SetScale(const glm::vec2& scale)
     {
-        Transform.setScale(scale);
+        Transform.setScale(scale.x, scale.y);
     }
 
     void TransformComponent::SetScale(float scaleX, float scaleY)
@@ -71,9 +71,10 @@ namespace Engine {
         Transform.setScale(scaleX, scaleY);
     }
 
-    sf::Vector2f TransformComponent::GetScale() const
+    glm::vec2 TransformComponent::GetScale() const
     {
-        return Transform.getScale();
+        auto scale = Transform.getScale();
+        return glm::vec2(scale.x, scale.y);
     }
 
     void TransformComponent::SetOrigin(float x, float y)
@@ -81,9 +82,10 @@ namespace Engine {
         Transform.setOrigin(x, y);
     }
 
-    sf::Vector2f TransformComponent::GetOrigin() const
+    glm::vec2 TransformComponent::GetOrigin() const
     {
-        return Transform.getOrigin();
+        auto origin = Transform.getOrigin();
+        return glm::vec2(origin.x, origin.y);
     }
 
     void TransformComponent::Move(float offsetX, float offsetY)

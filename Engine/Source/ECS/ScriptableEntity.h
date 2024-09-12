@@ -2,10 +2,6 @@
 
 #include "Entity.h"
 
-enum class PlayerState;
-enum class AbilityState;
-enum class EnemyState;
-
 namespace Engine {
 
 	class ScriptableEntity
@@ -60,14 +56,14 @@ namespace Engine {
 		void SetupAnimation(T state, const std::string& textureIdentifier, int frameCount, int frameWidth, int frameHeight,
 			int frameWidthPadding, int frameHeightPadding, float frameDuration, bool enableLooping)
 		{
-			std::vector<sf::IntRect> frames;
+			std::vector<glm::ivec4> frames;
 			for (int i = 0; i < frameCount; i++)
 			{
 				int left = frameWidth * i + frameWidthPadding;
 				int top = frameHeightPadding;
 				int width = frameWidth - frameWidthPadding * 2;
 				int height = frameHeight - frameHeightPadding * 2;
-				frames.emplace_back(sf::IntRect(left, top, width, height));
+				frames.emplace_back(left, top, width, height);
 			}
 
 			auto& animationComponent = GetComponent<AnimationComponent>();
@@ -85,8 +81,4 @@ namespace Engine {
 		friend class Level;
 	};
 
-	//// Explicit template instantiation
-	//template void ScriptableEntity::SetupAnimation<PlayerState>(PlayerState, const std::string&, int, int, int, int, int, float, bool);
-	//template void ScriptableEntity::SetupAnimation<AbilityState>(AbilityState, const std::string&, int, int, int, int, int, float, bool);
-	//template void ScriptableEntity::SetupAnimation<EnemyState>(EnemyState, const std::string&, int, int, int, int, int, float, bool);
 }

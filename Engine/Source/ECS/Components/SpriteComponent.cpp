@@ -1,7 +1,6 @@
 #include "Enginepch.h"
 
 #include "SpriteComponent.h"
-
 #include "Utils/ResourceManager.h"
 
 namespace Engine {
@@ -14,14 +13,14 @@ namespace Engine {
         : Sprite(), TextureIdentifier(textureIdentifier)
     {
         Sprite.setTexture(ResourceManager::GetTexture(textureIdentifier));
-        Sprite.setOrigin(GetTextureSize() / 2.f);
+        SetOrigin(GetTextureSize() / 2.0f);
     }
 
     void SpriteComponent::SetTextureIdentifier(const std::string& textureIdentifier)
     {
         TextureIdentifier = textureIdentifier;
         Sprite.setTexture(ResourceManager::GetTexture(textureIdentifier));
-        Sprite.setOrigin(GetTextureSize() / 2.f);
+        SetOrigin(GetTextureSize() / 2.0f);
     }
 
     const std::string& SpriteComponent::GetTextureIdentifier() const
@@ -29,26 +28,27 @@ namespace Engine {
         return TextureIdentifier;
     }
 
-    sf::Vector2f SpriteComponent::GetTextureSize() const
+    glm::vec2 SpriteComponent::GetTextureSize() const
     {
-        sf::Vector2i size = GetTextureRect().getSize();
-        return sf::Vector2f(static_cast<float>(size.x), static_cast<float>(size.y));
+        sf::Vector2u size = Sprite.getTexture()->getSize();
+        return glm::vec2(static_cast<float>(size.x), static_cast<float>(size.y));
     }
 
-    void SpriteComponent::SetTextureRect(const sf::IntRect& rectangle)
+    void SpriteComponent::SetTextureRect(const glm::ivec4& rectangle)
     {
-        Sprite.setTextureRect(rectangle);
-        Sprite.setOrigin(GetTextureSize() / 2.f);
+        Sprite.setTextureRect(sf::IntRect(rectangle.x, rectangle.y, rectangle.z, rectangle.w));
+        SetOrigin(GetTextureSize() / 2.0f);
     }
 
-    const sf::IntRect& SpriteComponent::GetTextureRect() const
+    glm::ivec4 SpriteComponent::GetTextureRect() const
     {
-        return Sprite.getTextureRect();
+        sf::IntRect rect = Sprite.getTextureRect();
+        return glm::ivec4(rect.left, rect.top, rect.width, rect.height);
     }
 
-    void SpriteComponent::SetPosition(const sf::Vector2f& position)
+    void SpriteComponent::SetPosition(const glm::vec2& position)
     {
-        Sprite.setPosition(position);
+        Sprite.setPosition(position.x, position.y);
     }
 
     void SpriteComponent::SetPosition(float x, float y)
@@ -61,9 +61,9 @@ namespace Engine {
         Sprite.setRotation(angle);
     }
 
-    void SpriteComponent::SetScale(const sf::Vector2f& scale)
+    void SpriteComponent::SetScale(const glm::vec2& scale)
     {
-        Sprite.setScale(scale);
+        Sprite.setScale(scale.x, scale.y);
     }
 
     void SpriteComponent::SetScale(float factorX, float factorY)
@@ -71,9 +71,9 @@ namespace Engine {
         Sprite.setScale(factorX, factorY);
     }
 
-    void SpriteComponent::SetOrigin(const sf::Vector2f& origin)
+    void SpriteComponent::SetOrigin(const glm::vec2& origin)
     {
-        Sprite.setOrigin(origin);
+        Sprite.setOrigin(origin.x, origin.y);
     }
 
     void SpriteComponent::SetOrigin(float originX, float originY)
@@ -81,9 +81,10 @@ namespace Engine {
         Sprite.setOrigin(originX, originY);
     }
 
-    const sf::Vector2f& SpriteComponent::GetScale() const
+    glm::vec2 SpriteComponent::GetScale() const
     {
-        return Sprite.getScale();
+        sf::Vector2f scale = Sprite.getScale();
+        return glm::vec2(scale.x, scale.y);
     }
 
 }

@@ -62,7 +62,7 @@ void Player::OnUpdate(Timestep ts)
     animation.Update(ts);
 
     // Reset velocity each frame
-    sf::Vector2f velocity = { 0.0f, 0.0f };
+    glm::vec2 velocity = { 0.0f, 0.0f };
 
     if (Input::IsKeyPressed(Key::W))
         velocity.y -= Speed;

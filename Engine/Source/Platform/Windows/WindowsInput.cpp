@@ -17,6 +17,7 @@ namespace Engine {
 		return window->hasFocus() && sf::Mouse::isButtonPressed(static_cast<sf::Mouse::Button>(button));
 	}
 
+	// TODO: Use glm here when glfw implemented
 	std::pair<float, float> Input::GetMousePosition()
 	{
 		auto window = GameApplication::GetRenderWindow();

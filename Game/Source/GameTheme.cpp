@@ -16,10 +16,10 @@ unsigned int GameTheme::s_CommonButtonTextSize;
 unsigned int GameTheme::s_MediumButtonTextSize;
 unsigned int GameTheme::s_LargeButtonTextSize;
 
-sf::Vector2f GameTheme::s_CommonButtonSize;
-//sf::Vector2f GameTheme::s_SmallButtonSize;
-sf::Vector2f GameTheme::s_MediumButtonSize;
-sf::Vector2f GameTheme::s_LargeButtonSize;
+glm::vec2 GameTheme::s_CommonButtonSize;
+//glm::vec2 GameTheme::s_SmallButtonSize;
+glm::vec2 GameTheme::s_MediumButtonSize;
+glm::vec2 GameTheme::s_LargeButtonSize;
 
 void GameTheme::Initialize()
 {

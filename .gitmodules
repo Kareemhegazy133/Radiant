@@ -7,3 +7,6 @@
 [submodule "Engine/Vendor/yaml-cpp"]
 	path = Engine/Vendor/yaml-cpp
 	url = https://github.com/TheCherno/yaml-cpp
+[submodule "Engine/Vendor/glm"]
+	path = Engine/Vendor/glm
+	url = https://github.com/g-truc/glm

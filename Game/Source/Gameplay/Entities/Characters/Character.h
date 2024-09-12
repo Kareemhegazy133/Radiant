@@ -31,6 +31,6 @@ public:
     float CurrentStamina = 0.f;
     float Speed;
 
-    sf::Vector2f Direction;
+    glm::vec2 Direction;
 
 };
