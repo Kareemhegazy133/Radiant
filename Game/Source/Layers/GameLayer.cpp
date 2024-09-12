@@ -22,7 +22,7 @@ GameLayer::~GameLayer()
 
 void GameLayer::OnAttach()
 {
-    // TODO: Look to implement on demand creation
+    // TODO: Look to implement on demand creation/destruction
     m_MainMenuState = CreateRef<MainMenuState>(this);
     m_GamePausedState = CreateRef<GamePausedState>(this);
     m_GameplayState = CreateRef<GameplayState>(this);

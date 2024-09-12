@@ -31,10 +31,30 @@ namespace Engine {
 			m_Entity.RemoveComponent<T>();
 		}
 
+		bool operator==(const ScriptableEntity& other) const
+		{
+			return m_Entity == other.m_Entity;
+		}
+
+		bool operator!=(const ScriptableEntity& other) const
+		{
+			return !(*this == other);
+		}
+
+		bool operator==(const Entity& other) const
+		{
+			return m_Entity == other;
+		}
+
+		bool operator!=(const Entity& other) const
+		{
+			return !(*this == other);
+		}
+
 	protected:
-		virtual void OnCreate() {}
-		virtual void OnUpdate(Timestep ts) {}
-		virtual void OnDestroy() {}
+		virtual void OnCreate() { std::cout << "Scriptable OnCreate" << std::endl; }
+		virtual void OnUpdate(Timestep ts) { std::cout << "Scriptable OnUpdate" << std::endl; }
+		virtual void OnDestroy() { std::cout << "Scriptable OnDestroy" << std::endl; }
 
 		template<typename T>
 		void SetupAnimation(T state, const std::string& textureIdentifier, int frameCount, int frameWidth, int frameHeight,

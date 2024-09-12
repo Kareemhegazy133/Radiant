@@ -31,6 +31,7 @@ namespace Engine {
 		entity.AddComponent<TransformComponent>();
 		auto& metadata = entity.AddComponent<MetadataComponent>();
 		metadata.ID = uuid;
+		metadata.Type = typeid(Entity);
 		metadata.Tag = name.empty() ? "Entity" : name;
 
 		m_EntityMap[uuid] = entity;
@@ -48,20 +49,19 @@ namespace Engine {
 	{
 		m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
 			{
+				// TODO: Move to Scene::OnScenePlay
 				if (!nsc.Instance)
 				{
 					nsc.Instance = nsc.InstantiateScript();
 					nsc.Instance->m_Entity = Entity{ entity, this };
 					nsc.Instance->OnCreate();
 				}
-
 				auto& metadata = nsc.Instance->m_Entity.GetComponent<MetadataComponent>();
 				if (!metadata.IsActive) return;
 
 				nsc.Instance->OnUpdate(ts);
-				
 			});
-
+		
 		auto view = GetAllEntitiesWith<MetadataComponent, TransformComponent, SpriteComponent, BoxCollider2DComponent>();
 		for (auto entityHandle : view)
 		{

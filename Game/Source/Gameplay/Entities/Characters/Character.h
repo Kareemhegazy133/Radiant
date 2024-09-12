@@ -8,7 +8,14 @@ class Character : public ScriptableEntity
 {
 public:
 
-    virtual void OnCreate() = 0;
+    virtual void OnCreate()
+    {
+        GetComponent<MetadataComponent>().Type = typeid(Character);
+        AddComponent<SpriteComponent>();
+        AddComponent<AnimationComponent>();
+        AddComponent<AbilitySystemComponent>();
+    }
+
     virtual void OnUpdate(Timestep ts) = 0;
     virtual void OnDestroy() = 0;
 
@@ -26,11 +33,4 @@ public:
 
     sf::Vector2f Direction;
 
-protected:
-    MetadataComponent& metadata = GetComponent<MetadataComponent>();
-    TransformComponent& transform = GetComponent<TransformComponent>();
-    SpriteComponent& sprite = AddComponent<SpriteComponent>();
-    AnimationComponent& animation = AddComponent<AnimationComponent>();
-
-    AbilitySystemComponent& abilities = AddComponent<AbilitySystemComponent>();
 };

@@ -35,7 +35,6 @@ private:
     void SetupStateMachine();
 
 private:
-    Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
     StateMachine m_StateMachine;
 
     CharacterInfoMenu* m_CharacterInfoMenu = nullptr;

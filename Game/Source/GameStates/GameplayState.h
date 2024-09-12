@@ -2,7 +2,9 @@
 
 #include <Engine.h>
 
-#include "Menus/CharacterInfoMenu.h"
+#include "GameContext.h"
+
+#include "Gameplay/Entities/Characters/Player.h"
 
 using namespace Engine;
 
@@ -19,6 +21,10 @@ public:
     void OnEnter() override
     {
         m_Level = CreateScope<Level>();
+        GameContext::SetLevel(m_Level.get());
+
+        Entity player = m_Level->CreateEntity("Player");
+        player.AddComponent<NativeScriptComponent>().Bind<Player>();
     }
 
     void OnExit() override;

@@ -2,6 +2,11 @@ workspace "TheReaper"
    architecture "x64"
    configurations { "Debug", "Release", "Dist" }
    startproject "Game"
+   
+   flags
+	{
+		"MultiProcessorCompile"
+	}
 
    -- Workspace-wide build options for MSVC
    filter "system:windows"

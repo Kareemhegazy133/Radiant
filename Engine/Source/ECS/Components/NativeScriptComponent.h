@@ -15,14 +15,20 @@ namespace Engine {
         {
             InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
             DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
+        }
 
+        template<typename T>
+        void Bind(ScriptableEntity* abilityOwner)
+        {
+            InstantiateScript = [abilityOwner]() { return static_cast<ScriptableEntity*>(new T(abilityOwner)); };
+            DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
         }
 
     public:
         ScriptableEntity* Instance = nullptr;
 
-        ScriptableEntity*(*InstantiateScript)();
-        void (*DestroyScript)(NativeScriptComponent*);
+        std::function<ScriptableEntity* ()> InstantiateScript;
+        std::function<void(NativeScriptComponent*)> DestroyScript;
     };
 }
 

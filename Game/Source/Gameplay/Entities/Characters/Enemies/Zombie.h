@@ -32,6 +32,5 @@ private:
     void SetupAnimations();
 
 private:
-    Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
     GameAttributeSet* m_AttributeSet = nullptr;
 };

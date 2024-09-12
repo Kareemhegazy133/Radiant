@@ -5,6 +5,7 @@
 
 #include "ECS/Level.h"
 #include "ECS/Entity.h"
+#include "GAS/Ability.h"
 
 #include "CollisionListener.h"
 
@@ -80,21 +81,34 @@ namespace Engine {
 		//ENGINE_INFO("Entity A: {0}, Entity B: {1}", entityA.GetComponent<MetadataComponent>().Tag, entityB.GetComponent<MetadataComponent>().Tag);
 
 		// TODO:: Ignore Ability Owner Collision
-		/*auto* entityAAbilityComponent = entityA.TryGetComponent<AbilityComponent>();
-		if (entityAAbilityComponent)
+
+		if (entityA.GetComponent<MetadataComponent>().Type == typeid(Ability))
 		{
-			if (*(entityAAbilityComponent->Caster) == entityB) {
-				return false;
+			auto& entityANSC = entityA.GetComponent<NativeScriptComponent>();
+			if (entityANSC.Instance)
+			{
+				Ability* ability = static_cast<Ability*>(entityANSC.Instance);
+
+				if (ability && ability->Caster && *(ability->Caster) == entityB)
+				{
+					return false;
+				}
 			}
 		}
 
-		auto* entityBAbilityComponent = entityB.TryGetComponent<AbilityComponent>();
-		if (entityBAbilityComponent)
+		if (entityB.GetComponent<MetadataComponent>().Type == typeid(Ability))
 		{
-			if (*(entityBAbilityComponent->Caster) == entityA) {
-				return false;
+			auto& entityBNSC = entityB.GetComponent<NativeScriptComponent>();
+			if (entityBNSC.Instance)
+			{
+				Ability* ability = static_cast<Ability*>(entityBNSC.Instance);
+
+				if (ability && ability->Caster && *(ability->Caster) == entityA)
+				{
+					return false;
+				}
 			}
-		}*/
+		}
 
 		return true;
 	}

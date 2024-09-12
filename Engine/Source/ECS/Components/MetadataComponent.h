@@ -2,6 +2,8 @@
 
 #include "Enginepch.h"
 
+#include <typeindex>
+
 #include "Core/UUID.h"
 
 namespace Engine {
@@ -20,6 +22,8 @@ namespace Engine {
         std::string Tag;
         bool IsActive = true;
 
+        // Initialize with 'void' as a default type
+        std::type_index Type = typeid(void);
     };
 }
 

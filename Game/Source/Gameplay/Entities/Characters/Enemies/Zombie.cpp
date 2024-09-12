@@ -1,11 +1,15 @@
 #include "Zombie.h"
 
+#include "GameContext.h"
+
 #include "Gameplay/Entities/Abilities/Abilities.h"
 
 using namespace Engine;
 
 void Zombie::OnCreate()
 {
+    Character::OnCreate();
+
     m_AttributeSet = new GameAttributeSet();
 
     m_FrameWidth = 256;
@@ -15,6 +19,7 @@ void Zombie::OnCreate()
 
     SetupAnimations();
 
+    Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
     rb2d.OnCollisionBegin = BIND_MEMBER_FUNCTION(Zombie::OnCollisionBegin, this);
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Zombie::OnCollisionEnd, this);
 
@@ -28,7 +33,8 @@ void Zombie::OnCreate()
 
     GAME_INFO("Zombie Health: {0}", m_AttributeSet->GetAttribute(Attributes::Health));
 
-    abilities.AddAbility<Fireball>(this);
+    auto& abilities = GetComponent<AbilitySystemComponent>();
+    abilities.AddAbility<Fireball>("Fireball", this, GameContext::GetLevel());
 
     // Starting Stats
     Level = 1;
@@ -44,6 +50,7 @@ void Zombie::OnCreate()
 
 void Zombie::OnUpdate(Timestep ts)
 {
+    auto& animation = GetComponent<AnimationComponent>();
     animation.Update(ts);
 
     // Reset velocity each frame
@@ -53,6 +60,7 @@ void Zombie::OnUpdate(Timestep ts)
     {
         // Walking State
 
+        auto& sprite = GetComponent<SpriteComponent>();
         // Flip the sprite based on direction
         if (velocity.x < 0.f)
         {
@@ -69,6 +77,7 @@ void Zombie::OnUpdate(Timestep ts)
         // Idle State
     }
 
+    auto& transform = GetComponent<TransformComponent>();
     transform.SetPosition(
         transform.GetPosition().x + velocity.x * ts,
         transform.GetPosition().y + velocity.y * ts

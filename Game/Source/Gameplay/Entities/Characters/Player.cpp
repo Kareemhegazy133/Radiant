@@ -1,12 +1,16 @@
 #include "Player.h"
 
+#include "GameContext.h"
+
 #include "Gameplay/Entities/Abilities/Abilities.h"
 
 using namespace Engine;
 
 void Player::OnCreate()
 {
-    // TODO: Revisit
+    Character::OnCreate();
+
+    // TODO: Revisit maybe?
     m_CharacterInfoMenu = new CharacterInfoMenu(this);
     m_AttributeSet = new GameAttributeSet();
 
@@ -15,11 +19,14 @@ void Player::OnCreate()
     m_FrameWidthPadding = 60;
     m_FrameHeightPadding = 40;
 
+    auto& transform = GetComponent<TransformComponent>();
+
     transform.SetPosition({ 300.f, 200.f });
 
     SetupAnimations();
     SetupStateMachine();
 
+    Rigidbody2DComponent& rb2d = AddComponent<Rigidbody2DComponent>(Rigidbody2DComponent::BodyType::Dynamic);
     rb2d.OnCollisionBegin = BIND_MEMBER_FUNCTION(Player::OnCollisionBegin, this);
     rb2d.OnCollisionEnd = BIND_MEMBER_FUNCTION(Player::OnCollisionEnd, this);
 
@@ -33,7 +40,9 @@ void Player::OnCreate()
 
     GAME_INFO("Player Health: {0}", m_AttributeSet->GetAttribute(Attributes::Health));
 
-    abilities.AddAbility<Fireball>(this);
+    auto& abilities = GetComponent<AbilitySystemComponent>();
+    abilities.AddAbility<Fireball>("Fireball", this, GameContext::GetLevel());
+    
 
     // Starting Stats
     Level = 1;
@@ -49,6 +58,7 @@ void Player::OnCreate()
 
 void Player::OnUpdate(Timestep ts)
 {
+    auto& animation = GetComponent<AnimationComponent>();
     animation.Update(ts);
 
     // Reset velocity each frame
@@ -67,6 +77,7 @@ void Player::OnUpdate(Timestep ts)
     {
         m_StateMachine.SetState(PlayerState::Walking);
 
+        auto& sprite = GetComponent<SpriteComponent>();
         // Flip the sprite based on direction
         if (velocity.x < 0.f)
         {
@@ -83,6 +94,7 @@ void Player::OnUpdate(Timestep ts)
         m_StateMachine.SetState(PlayerState::Idle);
     }
 
+    auto& transform = GetComponent<TransformComponent>();
     transform.SetPosition(
         transform.GetPosition().x + velocity.x * ts,
         transform.GetPosition().y + velocity.y * ts
@@ -91,6 +103,7 @@ void Player::OnUpdate(Timestep ts)
     // TODO: Add Keybinds functionality
     if (Input::IsKeyPressed(Key::Num1))
     {
+        auto& abilities = GetComponent<AbilitySystemComponent>();
         bool casted = abilities.ActivateAbility(0);
         if (casted)
         {
@@ -150,6 +163,7 @@ void Player::SetupStateMachine()
 {
     m_StateMachine.AddState(PlayerState::Idle,
         [this]() {
+            auto& animation = GetComponent<AnimationComponent>();
             // OnEnter Idle State
             animation.SetAnimation(PlayerState::Idle);
         },
@@ -165,6 +179,7 @@ void Player::SetupStateMachine()
 
     m_StateMachine.AddState(PlayerState::Walking,
         [this]() {
+            auto& animation = GetComponent<AnimationComponent>();
             // OnEnter Walking State
             animation.SetAnimation(PlayerState::Walking);
         },
@@ -180,10 +195,12 @@ void Player::SetupStateMachine()
 
     m_StateMachine.AddState(PlayerState::Throwing,
         [this]() {
+            auto& animation = GetComponent<AnimationComponent>();
             // OnEnter Throwing State
             animation.SetAnimation(PlayerState::Throwing);
         },
         [this]() {
+            auto& animation = GetComponent<AnimationComponent>();
             // OnUpdate Throwing State
             // Check if the throw animation is done
             if (animation.IsFinished())

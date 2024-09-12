@@ -16,7 +16,7 @@ namespace Engine {
 	public:
 		Level();
 		~Level();
-
+		
 		Entity CreateEntity(const std::string& name = std::string());
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 

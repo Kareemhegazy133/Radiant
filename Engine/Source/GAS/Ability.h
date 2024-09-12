@@ -13,7 +13,13 @@ namespace Engine {
 	{
 	public:
 
-		virtual void OnCreate() = 0;
+		virtual void OnCreate()
+		{
+			GetComponent<MetadataComponent>().Type = typeid(Ability);
+			AddComponent<SpriteComponent>();
+			AddComponent<AnimationComponent>();
+		}
+
 		virtual void OnUpdate(Timestep ts) = 0;
 		virtual void OnDestroy() = 0;
 
@@ -47,10 +53,5 @@ namespace Engine {
 		float Cooldown;
 		float LastActivatedTime;
 
-	protected:
-		MetadataComponent& metadata = GetComponent<MetadataComponent>();
-		TransformComponent& transform = GetComponent<TransformComponent>();
-		SpriteComponent& sprite = AddComponent<SpriteComponent>();
-		AnimationComponent& animation = AddComponent<AnimationComponent>();
 	};
 }

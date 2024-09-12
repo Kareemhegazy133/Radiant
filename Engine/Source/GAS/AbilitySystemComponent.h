@@ -8,19 +8,22 @@ namespace Engine {
     {
     public:
 
-        template<typename T, typename... Args>
-        void AddAbility(Args&&... args)
+        template<typename T>
+        void AddAbility(const std::string& abilityName, ScriptableEntity* owner, Level* level)
         {
             ENGINE_ASSERT(std::is_base_of<Ability, T>::value, "T must inherit from Ability");
-            m_Abilities.emplace_back(CreateRef<T>(std::forward<Args>(args)...));
+            Entity ability = level->CreateEntity(abilityName);
+            ability.AddComponent<NativeScriptComponent>().Bind<T>(owner);
+
+            m_Abilities.emplace_back(ability);
         }
 
         bool ActivateAbility(size_t index);
 
-        const std::vector<Ref<Ability>>& GetAbilities() const;
+        const std::vector<Entity>& GetAbilities() const;
 
     private:
-        std::vector<Ref<Ability>> m_Abilities;
+        std::vector<Entity> m_Abilities;
     };
 
 }
