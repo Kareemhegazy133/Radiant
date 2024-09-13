@@ -7,24 +7,23 @@ namespace Engine {
     class TransformComponent
     {
     public:
-
         TransformComponent() = default;
         TransformComponent(const TransformComponent&) = default;
-        TransformComponent(const sf::Vector2f& position);
+        TransformComponent(const glm::vec2& position);
 
-        void SetPosition(const sf::Vector2f& position);
+        void SetPosition(const glm::vec2& position);
         void SetPosition(float x, float y);
-        sf::Vector2f GetPosition();
+        glm::vec2 GetPosition();
 
         void SetRotation(float angle);
         float GetRotation();
 
-        void SetScale(const sf::Vector2f& scale);
+        void SetScale(const glm::vec2& scale);
         void SetScale(float scaleX, float scaleY);
-        sf::Vector2f GetScale() const;
+        glm::vec2 GetScale() const;
 
         void SetOrigin(float x, float y);
-        sf::Vector2f GetOrigin() const;
+        glm::vec2 GetOrigin() const;
 
         void Move(float offsetX, float offsetY);
 

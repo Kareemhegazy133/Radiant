@@ -24,10 +24,10 @@ public:
     inline static unsigned int GetMediumButtonTextSize() { return s_MediumButtonTextSize; }
     inline static unsigned int GetLargeButtonTextSize() { return s_LargeButtonTextSize; }
 
-    inline static const sf::Vector2f& GetCommonButtonSize() { return s_CommonButtonSize; }
+    inline static const glm::vec2& GetCommonButtonSize() { return s_CommonButtonSize; }
     //inline static const sf::Vector2f& GetSmallButtonSize() { return s_SmallButtonSize; }
-    inline static const sf::Vector2f& GetMediumButtonSize() { return s_MediumButtonSize; }
-    inline static const sf::Vector2f& GetLargeButtonSize() { return s_LargeButtonSize; }
+    inline static const glm::vec2& GetMediumButtonSize() { return s_MediumButtonSize; }
+    inline static const glm::vec2& GetLargeButtonSize() { return s_LargeButtonSize; }
 
     inline static const sf::Texture* GetCommonButtonNormalTexture() { return &ResourceManager::GetTexture("CommonButton"); }
     inline static const sf::Texture* GetCommonButtonHoveredTexture() { return &ResourceManager::GetTexture("CommonButtonHovered"); }
@@ -52,8 +52,8 @@ private:
     static unsigned int s_MediumButtonTextSize;
     static unsigned int s_LargeButtonTextSize;
 
-    static sf::Vector2f s_CommonButtonSize;
-    //static sf::Vector2f s_SmallButtonSize;
-    static sf::Vector2f s_MediumButtonSize;
-    static sf::Vector2f s_LargeButtonSize;
+    static glm::vec2 s_CommonButtonSize;
+    //static glm::vec2 s_SmallButtonSize;
+    static glm::vec2 s_MediumButtonSize;
+    static glm::vec2 s_LargeButtonSize;
 };

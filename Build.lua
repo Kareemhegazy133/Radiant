@@ -22,6 +22,7 @@ IncludeDir["sfml"] = "Engine/Vendor/sfml/include"
 IncludeDir["entt"] = "Engine/Vendor/entt/include"
 IncludeDir["box2d"] = "Engine/Vendor/box2d/include"
 IncludeDir["yaml_cpp"] = "Engine/Vendor/yaml-cpp/include"
+IncludeDir["glm"] = "Engine/Vendor/glm"
 
 group "Dependencies"
 	include "Engine/Vendor/box2d"
@@ -43,7 +44,9 @@ project "Engine"
 	{
 		"%{prj.name}/Source/**.h",
 		"%{prj.name}/Source/**.hpp",
-		"%{prj.name}/Source/**.cpp"
+		"%{prj.name}/Source/**.cpp",
+		"%{prj.name}/Vendor/glm/glm/**.hpp",
+		"%{prj.name}/Vendor/glm/glm/**.inl",
 	}
 
 	includedirs
@@ -53,7 +56,8 @@ project "Engine"
 		"%{IncludeDir.sfml}",
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.box2d}",
-		"%{IncludeDir.yaml_cpp}"
+		"%{IncludeDir.yaml_cpp}",
+		"%{IncludeDir.glm}"
 	}
 
 	libdirs
@@ -117,7 +121,8 @@ project "Game"
 		"%{IncludeDir.sfml}",
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.box2d}",
-		"%{IncludeDir.yaml_cpp}"
+		"%{IncludeDir.yaml_cpp}",
+		"%{IncludeDir.glm}"
 	}
 
 	libdirs

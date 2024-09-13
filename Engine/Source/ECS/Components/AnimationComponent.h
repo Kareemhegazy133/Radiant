@@ -22,7 +22,7 @@ namespace Engine {
         template<typename T>
         void AddAnimation(T state,
             const std::string& textureIdentifier,
-            const std::vector<sf::IntRect>& frames,
+            const std::vector<glm::ivec4>& frames,
             uint8_t frameWidthPadding,
             uint8_t frameHeightPadding,
             float frameDuration,
@@ -41,13 +41,13 @@ namespace Engine {
         // Check if the current animation has finished
         bool IsFinished() const;
 
-        const sf::IntRect& GetCurrentFrame() const;
+        const glm::ivec4& GetCurrentFrame() const;
 
     public:
         struct Animation
         {
             std::string TextureIdentifier;
-            std::vector<sf::IntRect> Frames;
+            std::vector<glm::ivec4> Frames;
             float FrameDuration;
             bool Loop = true;
             uint8_t FrameWidthPadding = 0;
@@ -55,7 +55,7 @@ namespace Engine {
 
             Animation() = default;
 
-            Animation(const std::string& textureIdentifier, const std::vector<sf::IntRect>& frames,
+            Animation(const std::string& textureIdentifier, const std::vector<glm::ivec4>& frames,
                 float frameDuration,
                 uint8_t frameWidthPadding = 0,
                 uint8_t frameHeightPadding = 0,

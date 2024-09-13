@@ -10,11 +10,11 @@ namespace Engine {
 	{
 	public:
 		Sprite() = default;
-		Sprite(const sf::Texture& texture, const sf::Vector2f& position = {0.f, 0.f});
+		Sprite(const sf::Texture& texture, const glm::vec2& position = { 0.f, 0.f });
 
 		void SetTexture(const sf::Texture& texture);
-		void SetPosition(const sf::Vector2f& position);
-		void SetScale(const sf::Vector2f& factors);
+		void SetPosition(const glm::vec2& position);
+		void SetScale(const glm::vec2& factors);
 		void SetScale(float factorX, float factorY);
 
 		inline sf::Drawable& GetDrawable() override { return m_Sprite; }

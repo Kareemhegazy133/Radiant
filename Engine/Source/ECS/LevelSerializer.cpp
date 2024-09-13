@@ -12,9 +12,9 @@
 namespace YAML {
 
 	template<>
-	struct convert<sf::Vector2f>
+	struct convert<glm::vec2>
 	{
-		static Node encode(const sf::Vector2f& rhs)
+		static Node encode(const glm::vec2& rhs)
 		{
 			Node node;
 			node.push_back(rhs.x);
@@ -23,13 +23,65 @@ namespace YAML {
 			return node;
 		}
 
-		static bool decode(const Node& node, sf::Vector2f& rhs)
+		static bool decode(const Node& node, glm::vec2& rhs)
 		{
 			if (!node.IsSequence() || node.size() != 2)
 				return false;
 
 			rhs.x = node[0].as<float>();
 			rhs.y = node[1].as<float>();
+			return true;
+		}
+	};
+
+	template<>
+	struct convert<glm::vec3>
+	{
+		static Node encode(const glm::vec3& rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			node.SetStyle(EmitterStyle::Flow);
+			return node;
+		}
+
+		static bool decode(const Node& node, glm::vec3& rhs)
+		{
+			if (!node.IsSequence() || node.size() != 3)
+				return false;
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			rhs.z = node[2].as<float>();
+			return true;
+		}
+	};
+
+	template<>
+	struct convert<glm::vec4>
+	{
+		static Node encode(const glm::vec4& rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			node.push_back(rhs.w);
+			node.SetStyle(EmitterStyle::Flow);
+			return node;
+		}
+
+		static bool decode(const Node& node, glm::vec4& rhs)
+		{
+			if (!node.IsSequence() || node.size() != 4)
+				return false;
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			rhs.z = node[2].as<float>();
+			rhs.w = node[3].as<float>();
 			return true;
 		}
 	};
@@ -54,10 +106,24 @@ namespace YAML {
 
 namespace Engine {
 
-	YAML::Emitter& operator<<(YAML::Emitter& out, const sf::Vector2f& v)
+	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
 	{
 		out << YAML::Flow;
 		out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
+		return out;
+	}
+
+	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
+		return out;
+	}
+
+	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
 		return out;
 	}
 
@@ -221,9 +287,9 @@ namespace Engine {
 				{
 					// Entitys always have transforms
 					auto& transform = deserializedEntity.GetComponent<TransformComponent>();
-					transform.SetPosition(transformComponent["Translation"].as<sf::Vector2f>());
+					transform.SetPosition(transformComponent["Translation"].as<glm::vec2>());
 					transform.SetRotation(transformComponent["Rotation"].as<float>());
-					transform.SetScale(transformComponent["Scale"].as<sf::Vector2f>());
+					transform.SetScale(transformComponent["Scale"].as<glm::vec2>());
 				}
 
 				auto spriteComponent = entity["SpriteComponent"];
@@ -245,7 +311,7 @@ namespace Engine {
 				if (boxCollider2DComponent)
 				{
 					auto& bc2d = deserializedEntity.AddComponent<BoxCollider2DComponent>();
-					bc2d.Offset = boxCollider2DComponent["Offset"].as<sf::Vector2f>();
+					bc2d.Offset = boxCollider2DComponent["Offset"].as<glm::vec2>();
 					bc2d.Density = boxCollider2DComponent["Density"].as<float>();
 					bc2d.Friction = boxCollider2DComponent["Friction"].as<float>();
 					bc2d.Restitution = boxCollider2DComponent["Restitution"].as<float>();

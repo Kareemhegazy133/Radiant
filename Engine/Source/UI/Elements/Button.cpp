@@ -1,29 +1,27 @@
 #include "Enginepch.h"
-
 #include "Button.h"
-
 #include "Utils/ResourceManager.h"
 
 namespace Engine {
 
-    Button::Button(const sf::Vector2f& position, const sf::Vector2f& size)
+    Button::Button(const glm::vec2& position, const glm::vec2& size)
     {
         SetSize(size);
         SetPosition(position);
     }
 
-    void Button::SetSize(const sf::Vector2f& size)
+    void Button::SetSize(const glm::vec2& size)
     {
-        m_Rectangle.setSize(size);
+        m_Rectangle.setSize(sf::Vector2f(size.x, size.y));
 
         switch (static_cast<int>(size.x))
         {
         case 220:
             m_ButtonSize = ButtonSize::Common;
             break;
-        /*case  :
-        * m_ButtonSize = ButtonSize::Small;
-            break;*/
+            /*case  :
+            * m_ButtonSize = ButtonSize::Small;
+                break;*/
         case 280:
             m_ButtonSize = ButtonSize::Medium;
             break;
@@ -36,14 +34,15 @@ namespace Engine {
         }
     }
 
-    const sf::Vector2f& Button::GetSize() const
+    const glm::vec2& Button::GetSize() const
     {
-        return m_Rectangle.getSize();
+        const sf::Vector2f& size = m_Rectangle.getSize();
+        return *reinterpret_cast<const glm::vec2*>(&size); // Convert sf::Vector2f to glm::vec2
     }
 
-    void Button::SetPosition(const sf::Vector2f& position)
+    void Button::SetPosition(const glm::vec2& position)
     {
-        m_Rectangle.setPosition(position);
+        m_Rectangle.setPosition(sf::Vector2f(position.x, position.y));
     }
 
     void Button::SetPosition(float x, float y)
@@ -51,9 +50,10 @@ namespace Engine {
         m_Rectangle.setPosition(x, y);
     }
 
-    const sf::Vector2f& Button::GetPosition() const
+    const glm::vec2& Button::GetPosition() const
     {
-        return m_Rectangle.getPosition();
+        const sf::Vector2f& position = m_Rectangle.getPosition();
+        return *reinterpret_cast<const glm::vec2*>(&position); // Convert sf::Vector2f to glm::vec2
     }
 
     void Button::SetDisabled(bool disable)
@@ -63,7 +63,7 @@ namespace Engine {
             m_IsDisabled = true;
             SetTexture(m_DisabledTexture);
         }
-        else if(!disable && m_IsDisabled)
+        else if (!disable && m_IsDisabled)
         {
             m_IsDisabled = false;
             SetTexture(m_NormalTexture);
@@ -150,7 +150,7 @@ namespace Engine {
         bool isCurrentlyHovered = IsHovered(mousePos);
         if (!m_IsDisabled)
         {
-            // if is now hovered and wasnt hovered last frame
+            // if is now hovered and wasn't hovered last frame
             if (isCurrentlyHovered && !m_IsHovered)
             {
                 m_IsHovered = true;
@@ -197,7 +197,7 @@ namespace Engine {
                 }
             }
         }
-        
+
         renderWindow->draw(m_Rectangle);
         renderWindow->draw(m_ButtonText.GetDrawable());
     }
