@@ -30,7 +30,7 @@ namespace Engine {
 
     glm::vec2 SpriteComponent::GetTextureSize() const
     {
-        sf::Vector2u size = Sprite.getTexture()->getSize();
+        sf::Vector2i size = Sprite.getTextureRect().getSize();
         return glm::vec2(static_cast<float>(size.x), static_cast<float>(size.y));
     }
 
