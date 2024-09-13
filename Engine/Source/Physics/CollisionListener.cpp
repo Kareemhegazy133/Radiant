@@ -80,8 +80,6 @@ namespace Engine {
 
 		//ENGINE_INFO("Entity A: {0}, Entity B: {1}", entityA.GetComponent<MetadataComponent>().Tag, entityB.GetComponent<MetadataComponent>().Tag);
 
-		// TODO:: Ignore Ability Owner Collision
-
 		if (entityA.GetComponent<MetadataComponent>().Type == typeid(Ability))
 		{
 			auto& entityANSC = entityA.GetComponent<NativeScriptComponent>();

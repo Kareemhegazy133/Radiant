@@ -41,6 +41,10 @@ namespace Engine {
 
 	void Level::DestroyEntity(Entity entity)
 	{
+		if (auto* nsc = entity.TryGetComponent<NativeScriptComponent>())
+		{
+			nsc->Instance->OnDestroy();
+		}
 		m_EntityMap.erase(entity.GetUUID());
 		m_Registry.destroy(entity);
 	}
@@ -49,7 +53,6 @@ namespace Engine {
 	{
 		m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
 			{
-				// TODO: Move to Scene::OnScenePlay
 				if (!nsc.Instance)
 				{
 					nsc.Instance = nsc.InstantiateScript();
