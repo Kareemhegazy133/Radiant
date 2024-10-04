@@ -1,0 +1,12 @@
+[submodule "Radiant/Vendor/spdlog"]
+	path = Radiant/Vendor/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "Radiant/Vendor/glm"]
+	path = Radiant/Vendor/glm
+	url = https://github.com/g-truc/glm
+[submodule "Radiant/Vendor/glfw"]
+	path = Radiant/Vendor/glfw
+	url = https://github.com/glfw/glfw
+[submodule "Radiant/Vendor/box2d"]
+	path = Radiant/Vendor/box2d
+	url = https://github.com/TheCherno/box2d
