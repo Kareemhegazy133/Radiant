@@ -45,6 +45,9 @@ void SandboxLayer::OnAttach()
 	m_Camera.AddComponent<CameraComponent>().Primary = true;
 	m_Camera.GetComponent<CameraComponent>().Camera.SetViewportSize(1280, 720);
 	m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+
+	LevelSerializer serializer(m_Level);
+	serializer.Serialize("Assets/Levels/Level.radiant");
 }
 
 void SandboxLayer::OnDetach()

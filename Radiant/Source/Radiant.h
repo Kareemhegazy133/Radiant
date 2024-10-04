@@ -21,6 +21,7 @@
 #include "Physics/Physics2D.h"
 
 #include "ECS/Level.h"
+#include "ECS/LevelSerializer.h"
 #include "ECS/Components.h"
 #include "ECS/Entity.h"
 #include "ECS/ScriptableEntity.h"

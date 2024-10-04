@@ -24,11 +24,13 @@ IncludeDir["glad"] = "Radiant/Vendor/glad/include"
 IncludeDir["stb_image"] = "Radiant/Vendor/stb_image"
 IncludeDir["entt"] = "Radiant/Vendor/entt/include"
 IncludeDir["box2d"] = "Radiant/Vendor/box2d/include"
+IncludeDir["yaml_cpp"] = "Radiant/Vendor/yaml-cpp/include"
 
 group "Dependencies"
 		include "Radiant/Vendor/glfw"
 		include "Radiant/Vendor/glad"
 		include "Radiant/Vendor/box2d"
+		include "Radiant/Vendor/yaml-cpp"
 group ""
 
 project "Radiant"
@@ -66,14 +68,21 @@ project "Radiant"
 		"%{IncludeDir.glad}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.entt}",
-		"%{IncludeDir.box2d}"
+		"%{IncludeDir.box2d}",
+		"%{IncludeDir.yaml_cpp}"
 	}
 	
 	links
 	{
 		"glfw",
 		"glad",
-		"box2d"
+		"box2d",
+		"yaml-cpp"
+	}
+	
+	defines
+	{
+		"YAML_CPP_STATIC_DEFINE"
 	}
 
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
@@ -120,7 +129,8 @@ project "Sandbox"
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
-		"%{IncludeDir.box2d}"
+		"%{IncludeDir.box2d}",
+		"%{IncludeDir.yaml_cpp}"
 	}
 	
 	links
