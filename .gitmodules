@@ -6,7 +6,7 @@
 	url = https://github.com/g-truc/glm
 [submodule "Radiant/Vendor/glfw"]
 	path = Radiant/Vendor/glfw
-	url = https://github.com/glfw/glfw
+	url = https://github.com/Kareemhegazy133/glfw
 [submodule "Radiant/Vendor/box2d"]
 	path = Radiant/Vendor/box2d
 	url = https://github.com/TheCherno/box2d
