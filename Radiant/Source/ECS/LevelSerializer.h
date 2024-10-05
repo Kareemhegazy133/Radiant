@@ -15,10 +15,10 @@ namespace Radiant {
 		LevelSerializer(const Ref<Level>& level);
 
 		void Serialize(const std::filesystem::path& filepath);
-		void SerializeRuntime(const std::filesystem::path& filepath);
+		void SerializeToYAML(YAML::Emitter& out);
 
 		bool Deserialize(const std::filesystem::path& filepath);
-		bool DeserializeRuntime(const std::filesystem::path& filepath);
+		bool DeserializeFromYAML(const std::string& yamlString);
 
 	public:
 		static void SerializeEntity(YAML::Emitter& out, Entity entity);

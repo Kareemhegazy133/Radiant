@@ -43,6 +43,14 @@ namespace Radiant {
 	void LevelSerializer::Serialize(const std::filesystem::path& filepath)
 	{
 		YAML::Emitter out;
+		SerializeToYAML(out);
+
+		std::ofstream fout(filepath);
+		fout << out.c_str();
+	}
+
+	void LevelSerializer::SerializeToYAML(YAML::Emitter& out)
+	{
 		out << YAML::BeginMap;
 		out << YAML::Key << "Level" << YAML::Value << m_Level->GetName();
 
@@ -60,9 +68,6 @@ namespace Radiant {
 
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
-
-		std::ofstream fout(filepath);
-		fout << out.c_str();
 	}
 
 	void LevelSerializer::SerializeEntity(YAML::Emitter& out, Entity entity)
@@ -180,12 +185,6 @@ namespace Radiant {
 		out << YAML::EndMap; // Entity
 	}
 
-	void LevelSerializer::SerializeRuntime(const std::filesystem::path& filepath)
-	{
-		// Not implemented
-		RADIANT_ASSERT(false);
-	}
-
 	bool LevelSerializer::Deserialize(const std::filesystem::path& filepath)
 	{
 		std::ifstream stream(filepath);
@@ -193,7 +192,22 @@ namespace Radiant {
 		std::stringstream strStream;
 		strStream << stream.rdbuf();
 
-		YAML::Node data = YAML::Load(strStream.str());
+		try
+		{
+			DeserializeFromYAML(strStream.str());
+		}
+		catch (const YAML::Exception& e)
+		{
+			RADIANT_ERROR("Failed to deserialize level '{0}': {1}", filepath.string(), e.what());
+			return false;
+		}
+
+		return true;
+	}
+
+	bool LevelSerializer::DeserializeFromYAML(const std::string& yamlString)
+	{
+		YAML::Node data = YAML::Load(yamlString);
 
 		if (!data["Level"])
 			return false;
@@ -314,13 +328,6 @@ namespace Radiant {
 		}
 
 		level->SortEntities();
-	}
-
-	bool LevelSerializer::DeserializeRuntime(const std::filesystem::path& filepath)
-	{
-		// Not implemented
-		RADIANT_ASSERT(false);
-		return false;
 	}
 
 }
