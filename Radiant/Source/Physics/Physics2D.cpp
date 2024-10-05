@@ -151,10 +151,14 @@ namespace Radiant {
 		RADIANT_PROFILE_FUNCTION();
 
 		auto& transform = entity.GetComponent<TransformComponent>();
-		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
-		auto& bc2d = entity.GetComponent<BoxCollider2DComponent>();
+		auto* rb2d = entity.TryGetComponent<RigidBody2DComponent>();
+		if (!rb2d)
+		{
+			RADIANT_WARN("Cannot Update Entity: {0}'s Transform does not have a RigidBody", entity.GetComponent<MetadataComponent>().Tag);
+			return;
+		}
 
-		b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+		b2Body* body = static_cast<b2Body*>(rb2d->RuntimeBody);
 
 		const auto& position = body->GetPosition();
 		transform.Translation.x = position.x;

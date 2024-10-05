@@ -17,8 +17,14 @@ namespace Radiant {
 
 		void SetViewportSize(uint32_t width, uint32_t height);
 
-		float GetPerspectiveVerticalFOV() const { return m_PerspectiveFOV; }
-		void SetPerspectiveVerticalFOV(float verticalFov) { m_PerspectiveFOV = verticalFov; RecalculateProjection(); }
+		void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; RecalculateProjection(); }
+		const float GetAspectRatio() const { return m_AspectRatio; }
+
+		void SetDegPerspectiveVerticalFOV(const float degVerticalFov) { m_DegPerspectiveFOV = degVerticalFov; }
+		void SetRadPerspectiveVerticalFOV(const float degVerticalFov) { m_DegPerspectiveFOV = glm::degrees(degVerticalFov); }
+		float GetDegPerspectiveVerticalFOV() const { return m_DegPerspectiveFOV; }
+		float GetRadPerspectiveVerticalFOV() const { return glm::radians(m_DegPerspectiveFOV); }
+		void SetPerspectiveVerticalFOV(float verticalFov) { m_DegPerspectiveFOV = verticalFov; RecalculateProjection(); }
 		float GetPerspectiveNearClip() const { return m_PerspectiveNear; }
 		void SetPerspectiveNearClip(float nearClip) { m_PerspectiveNear = nearClip; RecalculateProjection(); }
 		float GetPerspectiveFarClip() const { return m_PerspectiveFar; }
@@ -38,7 +44,7 @@ namespace Radiant {
 	private:
 		ProjectionType m_ProjectionType = ProjectionType::Orthographic;
 
-		float m_PerspectiveFOV = glm::radians(45.0f);
+		float m_DegPerspectiveFOV = 45.0f;
 		float m_PerspectiveNear = 0.01f, m_PerspectiveFar = 1000.0f;
 
 		float m_OrthographicSize = 10.0f;

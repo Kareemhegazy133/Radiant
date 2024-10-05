@@ -10,10 +10,10 @@ namespace Radiant {
 		RecalculateProjection();
 	}
 
-	void LevelCamera::SetPerspective(float verticalFOV, float nearClip, float farClip)
+	void LevelCamera::SetPerspective(float degVerticalFOV, float nearClip, float farClip)
 	{
 		m_ProjectionType = ProjectionType::Perspective;
-		m_PerspectiveFOV = verticalFOV;
+		m_DegPerspectiveFOV = degVerticalFOV;
 		m_PerspectiveNear = nearClip;
 		m_PerspectiveFar = farClip;
 		RecalculateProjection();
@@ -39,7 +39,7 @@ namespace Radiant {
 	{
 		if (m_ProjectionType == ProjectionType::Perspective)
 		{
-			m_Projection = glm::perspective(m_PerspectiveFOV, m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
+			m_Projection = glm::perspective(glm::radians(m_DegPerspectiveFOV), m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
 		}
 		else
 		{

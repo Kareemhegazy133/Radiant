@@ -10,3 +10,6 @@
 [submodule "Radiant/Vendor/box2d"]
 	path = Radiant/Vendor/box2d
 	url = https://github.com/TheCherno/box2d
+[submodule "Radiant/Vendor/yaml-cpp"]
+	path = Radiant/Vendor/yaml-cpp
+	url = https://github.com/TheCherno/yaml-cpp

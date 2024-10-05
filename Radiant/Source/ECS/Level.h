@@ -12,7 +12,7 @@ namespace Radiant {
 	class Level
 	{
 	public:
-		Level();
+		Level(const std::string& name = "UntitledLevel");
 		~Level();
 
 		Entity CreateEntity(const std::string& name = std::string());
@@ -29,6 +29,11 @@ namespace Radiant {
 		Entity FindEntityByName(std::string_view name);
 		Entity GetEntityByUUID(UUID uuid);
 
+		UUID GetUUID() const { return m_LevelID; }
+
+		void SetName(const std::string& name) { m_Name = name; }
+		const std::string& GetName() const { return m_Name; }
+
 	protected:
 		template<typename... Components>
 		auto GetAllEntitiesWith()
@@ -41,8 +46,13 @@ namespace Radiant {
 		void OnRigidBody2DComponentDestroy(entt::registry& registry, entt::entity entity);
 		void OnBoxCollider2DComponentConstruct(entt::registry& registry, entt::entity entity);
 
+		void SortEntities();
+
 	private:
+		UUID m_LevelID;
 		entt::registry m_Registry;
+
+		std::string m_Name;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
 		std::unordered_map<UUID, Entity> m_EntityMap;

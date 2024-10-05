@@ -12,7 +12,8 @@
 
 namespace Radiant {
 
-	Level::Level()
+	Level::Level(const std::string& name)
+		: m_Name(name)
 	{
 		RADIANT_TRACE("Level Constructor");
 		Physics2D::Init(this);
@@ -82,6 +83,8 @@ namespace Radiant {
 
 		m_Registry.destroy(entity.m_EntityHandle);
 		m_EntityMap.erase(id);
+
+		SortEntities();
 	}
 
 	void Level::DestroyEntity(UUID entityID)
@@ -235,6 +238,16 @@ namespace Radiant {
 		Entity e = { entity, this };
 		auto& bc2d = e.GetComponent<BoxCollider2DComponent>();
 		Physics2D::CreateBoxColliderFixture(e, bc2d);
+	}
+
+	void Level::SortEntities()
+	{
+		m_Registry.sort<MetadataComponent>([&](const auto lhs, const auto rhs)
+			{
+				auto lhsEntity = m_EntityMap.find(lhs.ID);
+				auto rhsEntity = m_EntityMap.find(rhs.ID);
+				return static_cast<uint32_t>(lhsEntity->second) < static_cast<uint32_t>(rhsEntity->second);
+			});
 	}
 
 }
