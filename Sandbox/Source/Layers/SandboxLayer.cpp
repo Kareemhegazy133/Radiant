@@ -12,7 +12,7 @@ SandboxLayer::SandboxLayer()
 
 SandboxLayer::~SandboxLayer()
 {
-	GAME_TRACE("SandboxLayer Destructed");
+	GAME_TRACE("SandboxLayer Destructor");
 }
 
 void SandboxLayer::OnAttach()

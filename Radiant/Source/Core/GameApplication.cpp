@@ -29,8 +29,8 @@ namespace Radiant {
 	{
 		RADIANT_PROFILE_FUNCTION();
 
+		RADIANT_TRACE("GameApplication Destructor");
 		Renderer::Shutdown();
-		RADIANT_TRACE("GameApplication Destructed");
 	}
 
 	void GameApplication::PushLayer(Layer* layer)
