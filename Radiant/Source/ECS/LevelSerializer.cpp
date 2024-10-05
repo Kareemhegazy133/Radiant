@@ -107,6 +107,7 @@ namespace Radiant {
 			out << YAML::Key << "Camera" << YAML::Value;
 			out << YAML::BeginMap; // Camera
 			out << YAML::Key << "ProjectionType" << YAML::Value << (int)camera.GetProjectionType();
+			out << YAML::Key << "AspectRatio" << YAML::Value << camera.GetAspectRatio();
 			out << YAML::Key << "PerspectiveFOV" << YAML::Value << camera.GetDegPerspectiveVerticalFOV();
 			out << YAML::Key << "PerspectiveNear" << YAML::Value << camera.GetPerspectiveNearClip();
 			out << YAML::Key << "PerspectiveFar" << YAML::Value << camera.GetPerspectiveFarClip();
@@ -134,6 +135,18 @@ namespace Radiant {
 			out << YAML::Key << "TilingFactor" << YAML::Value << spriteComponent.TilingFactor;
 
 			out << YAML::EndMap; // SpriteComponent
+		}
+
+		if (entity.HasComponent<NativeScriptComponent>())
+		{
+			out << YAML::Key << "NativeScriptComponent";
+			out << YAML::BeginMap; // NativeScriptComponent
+
+			// TODO: Reflection system?
+			/*auto& nativeScriptComponent = entity.GetComponent<NativeScriptComponent>();
+			out << YAML::Key << "Script Class Name" << YAML::Value << nativeScriptComponent.ScriptClass.name();*/
+
+			out << YAML::EndMap; // NativeScriptComponent
 		}
 
 		if (entity.HasComponent<RigidBody2DComponent>())
@@ -240,6 +253,8 @@ namespace Radiant {
 				auto& cameraProps = cameraComponent["Camera"];
 				cc.Camera.SetProjectionType((LevelCamera::ProjectionType)cameraProps["ProjectionType"].as<int>());
 
+				cc.Camera.SetAspectRatio(cameraProps["AspectRatio"].as<float>());
+
 				cc.Camera.SetPerspectiveVerticalFOV(cameraProps["PerspectiveFOV"].as<float>());
 				cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
 				cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
@@ -266,24 +281,35 @@ namespace Radiant {
 					src.TilingFactor = spriteComponent["TilingFactor"].as<float>();
 			}
 
-			auto rigidbody2DComponent = entity["Rigidbody2DComponent"];
+			auto nativeScriptComponent = entity["NativeScriptComponent"];
+			if (nativeScriptComponent)
+			{
+				// TODO: Reflection system?
+				//deserializedEntity.AddComponent<NativeScriptComponent>().Bind(nativeScriptComponent["Script Class Name"].as<...>());
+			}
+
+			auto rigidbody2DComponent = entity["RigidBody2DComponent"];
 			if (rigidbody2DComponent)
 			{
-				auto& rb2d = deserializedEntity.AddComponent<RigidBody2DComponent>();
+				// Add RigidBody at end to properly invoke entt construct signal
+				auto& rb2d = RigidBody2DComponent();
 				rb2d.Type = RigidBody2DBodyTypeFromString(rigidbody2DComponent["BodyType"].as<std::string>());
 				rb2d.FixedRotation = rigidbody2DComponent["FixedRotation"].as<bool>();
+				deserializedEntity.AddComponent<RigidBody2DComponent>(rb2d);
 			}
 
 			auto boxCollider2DComponent = entity["BoxCollider2DComponent"];
 			if (boxCollider2DComponent)
 			{
-				auto& bc2d = deserializedEntity.AddComponent<BoxCollider2DComponent>();
+				// Add BoxCollider at end to properly invoke entt construct signal
+				auto& bc2d = BoxCollider2DComponent();
 				bc2d.Offset = boxCollider2DComponent["Offset"].as<glm::vec2>();
 				bc2d.Size = boxCollider2DComponent["Size"].as<glm::vec2>();
 				bc2d.Density = boxCollider2DComponent["Density"].as<float>();
 				bc2d.Friction = boxCollider2DComponent["Friction"].as<float>();
 				bc2d.Restitution = boxCollider2DComponent["Restitution"].as<float>();
 				bc2d.RestitutionThreshold = boxCollider2DComponent["RestitutionThreshold"].as<float>();
+				deserializedEntity.AddComponent<BoxCollider2DComponent>(bc2d);
 			}
 		}
 

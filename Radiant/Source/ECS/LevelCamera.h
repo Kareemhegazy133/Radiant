@@ -17,6 +17,9 @@ namespace Radiant {
 
 		void SetViewportSize(uint32_t width, uint32_t height);
 
+		void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; RecalculateProjection(); }
+		const float GetAspectRatio() const { return m_AspectRatio; }
+
 		void SetDegPerspectiveVerticalFOV(const float degVerticalFov) { m_DegPerspectiveFOV = degVerticalFov; }
 		void SetRadPerspectiveVerticalFOV(const float degVerticalFov) { m_DegPerspectiveFOV = glm::degrees(degVerticalFov); }
 		float GetDegPerspectiveVerticalFOV() const { return m_DegPerspectiveFOV; }

@@ -21,33 +21,33 @@ void SandboxLayer::OnAttach()
 
 	m_Level = CreateRef<Level>();
 
-	auto square = m_Level->CreateEntity("Green Square");
-	square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
-	square.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
-	square.AddComponent<BoxCollider2DComponent>();
+	//auto square = m_Level->CreateEntity("Green Square");
+	//square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
+	//square.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
+	//square.AddComponent<BoxCollider2DComponent>();
 
-	m_CheckerboardTexture = Texture2D::Create("Assets/Textures/Checkerboard.png");
-	m_SpriteSheet = Texture2D::Create("Assets/SpriteSheets/RPGpack_sheet_2X.png");
+	//m_CheckerboardTexture = Texture2D::Create("Assets/Textures/Checkerboard.png");
+	//m_SpriteSheet = Texture2D::Create("Assets/SpriteSheets/RPGpack_sheet_2X.png");
 
-	m_TextureStairs = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 6 }, { 128, 128 });
-	m_TextureBarrel = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 2 }, { 128, 128 });
-	m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2, 1 }, { 128, 128 }, {1, 2});
+	//m_TextureStairs = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 6 }, { 128, 128 });
+	//m_TextureBarrel = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 2 }, { 128, 128 });
+	//m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2, 1 }, { 128, 128 }, {1, 2});
 
-	auto platform = m_Level->CreateEntity("Platform");
-	platform.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 1.0f, 1.0f });
-	platform.GetComponent<TransformComponent>().Translation = { 0.0f, -4.0f, 0.0f };
-	platform.GetComponent<TransformComponent>().Scale = { 15.0f, 1.0f, 0.0f };
-	platform.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Static);
-	platform.AddComponent<BoxCollider2DComponent>();
+	//auto platform = m_Level->CreateEntity("Platform");
+	//platform.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 1.0f, 1.0f });
+	//platform.GetComponent<TransformComponent>().Translation = { 0.0f, -4.0f, 0.0f };
+	//platform.GetComponent<TransformComponent>().Scale = { 15.0f, 1.0f, 0.0f };
+	//platform.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Static);
+	//platform.AddComponent<BoxCollider2DComponent>();
 
-	// Setup Camera
-	m_Camera = m_Level->CreateEntity("Camera");
-	m_Camera.AddComponent<CameraComponent>().Primary = true;
-	m_Camera.GetComponent<CameraComponent>().Camera.SetViewportSize(1280, 720);
-	m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+	//// Setup Camera
+	//m_Camera = m_Level->CreateEntity("Camera");
+	//m_Camera.AddComponent<CameraComponent>().Primary = true;
+	//m_Camera.GetComponent<CameraComponent>().Camera.SetViewportSize(1280, 720);
+	//m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 
 	LevelSerializer serializer(m_Level);
-	serializer.Serialize("Assets/Levels/Level.radiant");
+	serializer.Deserialize("Assets/Levels/Level.radiant");
 }
 
 void SandboxLayer::OnDetach()
