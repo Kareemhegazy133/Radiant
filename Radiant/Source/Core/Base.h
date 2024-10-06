@@ -21,7 +21,7 @@
 #define RADIANT_EXPAND_MACRO(x) x
 #define RADIANT_STRINGIFY_MACRO(x) #x
 
-#define BIT(x) (1 << x)
+#define BIT(x) (1u << x)
 
 #define RADIANT_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
@@ -47,6 +47,8 @@ namespace Radiant {
 	{
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
+
+	using byte = uint8_t;
 }
 
 #include "Core/Log.h"

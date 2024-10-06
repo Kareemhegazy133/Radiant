@@ -1,12 +1,14 @@
 #include "rdpch.h"
 #include "Renderer2D.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "VertexArray.h"
 #include "Shader.h"
 #include "RenderCommand.h"
 #include "UniformBuffer.h"
 
-#include <glm/gtc/matrix_transform.hpp>
+#include "Asset/AssetManager.h"
 
 namespace Radiant 
 {
@@ -468,7 +470,12 @@ namespace Radiant
 	void Renderer2D::DrawSprite(const glm::mat4& transform, SpriteComponent& src)
 	{
 		if (src.Texture)
-			DrawQuad(transform, src.Texture, src.TilingFactor, src.Color);
+		{
+			// TODO:: Move this out of here
+			Ref<Asset> asset = AssetManager::GetAsset(src.Texture);
+			Ref<Texture2D> texture = static_pointer_cast<Texture2D>(asset);
+			DrawQuad(transform, texture, src.TilingFactor, src.Color);
+		}
 		else
 			DrawQuad(transform, src.Color);
 	}

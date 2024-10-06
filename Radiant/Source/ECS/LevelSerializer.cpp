@@ -134,9 +134,7 @@ namespace Radiant {
 
 			auto& spriteComponent = entity.GetComponent<SpriteComponent>();
 			out << YAML::Key << "Color" << YAML::Value << spriteComponent.Color;
-			// TODO: Refactor Texture to be inherited from Asset with a handle (UUID)
-			//out << YAML::Key << "TextureHandle" << YAML::Value << spriteComponent.Texture;
-
+			out << YAML::Key << "TextureHandle" << YAML::Value << spriteComponent.Texture;
 			out << YAML::Key << "TilingFactor" << YAML::Value << spriteComponent.TilingFactor;
 
 			out << YAML::EndMap; // SpriteComponent
@@ -264,21 +262,34 @@ namespace Radiant {
 			{
 				auto& cc = deserializedEntity.AddComponent<CameraComponent>();
 
-				auto& cameraProps = cameraComponent["Camera"];
-				cc.Camera.SetProjectionType((LevelCamera::ProjectionType)cameraProps["ProjectionType"].as<int>());
+				const auto& cameraNode = cameraComponent["Camera"];
 
-				cc.Camera.SetAspectRatio(cameraProps["AspectRatio"].as<float>());
+				cc.Camera = LevelCamera();
+				auto& camera = cc.Camera;
 
-				cc.Camera.SetPerspectiveVerticalFOV(cameraProps["PerspectiveFOV"].as<float>());
-				cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
-				cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
-
-				cc.Camera.SetOrthographicSize(cameraProps["OrthographicSize"].as<float>());
-				cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
-				cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
+				if (cameraNode.IsMap())
+				{
+					if (cameraNode["ProjectionType"])
+						camera.SetProjectionType((LevelCamera::ProjectionType)cameraNode["ProjectionType"].as<int>());
+					if(cameraNode["AspectRatio"])
+						camera.SetAspectRatio(cameraNode["AspectRatio"].as<float>());
+					if (cameraNode["PerspectiveFOV"])
+						camera.SetDegPerspectiveVerticalFOV(cameraNode["PerspectiveFOV"].as<float>());
+					if (cameraNode["PerspectiveNear"])
+						camera.SetPerspectiveNearClip(cameraNode["PerspectiveNear"].as<float>());
+					if (cameraNode["PerspectiveFar"])
+						camera.SetPerspectiveFarClip(cameraNode["PerspectiveFar"].as<float>());
+					if (cameraNode["OrthographicSize"])
+						camera.SetOrthographicSize(cameraNode["OrthographicSize"].as<float>());
+					if (cameraNode["OrthographicNear"])
+						camera.SetOrthographicNearClip(cameraNode["OrthographicNear"].as<float>());
+					if (cameraNode["OrthographicFar"])
+						camera.SetOrthographicFarClip(cameraNode["OrthographicFar"].as<float>());
+				}
 
 				cc.Primary = cameraComponent["Primary"].as<bool>();
 				cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+
 			}
 
 			auto spriteComponent = entity["SpriteComponent"];
@@ -287,9 +298,8 @@ namespace Radiant {
 				auto& src = deserializedEntity.AddComponent<SpriteComponent>();
 				src.Color = spriteComponent["Color"].as<glm::vec4>();
 
-				// See TODO in Serializing
-				/*if (spriteComponent["TextureHandle"])
-					src.Texture = spriteComponent["TextureHandle"].as<Radiant::UUID>();*/
+				if (spriteComponent["TextureHandle"])
+					src.Texture = spriteComponent["TextureHandle"].as<AssetHandle>();
 
 				if (spriteComponent["TilingFactor"])
 					src.TilingFactor = spriteComponent["TilingFactor"].as<float>();
@@ -306,7 +316,7 @@ namespace Radiant {
 			if (rigidbody2DComponent)
 			{
 				// Add RigidBody at end to properly invoke entt construct signal
-				auto& rb2d = RigidBody2DComponent();
+				auto rb2d = RigidBody2DComponent();
 				rb2d.Type = RigidBody2DBodyTypeFromString(rigidbody2DComponent["BodyType"].as<std::string>());
 				rb2d.FixedRotation = rigidbody2DComponent["FixedRotation"].as<bool>();
 				deserializedEntity.AddComponent<RigidBody2DComponent>(rb2d);
@@ -316,7 +326,7 @@ namespace Radiant {
 			if (boxCollider2DComponent)
 			{
 				// Add BoxCollider at end to properly invoke entt construct signal
-				auto& bc2d = BoxCollider2DComponent();
+				auto bc2d = BoxCollider2DComponent();
 				bc2d.Offset = boxCollider2DComponent["Offset"].as<glm::vec2>();
 				bc2d.Size = boxCollider2DComponent["Size"].as<glm::vec2>();
 				bc2d.Density = boxCollider2DComponent["Density"].as<float>();

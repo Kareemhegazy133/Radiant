@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Asset/Asset.h"
+
 namespace Radiant {
 
-	class Texture
+	class Texture : public Asset
 	{
 	public:
 		virtual ~Texture() = default;
@@ -22,6 +24,9 @@ namespace Radiant {
 	public:
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height);
 		static Ref<Texture2D> Create(const std::string& path);
+
+		static AssetType GetStaticType() { return AssetType::Texture2D; }
+		virtual AssetType GetAssetType() const override { return GetStaticType(); }
 
 	};
 

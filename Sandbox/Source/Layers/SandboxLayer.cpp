@@ -19,8 +19,6 @@ void SandboxLayer::OnAttach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
-	m_Level = CreateRef<Level>();
-
 	//auto square = m_Level->CreateEntity("Green Square");
 	//square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
 	//square.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
@@ -46,8 +44,7 @@ void SandboxLayer::OnAttach()
 	//m_Camera.GetComponent<CameraComponent>().Camera.SetViewportSize(1280, 720);
 	//m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 
-	LevelSerializer serializer(m_Level);
-	serializer.Deserialize("Assets/Levels/Level.radiant");
+	m_Level = static_pointer_cast<Level>(AssetManager::ImportAsset("Assets/Levels/Level.level"));
 }
 
 void SandboxLayer::OnDetach()
