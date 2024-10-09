@@ -8,6 +8,8 @@ SandboxLayer::SandboxLayer()
 	: Layer("SandboxLayer")
 {
 	GAME_TRACE("SandboxLayer Constructor");
+
+	AssetManager::Init();
 }
 
 SandboxLayer::~SandboxLayer()

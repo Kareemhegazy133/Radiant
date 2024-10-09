@@ -8,6 +8,7 @@ namespace Radiant {
 
 	struct AssetMetadata
 	{
+		AssetHandle Handle = 0;
 		AssetType Type = AssetType::None;
 		std::filesystem::path FilePath;
 

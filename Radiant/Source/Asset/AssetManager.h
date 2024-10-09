@@ -11,7 +11,7 @@ namespace Radiant {
 	{
 	public:
 
-		//static void Init();
+		static void Init();
 		//static void Shutdown();
 
 		static Ref<Asset> ImportAsset(const std::filesystem::path& filepath);
@@ -25,6 +25,9 @@ namespace Radiant {
 
 		static void SetMetadata(AssetHandle handle, const AssetMetadata& metadata);
 		static AssetMetadata GetMetadata(AssetHandle handle);
+
+		static std::filesystem::path GetFileSystemPath(AssetHandle assetHandle);
+		static std::filesystem::path GetFileSystemPath(const AssetMetadata& metadata);
 
 	private:
 		static void SerializeAssetRegistry();

@@ -14,24 +14,28 @@ namespace Radiant {
 
 	static AssetMetadata s_NullMetadata;
 
+	void AssetManager::Init()
+	{
+		AssetImporter::Init();
+	}
 
 	Ref<Asset> AssetManager::ImportAsset(const std::filesystem::path& filepath)
 	{
-		AssetHandle handle;
 		AssetMetadata metadata;
+		metadata.Handle = AssetHandle();
 		metadata.FilePath = filepath;
 		metadata.Type = GetAssetTypeFromFileExtension(filepath.extension());
 		RADIANT_ASSERT(metadata.Type != AssetType::None);
 
-		Ref<Asset> asset = AssetImporter::ImportAsset(handle, metadata);
+		Ref<Asset> asset = AssetImporter::ImportAsset(metadata);
 		if (!asset)
 		{
 			RADIANT_ERROR("AssetManager: Failed to import asset at {0}", filepath.string());
 		}
 
-		asset->Handle = handle;
-		s_AssetManagerData->m_LoadedAssets[handle] = asset;
-		s_AssetManagerData->m_AssetRegistry.Set(handle, metadata);
+		asset->Handle = metadata.Handle;
+		s_AssetManagerData->m_LoadedAssets[metadata.Handle] = asset;
+		s_AssetManagerData->m_AssetRegistry.Set(metadata.Handle, metadata);
 		SerializeAssetRegistry();
 		return asset;
 	}
@@ -62,7 +66,7 @@ namespace Radiant {
 		{
 			const AssetMetadata& metadata = GetMetadata(assetHandle);
 
-			asset = AssetImporter::ImportAsset(assetHandle, metadata);
+			asset = AssetImporter::ImportAsset(metadata);
 			if (!asset)
 			{
 				RADIANT_ERROR("AssetManager: Failed to import asset");
@@ -105,6 +109,16 @@ namespace Radiant {
 			return s_AssetManagerData->m_AssetRegistry.Get(handle);
 
 		return s_NullMetadata;
+	}
+
+	std::filesystem::path AssetManager::GetFileSystemPath(AssetHandle assetHandle)
+	{
+		return GetFileSystemPath((GetMetadata(assetHandle)));
+	}
+
+	std::filesystem::path AssetManager::GetFileSystemPath(const AssetMetadata& metadata)
+	{
+		return metadata.FilePath;
 	}
 
 	void AssetManager::SerializeAssetRegistry()

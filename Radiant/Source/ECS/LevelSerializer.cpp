@@ -70,6 +70,18 @@ namespace Radiant {
 		out << YAML::EndMap;
 	}
 
+	bool LevelSerializer::SerializeToAssetPack(FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	{
+		YAML::Emitter out;
+		SerializeToYAML(out);
+
+		outInfo.Offset = stream.GetStreamPosition();
+		std::string yamlString = out.c_str();
+		stream.WriteString(yamlString);
+		outInfo.Size = stream.GetStreamPosition() - outInfo.Offset;
+		return true;
+	}
+
 	void LevelSerializer::SerializeEntity(YAML::Emitter& out, Entity entity)
 	{
 		RADIANT_ASSERT(entity.HasComponent<MetadataComponent>());
@@ -228,6 +240,15 @@ namespace Radiant {
 			});
 
 		return true;
+	}
+
+	bool LevelSerializer::DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::LevelInfo& levelInfo)
+	{
+		stream.SetStreamPosition(levelInfo.PackedOffset);
+		std::string levelYAML;
+		stream.ReadString(levelYAML);
+
+		return DeserializeFromYAML(levelYAML);
 	}
 
 	void LevelSerializer::DeserializeEntities(YAML::Node& entitiesNode, Ref<Level> level)
