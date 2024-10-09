@@ -47,12 +47,16 @@ void SandboxLayer::OnAttach()
 	//m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 
 	m_Level = static_pointer_cast<Level>(AssetManager::ImportAsset("Assets/Levels/Level.level"));
+	/*AssetManager::LoadAssetPack("Assets/AssetPack.rdap");
+	AssetPack::Load("Assets/AssetPack.rdap");
+	AssetPack::LoadLevel()*/
 }
 
 void SandboxLayer::OnDetach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
+	/*AssetManager::CreateAssetPack("Assets/AssetPack.rdap");*/
 }
 
 void SandboxLayer::OnUpdate(Timestep ts)

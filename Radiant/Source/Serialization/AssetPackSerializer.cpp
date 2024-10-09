@@ -105,7 +105,7 @@ namespace Radiant {
 	bool AssetPackSerializer::DeserializeIndex(const std::filesystem::path& path, AssetPackFile& file)
 	{
 		// Print Info
-		RADIANT_INFO("Asset Pack", "Deserializing Asset Pack from {}", path.string());
+		RADIANT_INFO("Asset Pack", "Deserializing Asset Pack from {0}", path.string());
 
 		FileStreamReader stream(path);
 		if (!stream.IsStreamGood())
@@ -120,7 +120,7 @@ namespace Radiant {
 		AssetPackFile current;
 		if (file.Header.Version != current.Header.Version)
 		{
-			RADIANT_ERROR("AssetPack version {} is not compatible with current version {}", file.Header.Version, current.Header.Version);
+			RADIANT_ERROR("AssetPack version {0} is not compatible with current version {1}", file.Header.Version, current.Header.Version);
 			return false;
 		}
 
@@ -143,7 +143,7 @@ namespace Radiant {
 			stream.ReadMap(levelInfo.Assets);
 		}
 
-		RADIANT_INFO("Asset Pack", "Deserialized index with {} levels from AssetPack", levelCount);
+		RADIANT_INFO("Asset Pack", "Deserialized index with {0} levels from AssetPack", levelCount);
 		return true;
 	}
 
