@@ -35,8 +35,7 @@ namespace Radiant {
 		AssetType type = AssetManager::GetAssetType(handle);
 		if (s_Serializers.find(type) == s_Serializers.end())
 		{
-			const auto& metadata = AssetManager::GetMetadata(handle);
-			RADIANT_WARN("There's currently no serializer for assets of type {0}", Utils::AssetTypeToString(metadata.Type));
+			RADIANT_WARN("There's currently no serializer for assets of type {0}", Utils::AssetTypeToString(type));
 			return false;
 		}
 

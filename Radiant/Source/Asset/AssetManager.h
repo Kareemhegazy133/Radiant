@@ -1,45 +1,34 @@
 #pragma once
 
-#include "Core/Base.h"
+#include "AssetManagerAPI.h"
 
-#include "Asset.h"
-#include "AssetRegistry.h"
+#include "Serialization/AssetPack.h"
 
 namespace Radiant {
 
 	class AssetManager
 	{
 	public:
-
 		static void Init();
-		//static void Shutdown();
 
-		static Ref<Asset> ImportAsset(const std::filesystem::path& filepath);
+		static Ref<Asset> LoadAsset(const std::filesystem::path& filepath);
+		static Ref<AssetPack> LoadAssetPack(const std::filesystem::path& filepath);
 
 		static bool IsAssetHandleValid(AssetHandle handle);
 		static bool IsAssetLoaded(AssetHandle handle);
+
 		static Ref<Asset> GetAsset(AssetHandle assetHandle);
 		static AssetType GetAssetType(AssetHandle assetHandle);
 
 		static std::unordered_set<AssetHandle> GetAllAssetsWithType(AssetType type);
 
-		static void SetMetadata(AssetHandle handle, const AssetMetadata& metadata);
-		static AssetMetadata GetMetadata(AssetHandle handle);
-
+		static void SetMetadata(AssetHandle assetHandle, const AssetMetadata& metadata);
+		static AssetMetadata GetMetadata(AssetHandle assetHandle);
 		static std::filesystem::path GetFileSystemPath(AssetHandle assetHandle);
 		static std::filesystem::path GetFileSystemPath(const AssetMetadata& metadata);
 
 	private:
-		static void SerializeAssetRegistry();
-		static bool DeserializeAssetRegistry();
-
-	private:
-		struct AssetManagerData
-		{
-			AssetRegistry m_AssetRegistry;
-			std::unordered_map<AssetHandle, Ref<Asset>> m_LoadedAssets;
-		};
-
-		static Scope<AssetManagerData> s_AssetManagerData;
+		static Scope<AssetManagerAPI> s_AssetManagerAPI;
 	};
+
 }

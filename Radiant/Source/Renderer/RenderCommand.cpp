@@ -1,5 +1,5 @@
 #include "rdpch.h"
-#include "Renderer/RenderCommand.h"
+#include "RenderCommand.h"
 
 namespace Radiant {
 

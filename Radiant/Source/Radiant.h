@@ -26,7 +26,6 @@
 #include "ECS/ScriptableEntity.h"
 
 #include "Asset/AssetManager.h"
-#include "Serialization/AssetPack.h"
 
 // ---Renderer------------------------
 

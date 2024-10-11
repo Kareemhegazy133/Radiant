@@ -1,6 +1,6 @@
 #include "rdpch.h"
-#include "Renderer/Renderer.h"
-#include "Renderer/Renderer2D.h"
+#include "Renderer.h"
+#include "Renderer2D.h"
 
 namespace Radiant {
 

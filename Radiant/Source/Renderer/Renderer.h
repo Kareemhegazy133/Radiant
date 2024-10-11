@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Renderer/RenderCommand.h"
+#include "RenderCommand.h"
 
 #include "OrthographicCamera.h"
-#include "Renderer/Shader.h"
+#include "Shader.h"
 
 namespace Radiant {
 
