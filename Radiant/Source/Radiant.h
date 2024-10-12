@@ -24,6 +24,7 @@
 #include "ECS/Components.h"
 #include "ECS/Entity.h"
 #include "ECS/ScriptableEntity.h"
+#include "ECS/LevelSerializer.h"
 
 #include "Asset/AssetManager.h"
 

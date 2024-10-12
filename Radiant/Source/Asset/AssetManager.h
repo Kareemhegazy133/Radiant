@@ -1,7 +1,7 @@
 #pragma once
 
-#include "AssetManagerAPI.h"
-
+#include "Asset.h"
+#include "AssetRegistry.h"
 #include "Serialization/AssetPack.h"
 
 namespace Radiant {
@@ -14,8 +14,11 @@ namespace Radiant {
 		static Ref<Asset> LoadAsset(const std::filesystem::path& filepath);
 		static Ref<AssetPack> LoadAssetPack(const std::filesystem::path& filepath);
 
-		static bool IsAssetHandleValid(AssetHandle handle);
-		static bool IsAssetLoaded(AssetHandle handle);
+		static Ref<Level> LoadLevel(const std::filesystem::path& filepath);
+		static void SaveLevel(const Ref<Level>& level, const std::filesystem::path& filepath);
+
+		static bool IsAssetHandleValid(AssetHandle assetHandle);
+		static bool IsAssetLoaded(AssetHandle assetHandle);
 
 		static Ref<Asset> GetAsset(AssetHandle assetHandle);
 		static AssetType GetAssetType(AssetHandle assetHandle);
@@ -28,7 +31,17 @@ namespace Radiant {
 		static std::filesystem::path GetFileSystemPath(const AssetMetadata& metadata);
 
 	private:
-		static Scope<AssetManagerAPI> s_AssetManagerAPI;
+		static void SerializeAssetRegistry();
+		static bool DeserializeAssetRegistry();
+
+	private:
+		struct AssetManagerData
+		{
+			AssetRegistry m_AssetRegistry;
+			std::unordered_map<AssetHandle, Ref<Asset>> m_LoadedAssets;
+		};
+		
+		static Scope<AssetManagerData> s_AssetManagerData;
 	};
 
 }

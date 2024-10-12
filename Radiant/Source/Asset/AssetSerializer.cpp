@@ -3,54 +3,73 @@
 
 #include "AssetManager.h"
 
-#include "ECS/LevelSerializer.h"
-
 namespace Radiant {
 
-	//////////////////////////////////////////////////////////////////////////////////
-	// LevelAssetSerializer
-	//////////////////////////////////////////////////////////////////////////////////
+	std::unordered_map<AssetType, Scope<AssetSerializerAPI>> AssetSerializer::s_Serializers;
 
-	void LevelAssetSerializer::Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const
+	void AssetSerializer::Init()
 	{
-		const Ref<Level> level = std::static_pointer_cast<Level>(asset);
-		LevelSerializer serializer(level);
-		serializer.Serialize(AssetManager::GetFileSystemPath(metadata).string());
+		s_Serializers.clear();
+		s_Serializers[AssetType::Level] = CreateScope<LevelAssetSerializerAPI>();
+		//s_Serializers[AssetType::Texture2D] = CreateScope<TextureSerializerAPI>();
 	}
 
-	Ref<Asset> LevelAssetSerializer::Deserialize(const AssetMetadata& metadata) const
+	Ref<Asset> AssetSerializer::LoadAsset(const AssetMetadata& metadata)
 	{
-		Ref<Level> level = CreateRef<Level>();
-		LevelSerializer serializer(level);
-		serializer.Deserialize(AssetManager::GetFileSystemPath(metadata).string());
-		return level;
-	}
-
-	bool LevelAssetSerializer::SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const
-	{
-		Ref<Level> level = CreateRef<Level>("AssetPackTemp", false);
-		const auto& metadata = AssetManager::GetMetadata(handle);
-		LevelSerializer serializer(level);
-		if (serializer.Deserialize(metadata.FilePath))
+		if (s_Serializers.find(metadata.Type) == s_Serializers.end())
 		{
-			return serializer.SerializeToAssetPack(stream, outInfo);
+			RADIANT_WARN("There's currently no serializer for assets of type {0}", Utils::AssetTypeToString(metadata.Type));
+			return nullptr;
 		}
-		return false;
+
+		return s_Serializers[metadata.Type]->Deserialize(metadata);
 	}
 
-	Ref<Asset> LevelAssetSerializer::DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const
+	void AssetSerializer::SaveAsset(const AssetMetadata& metadata, const Ref<Asset>& asset)
 	{
-		RADIANT_ASSERT(false); // Not implemented
-		return nullptr;
+		if (s_Serializers.find(metadata.Type) == s_Serializers.end())
+		{
+			RADIANT_WARN("There's currently no serializer for assets of type {0}", Utils::AssetTypeToString(metadata.Type));
+			return;
+		}
+
+		return s_Serializers[metadata.Type]->Serialize(metadata, asset);
 	}
 
-	Ref<Level> LevelAssetSerializer::DeserializeLevelFromAssetPack(FileStreamReader& stream, const AssetPackFile::LevelInfo& levelInfo) const
+	bool AssetSerializer::SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
 	{
-		Ref<Level> level = CreateRef<Level>();
-		LevelSerializer serializer(level);
-		if (serializer.DeserializeFromAssetPack(stream, levelInfo))
-			return level;
+		outInfo.Size = 0;
 
-		return nullptr;
+		if (!AssetManager::IsAssetHandleValid(handle))
+			return false;
+
+		AssetType type = AssetManager::GetAssetType(handle);
+		if (s_Serializers.find(type) == s_Serializers.end())
+		{
+			RADIANT_WARN("There's currently no serializer for assets of type {0}", Utils::AssetTypeToString(type));
+			return false;
+		}
+
+		return s_Serializers[type]->SerializeToAssetPack(handle, stream, outInfo);
 	}
+
+	Ref<Asset> AssetSerializer::DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo)
+	{
+		AssetType assetType = static_cast<AssetType>(assetInfo.Type);
+		if (s_Serializers.find(assetType) == s_Serializers.end())
+			return nullptr;
+
+		return s_Serializers[assetType]->DeserializeFromAssetPack(stream, assetInfo);
+	}
+
+	Ref<Level> AssetSerializer::DeserializeLevelFromAssetPack(FileStreamReader& stream, const AssetPackFile::LevelInfo& levelInfo)
+	{
+		AssetType assetType = AssetType::Level;
+		if (s_Serializers.find(assetType) == s_Serializers.end())
+			return nullptr;
+
+		LevelAssetSerializerAPI* levelAssetSerializerAPI = static_cast<LevelAssetSerializerAPI*>(s_Serializers[assetType].get());
+		return levelAssetSerializerAPI->DeserializeLevelFromAssetPack(stream, levelInfo);
+	}
+
 }

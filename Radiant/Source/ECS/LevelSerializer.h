@@ -3,7 +3,7 @@
 #include "Level.h"
 
 #include "Serialization/FileStream.h"
-#include "Asset/AssetSerializer.h"
+#include "Asset/AssetSerializerAPI.h"
 
 namespace YAML {
 	class Emitter;

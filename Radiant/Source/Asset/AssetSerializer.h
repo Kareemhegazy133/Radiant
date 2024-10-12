@@ -2,47 +2,28 @@
 
 #include "AssetMetadata.h"
 
+#include "AssetSerializerAPI.h"
+
 #include "Serialization/FileStream.h"
-#include "Serialization/AssetPackFile.h"
+
+#include "ECS/Level.h"
 
 namespace Radiant {
-
-	class Level;
-
-	struct AssetSerializationInfo
-	{
-		uint64_t Offset = 0;
-		uint64_t Size = 0;
-	};
 
 	class AssetSerializer
 	{
 	public:
-		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const = 0;
-		virtual Ref<Asset> Deserialize(const AssetMetadata& metadata) const = 0;
+		static void Init();
 
-		virtual bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const = 0;
-		virtual Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const = 0;
-	};
+		static Ref<Asset> LoadAsset(const AssetMetadata& metadata);
+		static void SaveAsset(const AssetMetadata& metadata, const Ref<Asset>& asset);
 
-	class TextureSerializer : public AssetSerializer
-	{
-	public:
-		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const override {}
+		static bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo);
+		static Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo);
+		static Ref<Level> DeserializeLevelFromAssetPack(FileStreamReader& stream, const AssetPackFile::LevelInfo& levelInfo);
 
-		virtual bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const;
-		virtual Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const;
-	};
-
-	class LevelAssetSerializer : public AssetSerializer
-	{
-	public:
-		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const override;
-		virtual Ref<Asset> Deserialize(const AssetMetadata& metadata) const override;
-
-		virtual bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const;
-		virtual Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const;
-		Ref<Level> DeserializeLevelFromAssetPack(FileStreamReader& stream, const AssetPackFile::LevelInfo& levelInfo) const;
+	private:
+		static std::unordered_map<AssetType, Scope<AssetSerializerAPI>> s_Serializers;
 	};
 
 }

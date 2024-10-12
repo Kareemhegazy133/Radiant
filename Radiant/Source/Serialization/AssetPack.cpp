@@ -2,7 +2,7 @@
 #include "AssetPack.h"
 
 #include "Asset/AssetManager.h"
-#include "Asset/AssetImporter.h"
+#include "Asset/AssetSerializer.h"
 #include "Core/Platform.h"
 #include "ECS/Level.h"
 #include "ECS/LevelSerializer.h"
@@ -23,7 +23,7 @@ namespace Radiant {
 		const AssetPackFile::LevelInfo& levelInfo = it->second;
 
 		FileStreamReader stream(m_Path);
-		Ref<Level> level = AssetImporter::DeserializeLevelFromAssetPack(stream, levelInfo);
+		Ref<Level> level = AssetSerializer::DeserializeLevelFromAssetPack(stream, levelInfo);
 		level->Handle = levelHandle;
 		return level;
 	}
@@ -67,7 +67,7 @@ namespace Radiant {
 		}
 
 		FileStreamReader stream(m_Path);
-		Ref<Asset> asset = AssetImporter::DeserializeFromAssetPack(stream, *assetInfo);
+		Ref<Asset> asset = AssetSerializer::DeserializeFromAssetPack(stream, *assetInfo);
 		//RADIANT_ASSERT(asset);
 		if (!asset)
 			return nullptr;

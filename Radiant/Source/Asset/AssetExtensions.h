@@ -9,7 +9,7 @@ namespace Radiant {
 	inline static std::unordered_map<std::filesystem::path, AssetType> s_AssetExtensionMap =
 	{
 		// Radiant types
-		{ ".level", AssetType::Level },
+		{ ".rdlvl", AssetType::Level },
 
 		// Textures
 		{ ".png", AssetType::Texture2D },

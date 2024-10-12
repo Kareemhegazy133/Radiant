@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <fstream>
 
-#include "Asset/AssetImporter.h"
+#include "Asset/AssetSerializer.h"
 
 #include "Serialization/FileStream.h"
 
@@ -52,7 +52,7 @@ namespace Radiant {
 		{
 			// Serialize Level
 			AssetSerializationInfo serializationInfo;
-			AssetImporter::SerializeToAssetPack(levelHandle, serializer, serializationInfo);
+			AssetSerializer::SerializeToAssetPack(levelHandle, serializer, serializationInfo);
 			file.Index.Levels[levelHandle].PackedOffset = serializationInfo.Offset;
 			file.Index.Levels[levelHandle].PackedSize = serializationInfo.Size;
 
@@ -69,7 +69,7 @@ namespace Radiant {
 				else
 				{
 					// Serialize asset
-					if (AssetImporter::SerializeToAssetPack(assetHandle, serializer, serializationInfo))
+					if (AssetSerializer::SerializeToAssetPack(assetHandle, serializer, serializationInfo))
 					{
 						file.Index.Levels[levelHandle].Assets[assetHandle].PackedOffset = serializationInfo.Offset;
 						file.Index.Levels[levelHandle].Assets[assetHandle].PackedSize = serializationInfo.Size;
