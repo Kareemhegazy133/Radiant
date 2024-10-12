@@ -1,31 +1,10 @@
 Level: UntitledLevel
 Entities:
-  - Entity: 5101056610811545591
-    MetadataComponent:
-      Tag: Green Square
-    TransformComponent:
-      Translation: [3.00566353e-05, -2.98500133, 0]
-      Rotation: [0, 0, 7.81268739e-08]
-      Scale: [1, 1, 1]
-    SpriteComponent:
-      Color: [0, 1, 0, 1]
-      TextureHandle: 0
-      TilingFactor: 1
-    RigidBody2DComponent:
-      BodyType: Dynamic
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-  - Entity: 11642662974024429110
+  - Entity: 1212241489090197430
     MetadataComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [-0.0307536125, -0.939256549, 0]
+      Translation: [0.151935816, -0.515176415, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
@@ -40,7 +19,7 @@ Entities:
         OrthographicFar: 1
       Primary: true
       FixedAspectRatio: false
-  - Entity: 17758608037127570288
+  - Entity: 1571322788075791211
     MetadataComponent:
       Tag: Platform
     TransformComponent:
@@ -53,6 +32,27 @@ Entities:
       TilingFactor: 1
     RigidBody2DComponent:
       BodyType: Static
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 9387923592178600989
+    MetadataComponent:
+      Tag: Green Square
+    TransformComponent:
+      Translation: [6.39013535e-07, -2.98500109, 0]
+      Rotation: [0, 0, 2.64320477e-08]
+      Scale: [1, 1, 1]
+    SpriteComponent:
+      Color: [0, 1, 0, 1]
+      TextureHandle: 0
+      TilingFactor: 1
+    RigidBody2DComponent:
+      BodyType: Dynamic
       FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]
