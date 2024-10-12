@@ -4,8 +4,8 @@ Entities:
     MetadataComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [0.607176423, -1.12260103, 0]
-      Rotation: [0, 0, 0]
+      Translation: [1.33560562, -0.0444968678, 0]
+      Rotation: [0, 0, 23.2557487]
       Scale: [1, 1, 1]
     CameraComponent:
       Camera:
@@ -25,8 +25,8 @@ Entities:
     MetadataComponent:
       Tag: Green Square
     TransformComponent:
-      Translation: [5.63432366e-07, -2.98500133, 0]
-      Rotation: [0, 0, 7.91203831e-08]
+      Translation: [-0.000347947818, -2.98483038, 0]
+      Rotation: [0, 0, 0.000169547449]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [0, 1, 0, 1]
@@ -46,8 +46,8 @@ Entities:
     MetadataComponent:
       Tag: Checkerboard
     TransformComponent:
-      Translation: [4.00000048, -2.98500133, 0]
-      Rotation: [0, 0, 7.91847299e-08]
+      Translation: [3.9997263, -2.98486662, 0]
+      Rotation: [0, 0, 0.000133345602]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [1, 1, 1, 1]
