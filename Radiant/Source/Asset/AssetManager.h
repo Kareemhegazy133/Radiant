@@ -5,7 +5,7 @@
 #include "Serialization/AssetPack.h"
 
 namespace Radiant {
-
+	// TODO: Default paths
 	class AssetManager
 	{
 	public:
@@ -27,6 +27,10 @@ namespace Radiant {
 
 		static void SetMetadata(AssetHandle assetHandle, const AssetMetadata& metadata);
 		static AssetMetadata GetMetadata(AssetHandle assetHandle);
+		static const AssetMetadata& GetMetadata(const std::filesystem::path& filepath);
+
+		static AssetHandle GetAssetHandleFromFilePath(const std::filesystem::path& filepath);
+		static AssetType GetAssetTypeFromPath(const std::filesystem::path& path);
 		static std::filesystem::path GetFileSystemPath(AssetHandle assetHandle);
 		static std::filesystem::path GetFileSystemPath(const AssetMetadata& metadata);
 

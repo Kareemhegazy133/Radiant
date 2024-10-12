@@ -8,6 +8,8 @@
 #include "Asset/AssetTypes.h"
 #include "Asset/AssetExtensions.h"
 
+#include "Utilities/FileSystem.h"
+
 namespace Radiant {
 
 	Scope<AssetManager::AssetManagerData> AssetManager::s_AssetManagerData = CreateScope<AssetManager::AssetManagerData>();
@@ -17,15 +19,22 @@ namespace Radiant {
 	void AssetManager::Init()
 	{
 		AssetSerializer::Init();
+
+		if (!DeserializeAssetRegistry())
+			RADIANT_WARN("AssetManager: Failed to Deserialize Asset Registry");
 	}
 
 	Ref<Asset> AssetManager::LoadAsset(const std::filesystem::path& filepath)
 	{
-		AssetMetadata metadata;
-		metadata.Handle = AssetHandle();
-		metadata.FilePath = filepath;
-		metadata.Type = GetAssetTypeFromFileExtension(filepath.extension());
-		RADIANT_ASSERT(metadata.Type != AssetType::None);
+		AssetMetadata metadata = GetMetadata(filepath);
+
+		if (!IsAssetHandleValid(metadata.Handle))
+		{
+			metadata.Handle = AssetHandle();
+			metadata.FilePath = filepath;
+			metadata.Type = GetAssetTypeFromFileExtension(filepath.extension());
+			RADIANT_ASSERT(metadata.Type != AssetType::None);
+		}
 
 		Ref<Asset> asset = AssetSerializer::LoadAsset(metadata);
 		if (!asset)
@@ -129,6 +138,27 @@ namespace Radiant {
 		return s_NullMetadata;
 	}
 
+	const AssetMetadata& AssetManager::GetMetadata(const std::filesystem::path& filepath)
+	{
+		for (auto& [handle, metadata] : s_AssetManagerData->m_AssetRegistry)
+		{
+			if (metadata.FilePath == filepath)
+				return metadata;
+		}
+
+		return s_NullMetadata;
+	}
+
+	AssetHandle AssetManager::GetAssetHandleFromFilePath(const std::filesystem::path& filepath)
+	{
+		return GetMetadata(filepath).Handle;
+	}
+
+	AssetType AssetManager::GetAssetTypeFromPath(const std::filesystem::path& path)
+	{
+		return GetAssetTypeFromFileExtension(path.extension());
+	}
+
 	std::filesystem::path AssetManager::GetFileSystemPath(AssetHandle assetHandle)
 	{
 		return GetFileSystemPath((GetMetadata(assetHandle)));
@@ -167,29 +197,55 @@ namespace Radiant {
 
 	bool AssetManager::DeserializeAssetRegistry()
 	{
-		std::string path = "Assets/AssetRegistry.rdar";
-		YAML::Node data;
-		try
+		const std::string& assetRegistryPath = "Assets/AssetRegistry.rdar";
+		if (!FileSystem::Exists(assetRegistryPath))
 		{
-			data = YAML::LoadFile(path);
-		}
-		catch (YAML::ParserException e)
-		{
-			RADIANT_ERROR("Failed to load Asset Registry file: {0}, Error: {1}", path, e.what());
+			RADIANT_WARN("Asset Manager: AssetRegistry file at {0} was not found", assetRegistryPath);
 			return false;
 		}
+
+		std::ifstream stream(assetRegistryPath);
+		RADIANT_ASSERT(stream);
+		std::stringstream strStream;
+		strStream << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(strStream.str());
 
 		auto rootNode = data["AssetRegistry"];
 		if (!rootNode)
+		{
+			RADIANT_ERROR("AssetManager: Asset Registry file appears to be corrupted!");
 			return false;
+		}
 
 		for (const auto& node : rootNode)
 		{
-			AssetHandle handle = node["Handle"].as<uint64_t>();
-			auto& metadata = s_AssetManagerData->m_AssetRegistry.Get(handle);
-			metadata.FilePath = node["FilePath"].as<std::string>();
+			std::string filepath = node["FilePath"].as<std::string>();
+
+			AssetMetadata metadata;
+			metadata.Handle = node["Handle"].as<uint64_t>();
+			metadata.FilePath = filepath;
 			metadata.Type = Utils::AssetTypeFromString(node["Type"].as<std::string>());
+
+			if (metadata.Type == AssetType::None)
+				continue;
+
+			if (metadata.Type != GetAssetTypeFromPath(filepath))
+			{
+				RADIANT_WARN("AssetManager: Mismatch between stored AssetType and extension type when reading asset registry!");
+				metadata.Type = GetAssetTypeFromPath(filepath);
+			}
+
+			if (metadata.Handle == 0)
+			{
+				RADIANT_WARN("AssetManager: AssetHandle for {0} is 0, this shouldn't happen.", metadata.FilePath.string());
+				continue;
+			}
+
+			SetMetadata(metadata.Handle, metadata);
 		}
+
+		RADIANT_INFO("AssetManager: Loaded {0} asset entries", s_AssetManagerData->m_AssetRegistry.Count());
 
 		return true;
 	}

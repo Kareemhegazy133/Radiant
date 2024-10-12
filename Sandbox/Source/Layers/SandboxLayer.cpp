@@ -21,35 +21,44 @@ void SandboxLayer::OnAttach()
 {
 	RADIANT_PROFILE_FUNCTION();
 	
-	m_Level = CreateRef<Level>();
-	//m_Level = AssetManager::LoadLevel("Assets/Levels/Level.rdlvl");
+	//m_Level = CreateRef<Level>();
+	m_Level = AssetManager::LoadLevel("Assets/Levels/Level.rdlvl");
 
-	auto square = m_Level->CreateEntity("Green Square");
-	square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
-	square.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
-	square.AddComponent<BoxCollider2DComponent>();
+	//auto square = m_Level->CreateEntity("Green Square");
+	//square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
+	//square.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
+	//square.AddComponent<BoxCollider2DComponent>();
 
-	//m_CheckerboardTexture = Texture2D::Create("Assets/Textures/Checkerboard.png");
-	//m_SpriteSheet = Texture2D::Create("Assets/SpriteSheets/RPGpack_sheet_2X.png");
+	////AssetManager::LoadAsset("Assets/Textures/Checkerboard.png");
 
-	//m_TextureStairs = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 6 }, { 128, 128 });
-	//m_TextureBarrel = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 2 }, { 128, 128 });
-	//m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2, 1 }, { 128, 128 }, {1, 2});
+	//auto checkerboard = m_Level->CreateEntity("Checkerboard");
+	//checkerboard.AddComponent<SpriteComponent>(AssetManager::LoadAsset("Assets/Textures/Checkerboard.png")->Handle);
+	//checkerboard.GetComponent<TransformComponent>().Translation = { 4.0f, 0.0f, 0.0f };
+	//checkerboard.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
+	//checkerboard.AddComponent<BoxCollider2DComponent>();
 
-	auto platform = m_Level->CreateEntity("Platform");
-	platform.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 1.0f, 1.0f });
-	platform.GetComponent<TransformComponent>().Translation = { 0.0f, -4.0f, 0.0f };
-	platform.GetComponent<TransformComponent>().Scale = { 15.0f, 1.0f, 0.0f };
-	platform.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Static);
-	platform.AddComponent<BoxCollider2DComponent>();
+	////m_CheckerboardTexture = Texture2D::Create("Assets/Textures/Checkerboard.png");
+	////m_SpriteSheet = Texture2D::Create("Assets/SpriteSheets/RPGpack_sheet_2X.png");
 
-	// Setup Camera
-	m_Camera = m_Level->CreateEntity("Camera");
-	m_Camera.AddComponent<CameraComponent>().Primary = true;
-	m_Camera.GetComponent<CameraComponent>().Camera.SetViewportSize(1280, 720);
-	m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+	////m_TextureStairs = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 6 }, { 128, 128 });
+	////m_TextureBarrel = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 2 }, { 128, 128 });
+	////m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2, 1 }, { 128, 128 }, {1, 2});
 
-	//m_Level = static_pointer_cast<Level>(AssetManager::LoadAsset("Assets/Levels/Level.level"));
+	//auto platform = m_Level->CreateEntity("Platform");
+	//platform.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 1.0f, 1.0f });
+	//platform.GetComponent<TransformComponent>().Translation = { 0.0f, -4.0f, 0.0f };
+	//platform.GetComponent<TransformComponent>().Scale = { 15.0f, 1.0f, 0.0f };
+	//platform.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Static);
+	//platform.AddComponent<BoxCollider2DComponent>();
+
+	//// Setup Camera
+	//m_Camera = m_Level->CreateEntity("Camera");
+	//m_Camera.AddComponent<CameraComponent>().Primary = true;
+	//m_Camera.GetComponent<CameraComponent>().Camera.SetViewportSize(1280, 720);
+	//m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+
+	m_Level->FindEntityByName("Camera").AddComponent<NativeScriptComponent>().Bind<CameraController>();
+
 	//AssetManager::LoadAssetPack("Assets/AssetPack.rdap");
 }
 

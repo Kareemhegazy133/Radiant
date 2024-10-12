@@ -29,7 +29,7 @@ namespace Radiant {
 		Entity FindEntityByName(std::string_view name);
 		Entity GetEntityByUUID(UUID uuid);
 
-		UUID GetUUID() const { return m_LevelID; }
+		UUID GetUUID() const { return Handle; }
 
 		std::unordered_set<AssetHandle> GetAssetList();
 
@@ -51,7 +51,6 @@ namespace Radiant {
 		void SortEntities();
 
 	private:
-		UUID m_LevelID;
 		entt::registry m_Registry;
 
 		std::string m_Name;

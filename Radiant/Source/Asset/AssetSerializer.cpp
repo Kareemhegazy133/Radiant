@@ -11,7 +11,7 @@ namespace Radiant {
 	{
 		s_Serializers.clear();
 		s_Serializers[AssetType::Level] = CreateScope<LevelAssetSerializerAPI>();
-		//s_Serializers[AssetType::Texture2D] = CreateScope<TextureSerializerAPI>();
+		s_Serializers[AssetType::Texture2D] = CreateScope<TextureSerializerAPI>();
 	}
 
 	Ref<Asset> AssetSerializer::LoadAsset(const AssetMetadata& metadata)

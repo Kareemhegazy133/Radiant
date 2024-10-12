@@ -13,6 +13,11 @@ namespace Radiant {
 	// TextureSerializerAPI
 	//////////////////////////////////////////////////////////////////////////////////
 
+	void TextureSerializerAPI::Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const
+	{
+		RADIANT_ASSERT(false); // Not needed
+	}
+
 	Ref<Asset> TextureSerializerAPI::Deserialize(const AssetMetadata& metadata) const
 	{
 		RADIANT_PROFILE_FUNCTION();
@@ -98,7 +103,7 @@ namespace Radiant {
 
 	Ref<Asset> LevelAssetSerializerAPI::DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const
 	{
-		RADIANT_ASSERT(false); // Not implemented
+		RADIANT_ASSERT(false); // Not needed
 		return nullptr;
 	}
 

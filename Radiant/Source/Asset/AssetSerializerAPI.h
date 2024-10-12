@@ -28,8 +28,8 @@ namespace Radiant {
 	class TextureSerializerAPI : public AssetSerializerAPI
 	{
 	public:
-		//virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const override {}
-		virtual Ref<Asset> Deserialize(const AssetMetadata& metadata) const = 0;
+		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const override;
+		virtual Ref<Asset> Deserialize(const AssetMetadata& metadata) const override;
 
 		virtual bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const;
 		virtual Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const;
