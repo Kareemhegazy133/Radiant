@@ -5,7 +5,7 @@
 #include "Serialization/AssetPack.h"
 
 namespace Radiant {
-	// TODO: Default paths
+
 	class AssetManager
 	{
 	public:
@@ -43,6 +43,8 @@ namespace Radiant {
 		{
 			AssetRegistry m_AssetRegistry;
 			std::unordered_map<AssetHandle, Ref<Asset>> m_LoadedAssets;
+
+			std::string AssetRegistryPath = "Assets/AssetRegistry.rdar";
 		};
 		
 		static Scope<AssetManagerData> s_AssetManagerData;

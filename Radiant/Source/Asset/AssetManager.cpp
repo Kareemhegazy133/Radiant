@@ -171,7 +171,7 @@ namespace Radiant {
 
 	void AssetManager::SerializeAssetRegistry()
 	{
-		auto path = "Assets/AssetRegistry.rdar";
+		const std::string& assetRegistryPath = s_AssetManagerData->AssetRegistryPath;
 		YAML::Emitter out;
 		{
 			out << YAML::BeginMap; // Root
@@ -191,13 +191,13 @@ namespace Radiant {
 			out << YAML::EndMap; // Root
 		}
 
-		std::ofstream fout(path);
+		std::ofstream fout(assetRegistryPath);
 		fout << out.c_str();
 	}
 
 	bool AssetManager::DeserializeAssetRegistry()
 	{
-		const std::string& assetRegistryPath = "Assets/AssetRegistry.rdar";
+		const std::string& assetRegistryPath = s_AssetManagerData->AssetRegistryPath;
 		if (!FileSystem::Exists(assetRegistryPath))
 		{
 			RADIANT_WARN("Asset Manager: AssetRegistry file at {0} was not found", assetRegistryPath);
