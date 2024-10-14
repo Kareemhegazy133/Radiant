@@ -22,7 +22,9 @@ void SandboxLayer::OnAttach()
 	RADIANT_PROFILE_FUNCTION();
 	
 	//m_Level = CreateRef<Level>();
-	m_Level = AssetManager::LoadLevel("Assets/Levels/Level.rdlvl");
+	//m_Level = AssetManager::LoadLevel("Assets/Levels/Level.rdlvl");
+	Ref<AssetPack> assetPack = AssetPack::Load("Assets/AssetPack.rdap");
+	assetPack->LoadLevel(AssetManager::GetAssetHandleFromFilePath("Assets/Levels/Level.rdlvl"));
 
 	//auto square = m_Level->CreateEntity("Green Square");
 	//square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
@@ -66,7 +68,7 @@ void SandboxLayer::OnDetach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
-	AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
+	//AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
 	//AssetManager::CreateAssetPack("Assets/AssetPack.rdap");
 }
 

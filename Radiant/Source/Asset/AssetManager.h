@@ -11,6 +11,8 @@ namespace Radiant {
 	public:
 		static void Init();
 
+		static void CreateAssetPack(const std::filesystem::path& filepath);
+
 		static Ref<Asset> LoadAsset(const std::filesystem::path& filepath);
 		static Ref<AssetPack> LoadAssetPack(const std::filesystem::path& filepath);
 
@@ -43,6 +45,7 @@ namespace Radiant {
 		{
 			AssetRegistry m_AssetRegistry;
 			std::unordered_map<AssetHandle, Ref<Asset>> m_LoadedAssets;
+			Ref<AssetPack> m_AssetPack;
 
 			std::string AssetRegistryPath = "Assets/AssetRegistry.rdar";
 		};

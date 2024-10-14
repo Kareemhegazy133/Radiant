@@ -24,6 +24,11 @@ namespace Radiant {
 			RADIANT_WARN("AssetManager: Failed to Deserialize Asset Registry");
 	}
 
+	void AssetManager::CreateAssetPack(const std::filesystem::path& filepath)
+	{
+		s_AssetManagerData->m_AssetPack = AssetPack::Create(filepath);
+	}
+
 	Ref<Asset> AssetManager::LoadAsset(const std::filesystem::path& filepath)
 	{
 		AssetMetadata metadata = GetMetadata(filepath);
@@ -47,6 +52,12 @@ namespace Radiant {
 		s_AssetManagerData->m_AssetRegistry.Set(metadata.Handle, metadata);
 		SerializeAssetRegistry();
 		return asset;
+	}
+
+	Ref<AssetPack> AssetManager::LoadAssetPack(const std::filesystem::path& filepath)
+	{
+		s_AssetManagerData->m_AssetPack = AssetPack::Load(filepath);
+		return s_AssetManagerData->m_AssetPack;
 	}
 
 	Ref<Level> AssetManager::LoadLevel(const std::filesystem::path& filepath)
