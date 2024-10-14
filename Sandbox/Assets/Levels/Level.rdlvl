@@ -1,11 +1,11 @@
 Level: UntitledLevel
 Entities:
-  - Entity: 340220182153236856
+  - Entity: 4467596591806048370
     MetadataComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
+      Translation: [-0.105635971, -1.25700235, 0]
+      Rotation: [0, 0, 25.1854725]
       Scale: [1, 1, 1]
     CameraComponent:
       Camera:
@@ -21,18 +21,19 @@ Entities:
       FixedAspectRatio: false
     NativeScriptComponent:
       {}
-  - Entity: 2885500649122395616
+  - Entity: 6893670419139700431
     MetadataComponent:
-      Tag: Platform
+      Tag: Green Square
     TransformComponent:
-      Translation: [0, -4, 0]
-      Rotation: [0, 0, 0]
-      Scale: [15, 1, 0]
+      Translation: [-0.000348018395, -2.98483038, 0]
+      Rotation: [0, 0, 0.000169589344]
+      Scale: [1, 1, 1]
     SpriteComponent:
-      Color: [0, 1, 1, 1]
+      Color: [0, 1, 0, 1]
+      TextureHandle: 0
       TilingFactor: 1
     RigidBody2DComponent:
-      BodyType: Static
+      BodyType: Dynamic
       FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]
@@ -41,18 +42,40 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-  - Entity: 16287861084441045727
+  - Entity: 9297545364677151672
     MetadataComponent:
-      Tag: Green Square
+      Tag: Checkerboard
     TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
+      Translation: [3.9997263, -2.98486638, 0]
+      Rotation: [0, 0, 0.000133336158]
       Scale: [1, 1, 1]
     SpriteComponent:
-      Color: [0, 1, 0, 1]
+      Color: [1, 1, 1, 1]
+      TextureHandle: 11361504105087898389
       TilingFactor: 1
     RigidBody2DComponent:
       BodyType: Dynamic
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 16801209666142371222
+    MetadataComponent:
+      Tag: Platform
+    TransformComponent:
+      Translation: [0, -4, 0]
+      Rotation: [0, 0, 0]
+      Scale: [15, 1, 0]
+    SpriteComponent:
+      Color: [0, 1, 1, 1]
+      TextureHandle: 0
+      TilingFactor: 1
+    RigidBody2DComponent:
+      BodyType: Static
       FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]

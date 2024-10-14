@@ -55,13 +55,13 @@ namespace Radiant {
 	struct SpriteComponent
 	{
 		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
-		Ref<Texture2D> Texture;
+		AssetHandle Texture = 0;
 		float TilingFactor = 1.0f;
 
 		SpriteComponent() = default;
 		SpriteComponent(const SpriteComponent&) = default;
-		SpriteComponent(const Ref<Texture2D>& texture)
-			: Texture(texture) {}
+		SpriteComponent(const AssetHandle& textureHandle)
+			: Texture(textureHandle) {}
 		SpriteComponent(const glm::vec4& color)
 			: Color(color) {}
 	};

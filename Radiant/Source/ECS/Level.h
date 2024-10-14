@@ -9,10 +9,10 @@
 
 namespace Radiant {
 
-	class Level
+	class Level : public Asset
 	{
 	public:
-		Level(const std::string& name = "UntitledLevel");
+		Level(const std::string& name = "UntitledLevel", bool initialize = true);
 		~Level();
 
 		Entity CreateEntity(const std::string& name = std::string());
@@ -29,7 +29,9 @@ namespace Radiant {
 		Entity FindEntityByName(std::string_view name);
 		Entity GetEntityByUUID(UUID uuid);
 
-		UUID GetUUID() const { return m_LevelID; }
+		UUID GetUUID() const { return Handle; }
+
+		std::unordered_set<AssetHandle> GetAssetList();
 
 		void SetName(const std::string& name) { m_Name = name; }
 		const std::string& GetName() const { return m_Name; }
@@ -49,7 +51,6 @@ namespace Radiant {
 		void SortEntities();
 
 	private:
-		UUID m_LevelID;
 		entt::registry m_Registry;
 
 		std::string m_Name;

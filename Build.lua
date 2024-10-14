@@ -37,7 +37,7 @@ project "Radiant"
 	kind "StaticLib"
 	location "Radiant"
 	language "C++"
-	cppdialect "C++17"
+	cppdialect "C++20"
 	staticruntime "off"
 
 	pchheader "rdpch.h"
@@ -110,7 +110,7 @@ project "Sandbox"
 	location "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
-	cppdialect "C++17"
+	cppdialect "C++20"
 	staticruntime "off"
 
 	files

@@ -1,0 +1,7 @@
+AssetRegistry:
+  - Handle: 12974086989157345301
+    FilePath: Assets/Levels/Level.rdlvl
+    Type: Level
+  - Handle: 11361504105087898389
+    FilePath: Assets/Textures/Checkerboard.png
+    Type: Texture2D

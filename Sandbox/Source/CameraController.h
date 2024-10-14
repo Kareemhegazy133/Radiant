@@ -9,11 +9,11 @@ class CameraController : public ScriptableEntity
 public:
 	void OnCreate()
 	{
-		// Initialize camera position and rotation if necessary
-		m_CameraPosition = glm::vec3(0.0f, 0.0f, 0.0f);
-		m_CameraRotation = 0.0f; // Initial camera rotation
+		// Get camera position and rotation from TransformComponent
+		m_CameraPosition = GetComponent<TransformComponent>().Translation;
+		m_CameraRotation = GetComponent<TransformComponent>().Rotation.z;
 		m_CameraTranslationSpeed = 5.0f; // Movement speed
-		m_CameraRotationSpeed = 45.0f; // Rotation speed (degrees per second)
+		m_CameraRotationSpeed = glm::radians(45.0f); // Rotation speed (radians per second)
 	}
 
 	void OnUpdate(Timestep ts)
@@ -52,7 +52,7 @@ public:
 		transform.Translation = m_CameraPosition; // Update the translation
 
 		// You could also apply rotation to the transform if needed:
-		transform.Rotation.z = glm::radians(m_CameraRotation);
+		transform.Rotation.z = m_CameraRotation;
 	}
 
 private:

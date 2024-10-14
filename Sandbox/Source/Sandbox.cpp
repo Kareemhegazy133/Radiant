@@ -11,9 +11,15 @@ public:
 	Sandbox(GameApplicationCommandLineArgs args)
 		: GameApplication("Sandbox", 1280, 720, args)
 	{
-		PushLayer(new SandboxLayer());
+		PushLayer(sandboxLayer);
 	}
 
+	~Sandbox()
+	{
+		PopLayer(sandboxLayer);
+	}
+
+	Layer* sandboxLayer = new SandboxLayer();
 };
 
 Radiant::GameApplication* Radiant::CreateGameApplication(GameApplicationCommandLineArgs args)

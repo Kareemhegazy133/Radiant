@@ -49,6 +49,22 @@ namespace Radiant {
 		layer->OnAttach();
 	}
 
+	void GameApplication::PopLayer(Layer* layer)
+	{
+		RADIANT_PROFILE_FUNCTION();
+
+		m_LayerStack.PopLayer(layer);
+		layer->OnDetach();
+	}
+
+	void GameApplication::PopOverlay(Layer* layer)
+	{
+		RADIANT_PROFILE_FUNCTION();
+
+		m_LayerStack.PopOverlay(layer);
+		layer->OnDetach();
+	}
+
 	void GameApplication::OnEvent(Event& e)
 	{
 		RADIANT_PROFILE_FUNCTION();

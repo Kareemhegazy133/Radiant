@@ -1,6 +1,8 @@
 #include "rdpch.h"
 #include "Level.h"
 
+#include "Asset/AssetManager.h"
+
 #include "Renderer/Renderer2D.h"
 
 #include "Entity.h"
@@ -12,9 +14,11 @@
 
 namespace Radiant {
 
-	Level::Level(const std::string& name)
+	Level::Level(const std::string& name, bool initialize)
 		: m_Name(name)
 	{
+		if (!initialize) return;
+
 		RADIANT_TRACE("Level Constructor");
 		Physics2D::Init(this);
 
@@ -217,6 +221,35 @@ namespace Radiant {
 			return { m_EntityMap.at(uuid), this };
 
 		return {};
+	}
+
+	std::unordered_set<AssetHandle> Level::GetAssetList()
+	{
+		std::unordered_set<AssetHandle> assetList;
+		std::unordered_set<AssetHandle> missingAssets; // Debug only
+
+		// SpriteComponent
+		{
+			auto view = m_Registry.view<SpriteComponent>();
+			for (auto entity : view)
+			{
+				const auto& src = m_Registry.get<SpriteComponent>(entity);
+				if (src.Texture)
+				{
+					if (AssetManager::IsAssetHandleValid(src.Texture))
+					{
+						assetList.insert(src.Texture);
+					}
+					else
+					{
+						missingAssets.insert(src.Texture);
+					}
+				}
+			}
+		}
+
+		RADIANT_WARN("{} assets ({} missing)", assetList.size(), missingAssets.size());
+		return assetList;
 	}
 
 	void Level::OnRigidBody2DComponentConstruct(entt::registry& registry, entt::entity entity)

@@ -8,6 +8,8 @@ SandboxLayer::SandboxLayer()
 	: Layer("SandboxLayer")
 {
 	GAME_TRACE("SandboxLayer Constructor");
+
+	AssetManager::Init();
 }
 
 SandboxLayer::~SandboxLayer()
@@ -18,20 +20,29 @@ SandboxLayer::~SandboxLayer()
 void SandboxLayer::OnAttach()
 {
 	RADIANT_PROFILE_FUNCTION();
-
-	m_Level = CreateRef<Level>();
+	
+	//m_Level = CreateRef<Level>();
+	m_Level = AssetManager::LoadLevel("Assets/Levels/Level.rdlvl");
 
 	//auto square = m_Level->CreateEntity("Green Square");
 	//square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
 	//square.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
 	//square.AddComponent<BoxCollider2DComponent>();
 
-	//m_CheckerboardTexture = Texture2D::Create("Assets/Textures/Checkerboard.png");
-	//m_SpriteSheet = Texture2D::Create("Assets/SpriteSheets/RPGpack_sheet_2X.png");
+	////AssetManager::LoadAsset("Assets/Textures/Checkerboard.png");
 
-	//m_TextureStairs = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 6 }, { 128, 128 });
-	//m_TextureBarrel = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 2 }, { 128, 128 });
-	//m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2, 1 }, { 128, 128 }, {1, 2});
+	//auto checkerboard = m_Level->CreateEntity("Checkerboard");
+	//checkerboard.AddComponent<SpriteComponent>(AssetManager::LoadAsset("Assets/Textures/Checkerboard.png")->Handle);
+	//checkerboard.GetComponent<TransformComponent>().Translation = { 4.0f, 0.0f, 0.0f };
+	//checkerboard.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
+	//checkerboard.AddComponent<BoxCollider2DComponent>();
+
+	////m_CheckerboardTexture = Texture2D::Create("Assets/Textures/Checkerboard.png");
+	////m_SpriteSheet = Texture2D::Create("Assets/SpriteSheets/RPGpack_sheet_2X.png");
+
+	////m_TextureStairs = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 6 }, { 128, 128 });
+	////m_TextureBarrel = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 2 }, { 128, 128 });
+	////m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2, 1 }, { 128, 128 }, {1, 2});
 
 	//auto platform = m_Level->CreateEntity("Platform");
 	//platform.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 1.0f, 1.0f });
@@ -46,14 +57,17 @@ void SandboxLayer::OnAttach()
 	//m_Camera.GetComponent<CameraComponent>().Camera.SetViewportSize(1280, 720);
 	//m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 
-	LevelSerializer serializer(m_Level);
-	serializer.Deserialize("Assets/Levels/Level.radiant");
+	m_Level->FindEntityByName("Camera").AddComponent<NativeScriptComponent>().Bind<CameraController>();
+
+	//AssetManager::LoadAssetPack("Assets/AssetPack.rdap");
 }
 
 void SandboxLayer::OnDetach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
+	AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
+	//AssetManager::CreateAssetPack("Assets/AssetPack.rdap");
 }
 
 void SandboxLayer::OnUpdate(Timestep ts)
