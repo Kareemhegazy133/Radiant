@@ -14,7 +14,12 @@ namespace Radiant {
 		// Textures
 		{ ".png", AssetType::Texture2D },
 		{ ".jpg", AssetType::Texture2D },
-		{ ".jpeg", AssetType::Texture2D }
+		{ ".jpeg", AssetType::Texture2D },
+
+		// Fonts
+		{ ".ttf", AssetType::Font },
+		{ ".ttc", AssetType::Font },
+		{ ".otf", AssetType::Font },
 	};
 
 	static AssetType GetAssetTypeFromFileExtension(const std::filesystem::path& extension)

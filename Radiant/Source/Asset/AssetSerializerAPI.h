@@ -19,7 +19,7 @@ namespace Radiant {
 	{
 	public:
 		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const = 0;
-		virtual Ref<Asset> Deserialize(const AssetMetadata& metadata) const = 0;
+		virtual bool Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const = 0;
 
 		virtual bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const = 0;
 		virtual Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const = 0;
@@ -29,7 +29,7 @@ namespace Radiant {
 	{
 	public:
 		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const override;
-		virtual Ref<Asset> Deserialize(const AssetMetadata& metadata) const override;
+		virtual bool Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const override;
 
 		virtual bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const;
 		virtual Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const;
@@ -39,11 +39,21 @@ namespace Radiant {
 	{
 	public:
 		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const override;
-		virtual Ref<Asset> Deserialize(const AssetMetadata& metadata) const override;
+		virtual bool Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const override;
 
 		virtual bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const;
 		virtual Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const override;
 		Ref<Level> DeserializeLevelFromAssetPack(FileStreamReader& stream, const AssetPackFile::LevelInfo& levelInfo) const;
+	};
+
+	class FontSerializerAPI : public AssetSerializerAPI
+	{
+	public:
+		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const override;
+		virtual bool Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const override;
+
+		virtual bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const;
+		virtual Ref<Asset> DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const;
 	};
 
 }

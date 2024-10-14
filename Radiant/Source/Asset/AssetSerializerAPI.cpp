@@ -7,6 +7,10 @@
 
 #include "ECS/LevelSerializer.h"
 
+#include "Renderer/UI/Font.h"
+
+#include "Utilities/FileSystem.h"
+
 namespace Radiant {
 
 	//////////////////////////////////////////////////////////////////////////////////
@@ -18,7 +22,7 @@ namespace Radiant {
 		RADIANT_ASSERT(false); // Not needed
 	}
 
-	Ref<Asset> TextureSerializerAPI::Deserialize(const AssetMetadata& metadata) const
+	bool TextureSerializerAPI::Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const
 	{
 		RADIANT_PROFILE_FUNCTION();
 
@@ -36,7 +40,7 @@ namespace Radiant {
 		if (data.Data == nullptr)
 		{
 			RADIANT_ERROR("TextureSerializerAPI::Deserialize - Could not load texture from filepath: {0}", metadata.FilePath.string());
-			return nullptr;
+			return false;
 		}
 
 		// TODO: think about this
@@ -55,9 +59,9 @@ namespace Radiant {
 			break;
 		}
 
-		Ref<Texture2D> texture = Texture2D::Create(spec, data);
+		asset = Texture2D::Create(spec, data);
 		data.Release();
-		return texture;
+		return true;
 	}
 
 	bool TextureSerializerAPI::SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const
@@ -81,12 +85,13 @@ namespace Radiant {
 		serializer.Serialize(metadata.FilePath.string());
 	}
 
-	Ref<Asset> LevelAssetSerializerAPI::Deserialize(const AssetMetadata& metadata) const
+	bool LevelAssetSerializerAPI::Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const
 	{
-		Ref<Level> level = CreateRef<Level>();
+		asset = CreateRef<Level>();
+		Ref<Level> level = std::static_pointer_cast<Level>(asset);
 		LevelSerializer serializer(level);
 		serializer.Deserialize(metadata.FilePath.string());
-		return level;
+		return true;
 	}
 
 	bool LevelAssetSerializerAPI::SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const
@@ -116,4 +121,49 @@ namespace Radiant {
 
 		return nullptr;
 	}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	// FontSerializerAPI
+	//////////////////////////////////////////////////////////////////////////////////
+
+	void FontSerializerAPI::Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const
+	{
+		RADIANT_ASSERT(false); // Not needed
+	}
+
+	bool FontSerializerAPI::Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const
+	{
+		asset = CreateRef<Font>(AssetManager::GetFileSystemPath(metadata));
+		asset->Handle = metadata.Handle;
+
+		return true;
+	}
+
+	bool FontSerializerAPI::SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const
+	{
+		outInfo.Offset = stream.GetStreamPosition();
+
+		// TODO: Make GetAsset<T>();
+		Ref<Font> font = std::static_pointer_cast<Font>(AssetManager::GetAsset(handle));
+		auto path = AssetManager::GetFileSystemPath(handle);
+		stream.WriteString(font->GetName());
+		Buffer fontData = FileSystem::ReadBytes(path);
+		stream.WriteBuffer(fontData);
+
+		outInfo.Size = stream.GetStreamPosition() - outInfo.Offset;
+		return true;
+	}
+
+	Ref<Asset> FontSerializerAPI::DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const
+	{
+		stream.SetStreamPosition(assetInfo.PackedOffset);
+
+		std::string name;
+		stream.ReadString(name);
+		Buffer fontData;
+		stream.ReadBuffer(fontData);
+
+		return CreateRef<Font>(name, fontData);;
+	}
+
 }

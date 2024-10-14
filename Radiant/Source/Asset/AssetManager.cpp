@@ -36,8 +36,9 @@ namespace Radiant {
 			RADIANT_ASSERT(metadata.Type != AssetType::None);
 		}
 
-		Ref<Asset> asset = AssetSerializer::LoadAsset(metadata);
-		if (!asset)
+		Ref<Asset> asset = nullptr;
+		bool result = AssetSerializer::LoadAsset(metadata, asset);
+		if (!result || !asset)
 		{
 			RADIANT_ERROR("AssetManager: Failed to import asset at {0}", filepath.string());
 		}
@@ -51,6 +52,7 @@ namespace Radiant {
 
 	Ref<Level> AssetManager::LoadLevel(const std::filesystem::path& filepath)
 	{
+		// TODO: Make a LoadAsset<T>();
 		return static_pointer_cast<Level>(LoadAsset(filepath));
 	}
 
@@ -93,8 +95,8 @@ namespace Radiant {
 		{
 			const AssetMetadata& metadata = GetMetadata(assetHandle);
 
-			asset = AssetSerializer::LoadAsset(metadata);
-			if (!asset)
+			bool result = AssetSerializer::LoadAsset(metadata, asset);
+			if (!result || !asset)
 			{
 				RADIANT_ERROR("AssetManager: Failed to load asset");
 			}
