@@ -5,6 +5,7 @@
 
 #include "Texture.h"
 #include "SubTexture2D.h"
+#include "UI/Font.h"
 
 #include "ECS/Components.h"
 
@@ -46,6 +47,7 @@ namespace Radiant {
 		static void DrawRect(const glm::mat4& transform, const glm::vec4& color);
 
 		static void DrawSprite(const glm::mat4& transform, SpriteComponent& src);
+		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const glm::vec4& color);
 
 		static float GetLineWidth();
 		static void SetLineWidth(float width);
