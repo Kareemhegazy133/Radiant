@@ -22,7 +22,7 @@ void SandboxLayer::OnAttach()
 	RADIANT_PROFILE_FUNCTION();
 	
 	//m_Level = CreateRef<Level>();
-	m_Level = AssetManager::LoadLevel("Assets/Levels/Level.rdlvl");
+	m_Level = AssetManager::LoadAsset<Level>("Assets/Levels/Level.rdlvl");
 
 	//auto square = m_Level->CreateEntity("Green Square");
 	//square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });

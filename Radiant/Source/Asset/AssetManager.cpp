@@ -50,12 +50,6 @@ namespace Radiant {
 		return asset;
 	}
 
-	Ref<Level> AssetManager::LoadLevel(const std::filesystem::path& filepath)
-	{
-		// TODO: Make a LoadAsset<T>();
-		return static_pointer_cast<Level>(LoadAsset(filepath));
-	}
-
 	void AssetManager::SaveLevel(const Ref<Level>& level, const std::filesystem::path& filepath)
 	{
 		AssetMetadata metadata;
