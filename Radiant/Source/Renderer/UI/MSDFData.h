@@ -1,9 +1,9 @@
 #pragma once
 
 #undef INFINITE
-#include "msdf-atlas-gen.h"
-
 #include <vector>
+
+#include "msdf-atlas-gen.h"
 
 namespace Radiant {
 

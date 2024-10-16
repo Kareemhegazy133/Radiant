@@ -4,12 +4,15 @@
 
 using namespace Radiant;
 
+static Ref<Font> s_Font;
+
 SandboxLayer::SandboxLayer()
 	: Layer("SandboxLayer")
 {
 	GAME_TRACE("SandboxLayer Constructor");
 
 	AssetManager::Init();
+
 }
 
 SandboxLayer::~SandboxLayer()
@@ -79,7 +82,9 @@ void SandboxLayer::OnUpdate(Timestep ts)
 	m_Level->OnUpdate(ts);
 	m_Level->OnRender();
 
-	//{
+	//Renderer2D::DrawString("Hello", s_Font, glm::mat4(1.0f), {0.2f, 0.3f, 0.8f, 1.f});
+
+	//{1
 	//	static float rotation = 0.0f;
 	//	rotation += ts * 50.0f;
 

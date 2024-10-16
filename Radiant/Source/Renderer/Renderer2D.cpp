@@ -135,12 +135,12 @@ namespace Radiant
 
 		// Text
 		s_Data.TextVertexArray = VertexArray::Create();
+
 		s_Data.TextVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(TextVertex));
 		s_Data.TextVertexBuffer->SetLayout({
 			{ ShaderDataType::Float3, "a_Position"     },
 			{ ShaderDataType::Float4, "a_Color"        },
-			{ ShaderDataType::Float2, "a_TexCoord"     },
-			{ ShaderDataType::Int,    "a_EntityID"     }
+			{ ShaderDataType::Float2, "a_TexCoord"     }
 			});
 		s_Data.TextVertexArray->AddVertexBuffer(s_Data.TextVertexBuffer);
 		s_Data.TextVertexArray->SetIndexBuffer(quadIB);
@@ -183,6 +183,12 @@ namespace Radiant
 
 		delete[] s_Data.LineVertexBufferPtr;
 		s_Data.LineVertexBufferPtr = nullptr;
+
+		delete[] s_Data.TextVertexBufferBase;
+		s_Data.TextVertexBufferBase = nullptr;
+
+		delete[] s_Data.TextVertexBufferPtr;
+		s_Data.TextVertexBufferPtr = nullptr;
 	}
 
 	void Renderer2D::BeginScene(const OrthographicCamera& camera)
@@ -257,8 +263,10 @@ namespace Radiant
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.TextVertexBufferPtr - (uint8_t*)s_Data.TextVertexBufferBase);
 			s_Data.TextVertexBuffer->SetData(s_Data.TextVertexBufferBase, dataSize);
+
 			auto buf = s_Data.TextVertexBufferBase;
 			s_Data.FontAtlasTexture->Bind(0);
+
 			s_Data.TextShader->Bind();
 			RenderCommand::DrawIndexed(s_Data.TextVertexArray, s_Data.TextIndexCount);
 		}
@@ -529,7 +537,7 @@ namespace Radiant
 	{
 		const auto& fontGeometry = font->GetMSDFData()->FontGeometry;
 		const auto& metrics = fontGeometry.getMetrics();
-		Ref<Texture2D> fontAtlas = font->GetFontAtlas();
+		Ref<Texture2D> fontAtlas = font->GetAtlasTexture();
 
 		s_Data.FontAtlasTexture = fontAtlas;
 
@@ -543,17 +551,16 @@ namespace Radiant
 			char character = string[i];
 			if (character == '\r')
 				continue;
+
 			if (character == '\n')
 			{
 				x = 0;
 				y -= fsScale * metrics.lineHeight + lineHeightOffset;
 				continue;
 			}
-
 			auto glyph = fontGeometry.getGlyph(character);
 			if (!glyph)
 				glyph = fontGeometry.getGlyph('?');
-
 			if (!glyph)
 				return;
 
@@ -579,7 +586,7 @@ namespace Radiant
 			texCoordMin *= glm::vec2(texelWidth, texelHeight);
 			texCoordMax *= glm::vec2(texelWidth, texelHeight);
 
-			// Render here
+			// render here
 			s_Data.TextVertexBufferPtr->Position = transform * glm::vec4(quadMin, 0.0f, 1.0f);
 			s_Data.TextVertexBufferPtr->Color = color;
 			s_Data.TextVertexBufferPtr->TexCoord = texCoordMin;
@@ -607,6 +614,7 @@ namespace Radiant
 				double advance = glyph->getAdvance();
 				char nextCharacter = string[i + 1];
 				fontGeometry.getAdvance(advance, character, nextCharacter);
+
 				float kerningOffset = 0.0f;
 				x += fsScale * advance + kerningOffset;
 			}
