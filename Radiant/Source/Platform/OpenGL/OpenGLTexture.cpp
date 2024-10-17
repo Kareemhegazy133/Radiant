@@ -11,8 +11,10 @@ namespace Radiant {
 		{
 			switch (format)
 			{
-			case ImageFormat::RGB8:  return GL_RGB;
-			case ImageFormat::RGBA8: return GL_RGBA;
+			case ImageFormat::R8:		return GL_RED;
+			case ImageFormat::RGB8:		return GL_RGB;
+			case ImageFormat::RGBA8:	return GL_RGBA;
+			case ImageFormat::RGBA32F:	return GL_RGBA;  // RGBA32F can use GL_RGBA for data format
 			}
 
 			RADIANT_ASSERT(false);
@@ -23,8 +25,10 @@ namespace Radiant {
 		{
 			switch (format)
 			{
-			case ImageFormat::RGB8:  return GL_RGB8;
-			case ImageFormat::RGBA8: return GL_RGBA8;
+			case ImageFormat::R8:		return GL_R8;
+			case ImageFormat::RGB8:		return GL_RGB8;
+			case ImageFormat::RGBA8:	return GL_RGBA8;
+			case ImageFormat::RGBA32F:	return GL_RGBA32F;
 			}
 
 			RADIANT_ASSERT(false);
@@ -51,7 +55,10 @@ namespace Radiant {
 		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 		if (data)
+		{
 			SetData(data);
+		}
+			
 	}
 
 	OpenGLTexture2D::~OpenGLTexture2D()
@@ -65,10 +72,39 @@ namespace Radiant {
 	{
 		RADIANT_PROFILE_FUNCTION();
 
-		uint32_t bpp = m_DataFormat == GL_RGBA ? 4 : 3;
-		RADIANT_ASSERT(data.Size == m_Width * m_Height * bpp, "Data must be entire texture!");
-		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data.Data);
+		uint32_t bpp = 0;
+		GLenum dataType = GL_UNSIGNED_BYTE;
+
+		// Determine bytes per pixel and data type based on m_DataFormat
+		switch (m_DataFormat)
+		{
+		case GL_RED:
+			bpp = 1;  // R8 format (1 byte per pixel)
+			break;
+		case GL_RGB:
+			bpp = 3;  // RGB8 format (3 bytes per pixel)
+			break;
+		case GL_RGBA:
+			bpp = 4;  // RGBA8 format (4 bytes per pixel)
+			break;
+		case GL_RGBA32F:
+			bpp = 16; // RGBA32F format (4 channels * 4 bytes per channel = 16 bytes per pixel)
+			dataType = GL_FLOAT;
+			break;
+		default:
+			RADIANT_ASSERT(false, "Unsupported texture data format!");
+			return;
+		}
+
+		data = data.Copy(data.Data, m_Width * m_Height * bpp);
+
+		// Ensure data size matches the expected texture size
+		RADIANT_ASSERT(data.Size == m_Width * m_Height * bpp, "Data must match the entire texture size!");
+
+		// Upload texture data
+		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, dataType, data.Data);
 	}
+
 
 	void OpenGLTexture2D::Bind(uint32_t slot) const
 	{

@@ -16,7 +16,7 @@ namespace Radiant {
 		template<typename T>
 		static Ref<T> LoadAsset(const std::filesystem::path& filepath)
 		{
-			RADIANT_ASSERT(std::is_base_of<Asset, T>::value, "LoadAsset<T> can only be used with types derived from Asset");
+			static_assert(std::is_base_of<Asset, T>::value, "LoadAsset<T> can only be used with types derived from Asset");
 
 			// Call the original LoadAsset function
 			Ref<Asset> baseAsset = LoadAsset(filepath);

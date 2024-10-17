@@ -537,7 +537,7 @@ namespace Radiant
 	{
 		const auto& fontGeometry = font->GetMSDFData()->FontGeometry;
 		const auto& metrics = fontGeometry.getMetrics();
-		Ref<Texture2D> fontAtlas = font->GetAtlasTexture();
+		Ref<Texture2D> fontAtlas = font->GetFontAtlas();
 
 		s_Data.FontAtlasTexture = fontAtlas;
 

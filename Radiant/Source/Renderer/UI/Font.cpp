@@ -1,12 +1,9 @@
 #include "rdpch.h"
 #include "Font.h"
 
-#undef INFINITE
-#include "msdf-atlas-gen.h"
-#include "FontGeometry.h"
-#include "GlyphGeometry.h"
-
 #include "MSDFData.h"
+
+#include "Utilities/FileSystem.h"
 
 namespace Radiant {
 
@@ -31,23 +28,53 @@ namespace Radiant {
 		spec.Format = ImageFormat::RGB8;
 		spec.GenerateMips = false;
 
-		Ref<Texture2D> texture = Texture2D::Create(spec, bitmap.pixels);
+		Ref<Texture2D> texture = Texture2D::Create(spec);
+
+		texture->SetData(Buffer(bitmap.pixels));
 		return texture;
 	}
 
 	Font::Font(const std::filesystem::path& filepath)
-		: m_Data(new MSDFData())
+		: m_MSDFData(new MSDFData())
+	{
+		m_Name = filepath.stem().string();
+
+		Buffer buffer = FileSystem::ReadBytes(filepath);
+		CreateAtlas(buffer);
+		buffer.Release();
+	}
+
+	Font::Font(const std::string& name, Buffer buffer)
+		: m_Name(name), m_MSDFData(new MSDFData())
+	{
+		CreateAtlas(buffer);
+	}
+
+	Font::~Font()
+	{
+		delete m_MSDFData;
+		m_MSDFData = nullptr;
+	}
+
+
+	Ref<Font> Font::GetDefaultFont()
+	{
+		static Ref<Font> DefaultFont;
+		if (!DefaultFont)
+			DefaultFont = CreateRef<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
+
+		return DefaultFont;
+	}
+
+	void Font::CreateAtlas(Buffer buffer)
 	{
 		msdfgen::FreetypeHandle* ft = msdfgen::initializeFreetype();
 		RADIANT_ASSERT(ft);
 
-		std::string fileString = filepath.string();
-
-		// TODO(Yan): msdfgen::loadFontData loads from memory buffer which we'll need 
-		msdfgen::FontHandle* font = msdfgen::loadFont(ft, fileString.c_str());
+		msdfgen::FontHandle* font = msdfgen::loadFontData(ft, buffer.As<const msdfgen::byte>(), int(buffer.Size));
 		if (!font)
 		{
-			RADIANT_ERROR("Failed to load font: {}", fileString);
+			RADIANT_ERROR("Font: Failed to load font");
 			return;
 		}
 
@@ -70,9 +97,9 @@ namespace Radiant {
 		}
 
 		double fontScale = 1.0;
-		m_Data->FontGeometry = msdf_atlas::FontGeometry(&m_Data->Glyphs);
-		int glyphsLoaded = m_Data->FontGeometry.loadCharset(font, fontScale, charset);
-		RADIANT_INFO("Loaded {} glyphs from font (out of {})", glyphsLoaded, charset.size());
+		m_MSDFData->FontGeometry = msdf_atlas::FontGeometry(&m_MSDFData->Glyphs);
+		int glyphsLoaded = m_MSDFData->FontGeometry.loadCharset(font, fontScale, charset);
+		RADIANT_INFO("Font: Loaded {0} glyphs from font (out of {1})", glyphsLoaded, charset.size());
 
 
 		double emSize = 40.0;
@@ -83,7 +110,7 @@ namespace Radiant {
 		atlasPacker.setMiterLimit(1.0);
 		atlasPacker.setPadding(0);
 		atlasPacker.setScale(emSize);
-		int remaining = atlasPacker.pack(m_Data->Glyphs.data(), (int)m_Data->Glyphs.size());
+		int remaining = atlasPacker.pack(m_MSDFData->Glyphs.data(), (int)m_MSDFData->Glyphs.size());
 		RADIANT_ASSERT(remaining == 0);
 
 		int width, height;
@@ -100,53 +127,25 @@ namespace Radiant {
 		bool expensiveColoring = false;
 		if (expensiveColoring)
 		{
-			msdf_atlas::Workload([&glyphs = m_Data->Glyphs, &coloringSeed](int i, int threadNo) -> bool {
+			msdf_atlas::Workload([&glyphs = m_MSDFData->Glyphs, &coloringSeed](int i, int threadNo) -> bool {
 				unsigned long long glyphSeed = (LCG_MULTIPLIER * (coloringSeed ^ i) + LCG_INCREMENT) * !!coloringSeed;
 				glyphs[i].edgeColoring(msdfgen::edgeColoringInkTrap, DEFAULT_ANGLE_THRESHOLD, glyphSeed);
 				return true;
-				}, m_Data->Glyphs.size()).finish(THREAD_COUNT);
+				}, m_MSDFData->Glyphs.size()).finish(THREAD_COUNT);
 		}
 		else {
 			unsigned long long glyphSeed = coloringSeed;
-			for (msdf_atlas::GlyphGeometry& glyph : m_Data->Glyphs)
+			for (msdf_atlas::GlyphGeometry& glyph : m_MSDFData->Glyphs)
 			{
 				glyphSeed *= LCG_MULTIPLIER;
 				glyph.edgeColoring(msdfgen::edgeColoringInkTrap, DEFAULT_ANGLE_THRESHOLD, glyphSeed);
 			}
 		}
 
-
-		m_AtlasTexture = CreateAndCacheAtlas<uint8_t, float, 3, msdf_atlas::msdfGenerator>("Test", (float)emSize, m_Data->Glyphs, m_Data->FontGeometry, width, height);
+		m_TextureAtlas = CreateAndCacheAtlas<uint8_t, float, 3, msdf_atlas::msdfGenerator>("Test", (float)emSize, m_MSDFData->Glyphs, m_MSDFData->FontGeometry, width, height);
 
 		msdfgen::destroyFont(font);
 		msdfgen::deinitializeFreetype(ft);
-	}
-
-	Font::Font(const std::string& name, Buffer buffer)
-		: m_Name(name), m_Data(new MSDFData())
-	{
-		CreateAtlas(buffer);
-	}
-
-	Font::~Font()
-	{
-		delete m_Data;
-		m_Data = nullptr;
-	}
-
-
-	Ref<Font> Font::GetDefault()
-	{
-		static Ref<Font> DefaultFont;
-		if (!DefaultFont)
-			DefaultFont = CreateRef<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
-
-		return DefaultFont;
-	}
-
-	void Font::CreateAtlas(Buffer buffer)
-	{
-
 	}
 
 }
