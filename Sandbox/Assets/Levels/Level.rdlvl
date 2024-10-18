@@ -25,8 +25,8 @@ Entities:
     MetadataComponent:
       Tag: Green Square
     TransformComponent:
-      Translation: [-0.00034346641, -2.98478031, 0]
-      Rotation: [0, 0, 0.00015280128]
+      Translation: [-0.000342263898, -2.98478198, 0]
+      Rotation: [0, 0, 0.000150479915]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [0, 1, 0, 1]
@@ -46,8 +46,8 @@ Entities:
     MetadataComponent:
       Tag: Checkerboard
     TransformComponent:
-      Translation: [3.99974823, -2.98494124, 0]
-      Rotation: [0, 0, 4.66419151e-05]
+      Translation: [3.99975491, -2.98494554, 0]
+      Rotation: [0, 0, 4.13785274e-05]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [1, 1, 1, 1]
