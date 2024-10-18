@@ -7,6 +7,67 @@
 
 namespace Radiant {
 
+#define DEFAULT_ANGLE_THRESHOLD 3.0
+#define DEFAULT_MITER_LIMIT 1.0
+#define LCG_MULTIPLIER 6364136223846793005ull
+#define LCG_INCREMENT 1442695040888963407ull
+#define THREADS 8
+
+	namespace Utils {
+
+		static std::filesystem::path GetCacheDirectory()
+		{
+			return "Assets/Cache/FontAtlases";
+		}
+
+		static void CreateCacheDirectoryIfNeeded()
+		{
+			std::filesystem::path cacheDirectory = GetCacheDirectory();
+			if (!std::filesystem::exists(cacheDirectory))
+				std::filesystem::create_directories(cacheDirectory);
+		}
+	}
+
+	struct AtlasHeader
+	{
+		uint32_t Type = 0;
+		uint32_t Width = 0, Height = 0;
+	};
+
+	static bool TryReadFontAtlasFromCache(const std::string& fontName, float fontSize, AtlasHeader& header, void*& pixels, Buffer& storageBuffer)
+	{
+		std::string filename = std::format("{0}-{1}.rdfa", fontName, fontSize);
+		std::filesystem::path filepath = Utils::GetCacheDirectory() / filename;
+
+		if (std::filesystem::exists(filepath))
+		{
+			storageBuffer = FileSystem::ReadBytes(filepath);
+			header = *storageBuffer.As<AtlasHeader>();
+			pixels = (uint8_t*)storageBuffer.Data + sizeof(AtlasHeader);
+			return true;
+		}
+		return false;
+	}
+
+	static void CacheFontAtlas(const std::string& fontName, float fontSize, AtlasHeader header, const void* pixels)
+	{
+		Utils::CreateCacheDirectoryIfNeeded();
+
+		std::string filename = std::format("{0}-{1}.rdfa", fontName, fontSize);
+		std::filesystem::path filepath = Utils::GetCacheDirectory() / filename;
+
+		std::ofstream stream(filepath, std::ios::binary | std::ios::trunc);
+		if (!stream)
+		{
+			stream.close();
+			RADIANT_ERROR("Font: Failed to cache font atlas to {0}", filepath.string());
+			return;
+		}
+
+		stream.write((char*)&header, sizeof(AtlasHeader));
+		stream.write((char*)pixels, header.Width * header.Height * 3);
+	}
+
 	template<typename T, typename S, int N, msdf_atlas::GeneratorFunction<S, N> GenFunc>
 	static Ref<Texture2D> CreateAndCacheAtlas(const std::string& fontName, float fontSize, const std::vector<msdf_atlas::GlyphGeometry>& glyphs,
 		const msdf_atlas::FontGeometry& fontGeometry, uint32_t width, uint32_t height)
@@ -17,20 +78,36 @@ namespace Radiant {
 
 		msdf_atlas::ImmediateAtlasGenerator<S, N, GenFunc, msdf_atlas::BitmapAtlasStorage<T, N>> generator(width, height);
 		generator.setAttributes(attributes);
-		generator.setThreadCount(8);
+		generator.setThreadCount(THREADS);
 		generator.generate(glyphs.data(), (int)glyphs.size());
 
 		msdfgen::BitmapConstRef<T, N> bitmap = (msdfgen::BitmapConstRef<T, N>)generator.atlasStorage();
 
+		AtlasHeader header;
+		header.Width = bitmap.width;
+		header.Height = bitmap.height;
+		CacheFontAtlas(fontName, fontSize, header, bitmap.pixels);
+
 		TextureSpecification spec;
-		spec.Width = bitmap.width;
-		spec.Height = bitmap.height;
+		spec.Width = header.Width;
+		spec.Height = header.Height;
 		spec.Format = ImageFormat::RGB8;
 		spec.GenerateMips = false;
 
 		Ref<Texture2D> texture = Texture2D::Create(spec);
 
 		texture->SetData(Buffer(bitmap.pixels));
+		return texture;
+	}
+
+	static Ref<Texture2D> CreateCachedAtlas(AtlasHeader header, const void* pixels)
+	{
+		TextureSpecification spec;
+		spec.Format = ImageFormat::RGB8;
+		spec.Width = header.Width;
+		spec.Height = header.Height;
+		spec.GenerateMips = false;
+		Ref<Texture2D> texture = Texture2D::Create(spec, pixels);
 		return texture;
 	}
 
@@ -101,7 +178,6 @@ namespace Radiant {
 		int glyphsLoaded = m_MSDFData->FontGeometry.loadCharset(font, fontScale, charset);
 		RADIANT_INFO("Font: Loaded {0} glyphs from font (out of {1})", glyphsLoaded, charset.size());
 
-
 		double emSize = 40.0;
 
 		msdf_atlas::TightAtlasPacker atlasPacker;
@@ -117,10 +193,6 @@ namespace Radiant {
 		atlasPacker.getDimensions(width, height);
 		emSize = atlasPacker.getScale();
 
-#define DEFAULT_ANGLE_THRESHOLD 3.0
-#define LCG_MULTIPLIER 6364136223846793005ull
-#define LCG_INCREMENT 1442695040888963407ull
-#define THREAD_COUNT 8
 		// if MSDF || MTSDF
 
 		uint64_t coloringSeed = 0;
@@ -131,7 +203,7 @@ namespace Radiant {
 				unsigned long long glyphSeed = (LCG_MULTIPLIER * (coloringSeed ^ i) + LCG_INCREMENT) * !!coloringSeed;
 				glyphs[i].edgeColoring(msdfgen::edgeColoringInkTrap, DEFAULT_ANGLE_THRESHOLD, glyphSeed);
 				return true;
-				}, m_MSDFData->Glyphs.size()).finish(THREAD_COUNT);
+				}, m_MSDFData->Glyphs.size()).finish(THREADS);
 		}
 		else {
 			unsigned long long glyphSeed = coloringSeed;
@@ -142,7 +214,19 @@ namespace Radiant {
 			}
 		}
 
-		m_TextureAtlas = CreateAndCacheAtlas<uint8_t, float, 3, msdf_atlas::msdfGenerator>("Test", (float)emSize, m_MSDFData->Glyphs, m_MSDFData->FontGeometry, width, height);
+		// Check cache here
+		Buffer storageBuffer;
+		AtlasHeader header;
+		void* pixels;
+		if (TryReadFontAtlasFromCache(m_Name, (float)emSize, header, pixels, storageBuffer))
+		{
+			m_TextureAtlas = CreateCachedAtlas(header, pixels);
+			storageBuffer.Release();
+		}
+		else
+		{
+			m_TextureAtlas = CreateAndCacheAtlas<byte, float, 3, msdf_atlas::msdfGenerator>(m_Name, (float)emSize, m_MSDFData->Glyphs, m_MSDFData->FontGeometry, width, height);
+		}
 
 		msdfgen::destroyFont(font);
 		msdfgen::deinitializeFreetype(ft);
