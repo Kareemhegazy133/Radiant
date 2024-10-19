@@ -14,7 +14,7 @@ namespace Radiant {
 			case ImageFormat::R8:		return GL_RED;
 			case ImageFormat::RGB8:		return GL_RGB;
 			case ImageFormat::RGBA8:	return GL_RGBA;
-			case ImageFormat::RGBA32F:	return GL_RGBA;  // RGBA32F can use GL_RGBA for data format
+			case ImageFormat::RGBA32F:	return GL_RGBA32F;
 			}
 
 			RADIANT_ASSERT(false);
@@ -33,6 +33,30 @@ namespace Radiant {
 
 			RADIANT_ASSERT(false);
 			return 0;
+		}
+
+		static size_t GetMemorySize(ImageFormat format, uint32_t width, uint32_t height)
+		{
+			switch (format)
+			{
+			case ImageFormat::R8: return width * height * 1;
+			case ImageFormat::RGB8: return width * height * 3;
+			case ImageFormat::RGBA8: return width * height * 4;
+			case ImageFormat::RGBA32F: return width * height * 4 * sizeof(float);
+			}
+
+			RADIANT_ASSERT(false);
+			return 0;
+		}
+
+		static bool ValidateSpecification(const TextureSpecification& specification)
+		{
+			bool result = true;
+
+			result = specification.Width > 0 && specification.Height > 0 && specification.Width < 65536 && specification.Height < 65536;
+			RADIANT_ASSERT(result);
+
+			return result;
 		}
 
 	}
@@ -72,37 +96,14 @@ namespace Radiant {
 	{
 		RADIANT_PROFILE_FUNCTION();
 
-		uint32_t bpp = 0;
-		GLenum dataType = GL_UNSIGNED_BYTE;
-
-		// Determine bytes per pixel and data type based on m_DataFormat
-		switch (m_DataFormat)
-		{
-		case GL_RED:
-			bpp = 1;  // R8 format (1 byte per pixel)
-			break;
-		case GL_RGB:
-			bpp = 3;  // RGB8 format (3 bytes per pixel)
-			break;
-		case GL_RGBA:
-			bpp = 4;  // RGBA8 format (4 bytes per pixel)
-			break;
-		case GL_RGBA32F:
-			bpp = 16; // RGBA32F format (4 channels * 4 bytes per channel = 16 bytes per pixel)
-			dataType = GL_FLOAT;
-			break;
-		default:
-			RADIANT_ASSERT(false, "Unsupported texture data format!");
-			return;
-		}
-
-		data = data.Copy(data.Data, m_Width * m_Height * bpp);
+		Utils::ValidateSpecification(m_Specification);
+		auto size = (uint32_t)Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
+		data = Buffer::Copy(data.Data, size);
 
 		// Ensure data size matches the expected texture size
-		RADIANT_ASSERT(data.Size == m_Width * m_Height * bpp, "Data must match the entire texture size!");
-
+		RADIANT_ASSERT(data.Size == size, "Data must match the entire texture size!");
 		// Upload texture data
-		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, dataType, data.Data);
+		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, m_DataFormat == GL_RGBA32F ? GL_FLOAT : GL_UNSIGNED_BYTE, data.Data);
 	}
 
 

@@ -88,7 +88,7 @@ namespace Radiant {
 		}
 
 		stream.write((char*)&header, sizeof(AtlasHeader));
-		stream.write((char*)pixels, header.Width * header.Height * 3);
+		stream.write((char*)pixels, header.Width * header.Height * sizeof(float) * 4);
 	}
 
 	template<typename T, typename S, int N, msdf_atlas::GeneratorFunction<S, N> GenFunc>
@@ -110,7 +110,7 @@ namespace Radiant {
 		TextureSpecification spec;
 		spec.Width = header.Width;
 		spec.Height = header.Height;
-		spec.Format = ImageFormat::RGB8;
+		spec.Format = ImageFormat::RGBA8;
 		spec.GenerateMips = false;
 
 		Ref<Texture2D> texture = Texture2D::Create(spec, bitmap.pixels);
@@ -120,7 +120,7 @@ namespace Radiant {
 	static Ref<Texture2D> CreateCachedAtlas(AtlasHeader header, const void* pixels)
 	{
 		TextureSpecification spec;
-		spec.Format = ImageFormat::RGB8;
+		spec.Format = ImageFormat::RGBA8;
 		spec.Width = header.Width;
 		spec.Height = header.Height;
 		spec.GenerateMips = false;
@@ -166,7 +166,7 @@ namespace Radiant {
 		fontInput.fontData = buffer;
 		fontInput.glyphIdentifierType = msdf_atlas::GlyphIdentifierType::UNICODE_CODEPOINT;
 		fontInput.fontScale = 1;
-		config.imageType = msdf_atlas::ImageType::MSDF;
+		config.imageType = msdf_atlas::ImageType::MTSDF;
 		config.imageFormat = msdf_atlas::ImageFormat::BINARY_FLOAT;
 		config.yDirection = msdf_atlas::YDirection::BOTTOM_UP;
 		config.edgeColoring = msdfgen::edgeColoringInkTrap;
@@ -222,30 +222,39 @@ namespace Radiant {
 		if (fontInput.fontScale <= 0)
 			fontInput.fontScale = 1;
 
-		struct CharsetRange
-		{
-			uint32_t Begin, End;
-		};
-
 		// Load character set
 		fontInput.glyphIdentifierType = msdf_atlas::GlyphIdentifierType::UNICODE_CODEPOINT;
 		msdf_atlas::Charset charset;
 
 		// From imgui_draw.cpp
-		static const CharsetRange charsetRanges[] =
+		static const uint32_t charsetRanges[] =
 		{
-			{ 0x0020, 0x00FF }
+			0x0020, 0x00FF, // Basic Latin + Latin Supplement
+			0x0400, 0x052F, // Cyrillic + Cyrillic Supplement
+			0x2DE0, 0x2DFF, // Cyrillic Extended-A
+			0xA640, 0xA69F, // Cyrillic Extended-B
+			0, 
 		};
 
-		for (CharsetRange range : charsetRanges)
+		for (int range = 0; range < 8; range += 2)
 		{
-			for (uint32_t c = range.Begin; c <= range.End; c++)
+			for (uint32_t c = charsetRanges[range]; c <= charsetRanges[range + 1]; c++)
 				charset.add(c);
 		}
 
 		// Load Glyphs
 		m_MSDFData->FontGeometry = msdf_atlas::FontGeometry(&m_MSDFData->Glyphs);
-		int glyphsLoaded = m_MSDFData->FontGeometry.loadCharset(font, fontInput.fontScale, charset);
+		int glyphsLoaded = -1;
+		switch (fontInput.glyphIdentifierType)
+		{
+		case msdf_atlas::GlyphIdentifierType::GLYPH_INDEX:
+			glyphsLoaded = m_MSDFData->FontGeometry.loadGlyphset(font, fontInput.fontScale, charset);
+			break;
+		case msdf_atlas::GlyphIdentifierType::UNICODE_CODEPOINT:
+			glyphsLoaded = m_MSDFData->FontGeometry.loadCharset(font, fontInput.fontScale, charset);
+			anyCodepointsAvailable |= glyphsLoaded > 0;
+			break;
+		}
 		RADIANT_ASSERT(glyphsLoaded >= 0);
 		RADIANT_INFO("Font: Loaded {0} glyphs from font (out of {1})", glyphsLoaded, charset.size());
 
@@ -272,8 +281,8 @@ namespace Radiant {
 			atlasPacker.setDimensions(fixedWidth, fixedHeight);
 		else
 			atlasPacker.setDimensionsConstraint(atlasSizeConstraint);
-		atlasPacker.setPadding(0);
-		atlasPacker.setPadding(0);
+		atlasPacker.setPadding(config.imageType == msdf_atlas::ImageType::MSDF || config.imageType == msdf_atlas::ImageType::MTSDF ? 0 : -1);
+		// TODO: In this case (if padding is -1), the border pixels of each glyph are black, but still computed. For floating-point output, this may play a role.
 		if (fixedScale)
 			atlasPacker.setScale(config.emSize);
 		else
@@ -305,7 +314,7 @@ namespace Radiant {
 			RADIANT_INFO("Font: Atlas dimensions: {0} x {1}", config.width, config.height);
 
 		// Edge Coloring
-		if (config.imageType == msdf_atlas::ImageType::MSDF)
+		if (config.imageType == msdf_atlas::ImageType::MSDF || config.imageType == msdf_atlas::ImageType::MTSDF)
 		{
 			if (config.expensiveColoring)
 			{
@@ -338,7 +347,18 @@ namespace Radiant {
 		}
 		else
 		{
-			m_TextureAtlas = CreateAndCacheAtlas<byte, float, 3, msdf_atlas::msdfGenerator>(m_Name, (float)config.emSize, m_MSDFData->Glyphs, m_MSDFData->FontGeometry, config);
+			Ref<Texture2D> texture;
+			switch (config.imageType)
+			{
+			case msdf_atlas::ImageType::MSDF:
+				texture = CreateAndCacheAtlas<byte, float, 3, msdf_atlas::msdfGenerator>(m_Name, (float)config.emSize, m_MSDFData->Glyphs, m_MSDFData->FontGeometry, config);
+				break;
+			case msdf_atlas::ImageType::MTSDF:
+				texture = CreateAndCacheAtlas<byte, float, 4, msdf_atlas::mtsdfGenerator>(m_Name, (float)config.emSize, m_MSDFData->Glyphs, m_MSDFData->FontGeometry, config);
+				break;
+			}
+
+			m_TextureAtlas = texture;
 		}
 	}
 
