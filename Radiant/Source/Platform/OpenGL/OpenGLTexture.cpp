@@ -39,10 +39,10 @@ namespace Radiant {
 		{
 			switch (format)
 			{
-			case ImageFormat::R8: return width * height * 1;
-			case ImageFormat::RGB8: return width * height * 3;
-			case ImageFormat::RGBA8: return width * height * 4;
-			case ImageFormat::RGBA32F: return width * height * 4 * sizeof(float);
+			case ImageFormat::R8:			return width * height * 1;
+			case ImageFormat::RGB8:			return width * height * 3;
+			case ImageFormat::RGBA8:		return width * height * 4;
+			case ImageFormat::RGBA32F:		return width * height * 4 * sizeof(float);
 			}
 
 			RADIANT_ASSERT(false);

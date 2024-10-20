@@ -13,7 +13,7 @@ SandboxLayer::SandboxLayer()
 
 	AssetManager::Init();
 
-
+	
 }
 
 SandboxLayer::~SandboxLayer()
@@ -25,6 +25,7 @@ void SandboxLayer::OnAttach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
+	Font::Init();
 	//m_Level = CreateRef<Level>();
 	m_Level = AssetManager::LoadAsset<Level>("Assets/Levels/Level.rdlvl");
 
@@ -70,9 +71,10 @@ void SandboxLayer::OnDetach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
+
 	AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
 	//AssetManager::CreateAssetPack("Assets/AssetPack.rdap");
-
+	Font::Shutdown();
 }
 
 void SandboxLayer::OnUpdate(Timestep ts)

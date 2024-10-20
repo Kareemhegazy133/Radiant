@@ -181,6 +181,17 @@ namespace Radiant {
 			}
 
 			Renderer2D::DrawString("Hello", Font::GetDefaultFont(), glm::mat4(1.0f), glm::vec4(1.0f));
+			
+			// Draw text
+			{
+				auto view = m_Registry.view<TransformComponent, TextComponent>();
+				for (auto entity : view)
+				{
+					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
+					auto font = Font::GetFontAssetForTextComponent(text);
+					Renderer2D::DrawString(text.TextString, font, transform.GetTransform(), text.Color, text.LineSpacing, text.Kerning);
+				}
+			}
 
 			Renderer2D::EndScene();
 		}

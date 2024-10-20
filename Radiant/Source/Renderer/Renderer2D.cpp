@@ -533,7 +533,17 @@ namespace Radiant
 			DrawQuad(transform, src.Color);
 	}
 
-	void Renderer2D::DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const glm::vec4& color)
+	void Renderer2D::DrawString(const std::string& string, const glm::vec3& position, const glm::vec4& color)
+	{
+		DrawString(string, Font::GetDefaultFont(), position, color);
+	}
+
+	void Renderer2D::DrawString(const std::string& string, const Ref<Font>& font, const glm::vec3& position, const glm::vec4& color)
+	{
+		DrawString(string, font, glm::translate(glm::mat4(1.0f), position), color);
+	}
+
+	void Renderer2D::DrawString(const std::string& string, const Ref<Font>& font, const glm::mat4& transform, const glm::vec4& color, float lineHeightOffset, float kerningOffset)
 	{
 		const auto& fontGeometry = font->GetMSDFData()->FontGeometry;
 		const auto& metrics = fontGeometry.getMetrics();
@@ -544,7 +554,7 @@ namespace Radiant
 		double x = 0.0;
 		double fsScale = 1.0 / (metrics.ascenderY - metrics.descenderY);
 		double y = 0.0;
-		float lineHeightOffset = 0.0f;
+		const float spaceGlyphAdvance = fontGeometry.getGlyph(' ')->getAdvance();
 
 		for (size_t i = 0; i < string.size(); i++)
 		{
@@ -558,14 +568,32 @@ namespace Radiant
 				y -= fsScale * metrics.lineHeight + lineHeightOffset;
 				continue;
 			}
+
+			if (character == ' ')
+			{
+				float advance = spaceGlyphAdvance;
+				if (i < string.size() - 1)
+				{
+					char nextCharacter = string[i + 1];
+					double dAdvance;
+					fontGeometry.getAdvance(dAdvance, character, nextCharacter);
+					advance = (float)dAdvance;
+				}
+				x += fsScale * advance + kerningOffset;
+				continue;
+			}
+
+			if (character == '\t')
+			{
+				x += 4.0f * (fsScale * spaceGlyphAdvance + kerningOffset);
+				continue;
+			}
+
 			auto glyph = fontGeometry.getGlyph(character);
 			if (!glyph)
 				glyph = fontGeometry.getGlyph('?');
 			if (!glyph)
 				return;
-
-			if (character == '\t')
-				glyph = fontGeometry.getGlyph(' ');
 
 			double al, ab, ar, at;
 			glyph->getQuadAtlasBounds(al, ab, ar, at);
@@ -615,7 +643,6 @@ namespace Radiant
 				char nextCharacter = string[i + 1];
 				fontGeometry.getAdvance(advance, character, nextCharacter);
 
-				float kerningOffset = 0.0f;
 				x += fsScale * advance + kerningOffset;
 			}
 		}

@@ -3,6 +3,7 @@
 
 #include "MSDFData.h"
 
+#include "Asset/AssetManager.h"
 #include "Utilities/FileSystem.h"
 
 namespace Radiant {
@@ -40,6 +41,7 @@ namespace Radiant {
 
 		static std::filesystem::path GetCacheDirectory()
 		{
+			// TODO: Should make a general cache directory + FontAtlases
 			return "Assets/Cache/FontAtlases";
 		}
 
@@ -88,7 +90,7 @@ namespace Radiant {
 		}
 
 		stream.write((char*)&header, sizeof(AtlasHeader));
-		stream.write((char*)pixels, header.Width * header.Height * sizeof(float) * 4);
+		stream.write((char*)pixels, header.Width * header.Height * 4);
 	}
 
 	template<typename T, typename S, int N, msdf_atlas::GeneratorFunction<S, N> GenFunc>
@@ -150,13 +152,25 @@ namespace Radiant {
 		m_MSDFData = nullptr;
 	}
 
+	void Font::Init(const std::filesystem::path& filepath /*= "Assets/Fonts/OpenSans/OpenSans-Regular.ttf"*/)
+	{
+		s_DefaultFont = CreateRef<Font>(filepath);
+	}
+
 	Ref<Font> Font::GetDefaultFont()
 	{
-		static Ref<Font> DefaultFont;
-		if (!DefaultFont)
-			DefaultFont = CreateRef<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
+		RADIANT_ASSERT(s_DefaultFont, "Font: No default font has been initialized");
+		return s_DefaultFont;
+	}
 
-		return DefaultFont;
+	Ref<Font> Font::GetFontAssetForTextComponent(const TextComponent& textComponent)
+	{
+		if (textComponent.FontHandle == s_DefaultFont->Handle || !AssetManager::IsAssetHandleValid(textComponent.FontHandle))
+		{
+			return s_DefaultFont;
+		}
+
+		return AssetManager::GetAsset<Font>(textComponent.FontHandle);
 	}
 
 	void Font::CreateAtlas(Buffer buffer)
@@ -165,7 +179,7 @@ namespace Radiant {
 		Configuration config = { };
 		fontInput.fontData = buffer;
 		fontInput.glyphIdentifierType = msdf_atlas::GlyphIdentifierType::UNICODE_CODEPOINT;
-		fontInput.fontScale = 1;
+		fontInput.fontScale = -1;
 		config.imageType = msdf_atlas::ImageType::MTSDF;
 		config.imageFormat = msdf_atlas::ImageFormat::BINARY_FLOAT;
 		config.yDirection = msdf_atlas::YDirection::BOTTOM_UP;
@@ -180,7 +194,7 @@ namespace Radiant {
 		config.angleThreshold = DEFAULT_ANGLE_THRESHOLD;
 		config.miterLimit = DEFAULT_MITER_LIMIT;
 
-		config.emSize = 40.0;
+		config.emSize = 50.0;
 
 		// Load fonts
 		bool anyCodepointsAvailable = false;
@@ -360,6 +374,11 @@ namespace Radiant {
 
 			m_TextureAtlas = texture;
 		}
+	}
+
+	void Font::Shutdown()
+	{
+		s_DefaultFont.reset();
 	}
 
 }

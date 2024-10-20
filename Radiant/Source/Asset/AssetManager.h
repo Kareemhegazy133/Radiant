@@ -51,7 +51,7 @@ namespace Radiant {
 			// Check if the asset exists
 			if (!baseAsset)
 			{
-				RADIANT_ERROR("AssetManager: Asset with handle {0} not found!", assetHandle);
+				RADIANT_ERROR("AssetManager: Asset with handle {0} not found!", (uint64_t)assetHandle);
 				return nullptr;
 			}
 
@@ -59,7 +59,7 @@ namespace Radiant {
 			Ref<T> asset = std::static_pointer_cast<T>(baseAsset);
 			if (!asset)
 			{
-				RADIANT_ERROR("AssetManager: Asset with handle {0} is not of the requested type!", assetHandle);
+				RADIANT_ERROR("AssetManager: Asset with handle {0} is not of the requested type!", (uint64_t)assetHandle);
 				return nullptr;
 			}
 

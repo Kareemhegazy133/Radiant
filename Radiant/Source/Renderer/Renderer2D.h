@@ -47,7 +47,10 @@ namespace Radiant {
 		static void DrawRect(const glm::mat4& transform, const glm::vec4& color);
 
 		static void DrawSprite(const glm::mat4& transform, SpriteComponent& src);
-		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const glm::vec4& color);
+
+		static void DrawString(const std::string& string, const glm::vec3& position, const glm::vec4& color = glm::vec4(1.0f));
+		static void DrawString(const std::string& string, const Ref<Font>& font, const glm::vec3& position, const glm::vec4& color = glm::vec4(1.0f));
+		static void DrawString(const std::string& string, const Ref<Font>& font, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f), float lineHeightOffset = 0.0f, float kerningOffset = 0.0f);
 
 		static float GetLineWidth();
 		static void SetLineWidth(float width);

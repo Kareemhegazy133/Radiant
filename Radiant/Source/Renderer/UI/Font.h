@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "Renderer/Texture.h"
+#include "ECS/Components.h"
 
 namespace Radiant {
 
@@ -15,10 +16,14 @@ namespace Radiant {
 		Font(const std::string& name, Buffer buffer);
 		virtual ~Font();
 
+		static void Init(const std::filesystem::path& filepath = "Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
+		static void Shutdown();
+
 		Ref<Texture2D> GetFontAtlas() const { return m_TextureAtlas; }
 		const MSDFData* GetMSDFData() const { return m_MSDFData; }
 
 		static Ref<Font> GetDefaultFont();
+		static Ref<Font> GetFontAssetForTextComponent(const TextComponent& textComponent);
 
 		static AssetType GetStaticType() { return AssetType::Font; }
 		virtual AssetType GetAssetType() const override { return GetStaticType(); }
