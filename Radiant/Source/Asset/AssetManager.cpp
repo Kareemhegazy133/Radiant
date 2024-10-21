@@ -36,8 +36,15 @@ namespace Radiant {
 			RADIANT_ASSERT(metadata.Type != AssetType::None);
 		}
 
-		Ref<Asset> asset = AssetSerializer::LoadAsset(metadata);
-		if (!asset)
+		if (IsAssetLoaded(metadata.Handle))
+		{
+			RADIANT_WARN("AssetManager: Asset with handle: {0} is already loaded. Returning loaded asset.", (uint64_t)metadata.Handle);
+			return s_AssetManagerData->m_LoadedAssets.at(metadata.Handle);
+		}
+
+		Ref<Asset> asset = nullptr;
+		bool result = AssetSerializer::LoadAsset(metadata, asset);
+		if (!result || !asset)
 		{
 			RADIANT_ERROR("AssetManager: Failed to import asset at {0}", filepath.string());
 		}
@@ -47,11 +54,6 @@ namespace Radiant {
 		s_AssetManagerData->m_AssetRegistry.Set(metadata.Handle, metadata);
 		SerializeAssetRegistry();
 		return asset;
-	}
-
-	Ref<Level> AssetManager::LoadLevel(const std::filesystem::path& filepath)
-	{
-		return static_pointer_cast<Level>(LoadAsset(filepath));
 	}
 
 	void AssetManager::SaveLevel(const Ref<Level>& level, const std::filesystem::path& filepath)
@@ -65,16 +67,6 @@ namespace Radiant {
 		AssetSerializer::SaveAsset(metadata, level);
 		s_AssetManagerData->m_AssetRegistry.Set(metadata.Handle, metadata);
 		SerializeAssetRegistry();
-	}
-
-	bool AssetManager::IsAssetHandleValid(AssetHandle assetHandle)
-	{
-		return assetHandle != 0 && s_AssetManagerData->m_AssetRegistry.Contains(assetHandle);
-	}
-
-	bool AssetManager::IsAssetLoaded(AssetHandle assetHandle)
-	{
-		return s_AssetManagerData->m_LoadedAssets.find(assetHandle) != s_AssetManagerData->m_LoadedAssets.end();;
 	}
 
 	Ref<Asset> AssetManager::GetAsset(AssetHandle assetHandle)
@@ -93,14 +85,24 @@ namespace Radiant {
 		{
 			const AssetMetadata& metadata = GetMetadata(assetHandle);
 
-			asset = AssetSerializer::LoadAsset(metadata);
-			if (!asset)
+			bool result = AssetSerializer::LoadAsset(metadata, asset);
+			if (!result || !asset)
 			{
 				RADIANT_ERROR("AssetManager: Failed to load asset");
 			}
 			s_AssetManagerData->m_LoadedAssets[assetHandle] = asset;
 		}
 		return asset;
+	}
+
+	bool AssetManager::IsAssetHandleValid(AssetHandle assetHandle)
+	{
+		return assetHandle != 0 && s_AssetManagerData->m_AssetRegistry.Contains(assetHandle);
+	}
+
+	bool AssetManager::IsAssetLoaded(AssetHandle assetHandle)
+	{
+		return s_AssetManagerData->m_LoadedAssets.find(assetHandle) != s_AssetManagerData->m_LoadedAssets.end();;
 	}
 
 	AssetType AssetManager::GetAssetType(AssetHandle assetHandle)
@@ -200,7 +202,7 @@ namespace Radiant {
 		const std::string& assetRegistryPath = s_AssetManagerData->AssetRegistryPath;
 		if (!FileSystem::Exists(assetRegistryPath))
 		{
-			RADIANT_WARN("Asset Manager: AssetRegistry file at {0} was not found", assetRegistryPath);
+			RADIANT_WARN("AssetManager: AssetRegistry file at {0} was not found", assetRegistryPath);
 			return false;
 		}
 

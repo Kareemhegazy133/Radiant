@@ -10,19 +10,20 @@ namespace Radiant {
 	void AssetSerializer::Init()
 	{
 		s_Serializers.clear();
+		s_Serializers[AssetType::Font] = CreateScope<FontSerializerAPI>();
 		s_Serializers[AssetType::Level] = CreateScope<LevelAssetSerializerAPI>();
 		s_Serializers[AssetType::Texture2D] = CreateScope<TextureSerializerAPI>();
 	}
 
-	Ref<Asset> AssetSerializer::LoadAsset(const AssetMetadata& metadata)
+	bool AssetSerializer::LoadAsset(const AssetMetadata& metadata, Ref<Asset>& asset)
 	{
 		if (s_Serializers.find(metadata.Type) == s_Serializers.end())
 		{
 			RADIANT_WARN("There's currently no serializer for assets of type {0}", Utils::AssetTypeToString(metadata.Type));
-			return nullptr;
+			return false;
 		}
 
-		return s_Serializers[metadata.Type]->Deserialize(metadata);
+		return s_Serializers[metadata.Type]->Deserialize(metadata, asset);
 	}
 
 	void AssetSerializer::SaveAsset(const AssetMetadata& metadata, const Ref<Asset>& asset)

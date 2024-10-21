@@ -4,7 +4,7 @@
 
 #include "Core/PlatformDetection.h"
 
-#ifdef RADIANT_DEBUG
+#ifdef RD_DEBUG
 	#if defined(RADIANT_PLATFORM_WINDOWS)
 		#define RADIANT_DEBUGBREAK() __debugbreak()
 	#elif defined(RADIANT_PLATFORM_LINUX)

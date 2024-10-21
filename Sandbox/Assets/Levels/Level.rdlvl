@@ -1,11 +1,11 @@
 Level: UntitledLevel
 Entities:
-  - Entity: 4467596591806048370
+  - Entity: 301154576189130776
     MetadataComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [1.32640564, -0.248643354, 0]
-      Rotation: [0, 0, 25.1854725]
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
       Camera:
@@ -21,12 +21,12 @@ Entities:
       FixedAspectRatio: false
     NativeScriptComponent:
       {}
-  - Entity: 6893670419139700431
+  - Entity: 3722572621464345604
     MetadataComponent:
       Tag: Green Square
     TransformComponent:
-      Translation: [-0.000347985566, -2.98483038, 0]
-      Rotation: [0, 0, 0.000169547449]
+      Translation: [-2.36275461e-08, -2.98107862, 0]
+      Rotation: [0, 0, 4.61100278e-08]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [0, 1, 0, 1]
@@ -42,16 +42,16 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-  - Entity: 9297545364677151672
+  - Entity: 10648497653623159601
     MetadataComponent:
       Tag: Checkerboard
     TransformComponent:
-      Translation: [3.9997263, -2.98486638, 0]
-      Rotation: [0, 0, 0.000133348818]
+      Translation: [4, -2.98107862, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [1, 1, 1, 1]
-      TextureHandle: 11361504105087898389
+      TextureHandle: 12979861245956966833
       TilingFactor: 1
     RigidBody2DComponent:
       BodyType: Dynamic
@@ -63,7 +63,21 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-  - Entity: 16801209666142371222
+  - Entity: 16953915907645856911
+    MetadataComponent:
+      Tag: Text
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    TextComponent:
+      TextString: Hello World!
+      FontHandle: 12045035358232015408
+      Color: [1, 1, 1, 1]
+      TextSize: 24
+      LineSpacing: 0
+      Kerning: 0
+  - Entity: 17140355152630378771
     MetadataComponent:
       Tag: Platform
     TransformComponent:

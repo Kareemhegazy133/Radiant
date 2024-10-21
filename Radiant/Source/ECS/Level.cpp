@@ -169,14 +169,32 @@ namespace Radiant {
 				Entity entity = { entityHandle, this };
 				Physics2D::UpdateEntitiesTransforms(entity);
 
-				Renderer2D::DrawSprite(transform.GetTransform(), sprite);
-
+				if (sprite.TextureHandle == 0)
+				{
+					Renderer2D::DrawSprite(transform.GetTransform(), sprite.Color);
+				}
+				else if (Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.TextureHandle))
+				{
+					Renderer2D::DrawSprite(transform.GetTransform(), texture, sprite.TilingFactor, sprite.Color);
+				}
+				
 				// For Debugging Purposes
 				if (m_ShowPhysicsColliders)
 				{
 					Entity e = { entity, this };
 					if(auto* bc2d = e.TryGetComponent<BoxCollider2DComponent>())
 						Physics2D::DebugDraw(transform, *bc2d);
+				}
+			}
+			
+			// Draw text
+			{
+				auto view = m_Registry.view<TransformComponent, TextComponent>();
+				for (auto entity : view)
+				{
+					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
+					auto font = Font::GetFontAssetForTextComponent(text);
+					Renderer2D::DrawString(text.TextString, font, transform.GetTransform(), text.Color, text.TextSize, text.LineSpacing, text.Kerning);
 				}
 			}
 
@@ -234,15 +252,35 @@ namespace Radiant {
 			for (auto entity : view)
 			{
 				const auto& src = m_Registry.get<SpriteComponent>(entity);
-				if (src.Texture)
+				if (src.TextureHandle)
 				{
-					if (AssetManager::IsAssetHandleValid(src.Texture))
+					if (AssetManager::IsAssetHandleValid(src.TextureHandle))
 					{
-						assetList.insert(src.Texture);
+						assetList.insert(src.TextureHandle);
 					}
 					else
 					{
-						missingAssets.insert(src.Texture);
+						missingAssets.insert(src.TextureHandle);
+					}
+				}
+			}
+		}
+
+		// TextComponent
+		{
+			auto view = m_Registry.view<TextComponent>();
+			for (auto entity : view)
+			{
+				const auto& tc = m_Registry.get<TextComponent>(entity);
+				if (tc.FontHandle)
+				{
+					if (AssetManager::IsAssetHandleValid(tc.FontHandle))
+					{
+						assetList.insert(tc.FontHandle);
+					}
+					else
+					{
+						missingAssets.insert(tc.FontHandle);
 					}
 				}
 			}

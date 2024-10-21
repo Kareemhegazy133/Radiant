@@ -15,7 +15,7 @@ namespace Radiant {
 	public:
 		static void Init();
 
-		static Ref<Asset> LoadAsset(const AssetMetadata& metadata);
+		static bool LoadAsset(const AssetMetadata& metadata, Ref<Asset>& asset);
 		static void SaveAsset(const AssetMetadata& metadata, const Ref<Asset>& asset);
 
 		static bool SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo);

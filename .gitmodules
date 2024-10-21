@@ -13,3 +13,6 @@
 [submodule "Radiant/Vendor/yaml-cpp"]
 	path = Radiant/Vendor/yaml-cpp
 	url = https://github.com/TheCherno/yaml-cpp
+[submodule "Radiant/Vendor/msdf-atlas-gen"]
+	path = Radiant/Vendor/msdf-atlas-gen
+	url = https://github.com/TheCherno/msdf-atlas-gen
