@@ -149,7 +149,7 @@ namespace Radiant {
 
 			auto& spriteComponent = entity.GetComponent<SpriteComponent>();
 			out << YAML::Key << "Color" << YAML::Value << spriteComponent.Color;
-			out << YAML::Key << "TextureHandle" << YAML::Value << spriteComponent.Texture;
+			out << YAML::Key << "TextureHandle" << YAML::Value << spriteComponent.TextureHandle;
 			out << YAML::Key << "TilingFactor" << YAML::Value << spriteComponent.TilingFactor;
 
 			out << YAML::EndMap; // SpriteComponent
@@ -204,6 +204,7 @@ namespace Radiant {
 			out << YAML::Key << "TextString" << YAML::Value << textComponent.TextString;
 			out << YAML::Key << "FontHandle" << YAML::Value << textComponent.FontHandle;
 			out << YAML::Key << "Color" << YAML::Value << textComponent.Color;
+			out << YAML::Key << "TextSize" << YAML::Value << textComponent.TextSize;
 			out << YAML::Key << "LineSpacing" << YAML::Value << textComponent.LineSpacing;
 			out << YAML::Key << "Kerning" << YAML::Value << textComponent.Kerning;
 
@@ -338,7 +339,7 @@ namespace Radiant {
 				src.Color = spriteComponent["Color"].as<glm::vec4>();
 
 				if (spriteComponent["TextureHandle"])
-					src.Texture = spriteComponent["TextureHandle"].as<AssetHandle>();
+					src.TextureHandle = spriteComponent["TextureHandle"].as<AssetHandle>();
 
 				if (spriteComponent["TilingFactor"])
 					src.TilingFactor = spriteComponent["TilingFactor"].as<float>();
@@ -386,6 +387,7 @@ namespace Radiant {
 				else
 					component.FontHandle = Font::GetDefaultFont()->Handle;
 				component.Color = textComponent["Color"].as<glm::vec4>();
+				component.TextSize = textComponent["TextSize"].as<float>();
 				component.LineSpacing = textComponent["LineSpacing"].as<float>();
 				component.Kerning = textComponent["Kerning"].as<float>();
 			}

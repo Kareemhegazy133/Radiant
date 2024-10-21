@@ -38,6 +38,7 @@ namespace Radiant {
 
 		if (IsAssetLoaded(metadata.Handle))
 		{
+			RADIANT_WARN("AssetManager: Asset with handle: {0} is already loaded. Returning loaded asset.", (uint64_t)metadata.Handle);
 			return s_AssetManagerData->m_LoadedAssets.at(metadata.Handle);
 		}
 

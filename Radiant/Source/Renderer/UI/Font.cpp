@@ -164,10 +164,12 @@ namespace Radiant {
 		return s_DefaultFont;
 	}
 
-	Ref<Font> Font::GetFontAssetForTextComponent(const TextComponent& textComponent)
+	Ref<Font> Font::GetFontAssetForTextComponent(TextComponent& textComponent)
 	{
 		if (textComponent.FontHandle == s_DefaultFont->Handle || !AssetManager::IsAssetHandleValid(textComponent.FontHandle))
 		{
+			// Set the TextComponent's handle to the default font's handle we are using to serialize correctly
+			textComponent.FontHandle = s_DefaultFont->Handle;
 			return s_DefaultFont;
 		}
 

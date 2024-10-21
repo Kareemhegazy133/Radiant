@@ -520,31 +520,31 @@ namespace Radiant
 		DrawLine(lineVertices[3], lineVertices[0], color);
 	}
 
-	void Renderer2D::DrawSprite(const glm::mat4& transform, SpriteComponent& src)
+	void Renderer2D::DrawSprite(const glm::mat4& transform, const Ref<Texture2D>& texture, float tilingFactor /*= 1.0f*/, const glm::vec4& color /*= glm::vec4(1.0f)*/)
 	{
-		if (src.Texture)
-		{
-			// TODO:: Move this out of here
-			Ref<Asset> asset = AssetManager::GetAsset(src.Texture);
-			Ref<Texture2D> texture = static_pointer_cast<Texture2D>(asset);
-			DrawQuad(transform, texture, src.TilingFactor, src.Color);
-		}
-		else
-			DrawQuad(transform, src.Color);
+		DrawQuad(transform, texture, tilingFactor, color);
 	}
 
-	void Renderer2D::DrawString(const std::string& string, const glm::vec3& position, const glm::vec4& color)
+	void Renderer2D::DrawSprite(const glm::mat4& transform, const glm::vec4& color /*= glm::vec4(1.0f)*/)
 	{
-		DrawString(string, Font::GetDefaultFont(), position, color);
+		DrawQuad(transform, color);
 	}
 
-	void Renderer2D::DrawString(const std::string& string, const Ref<Font>& font, const glm::vec3& position, const glm::vec4& color)
+	void Renderer2D::DrawString(const std::string& string, const glm::vec3& position, const glm::vec4& color, float fontSize /*= 12.0f*/)
 	{
-		DrawString(string, font, glm::translate(glm::mat4(1.0f), position), color);
+		DrawString(string, Font::GetDefaultFont(), position, color, fontSize);
 	}
 
-	void Renderer2D::DrawString(const std::string& string, const Ref<Font>& font, const glm::mat4& transform, const glm::vec4& color, float lineHeightOffset, float kerningOffset)
+	void Renderer2D::DrawString(const std::string& string, const Ref<Font>& font, const glm::vec3& position, const glm::vec4& color, float fontSize /*= 12.0f*/)
 	{
+		DrawString(string, font, glm::translate(glm::mat4(1.0f), position), color, fontSize);
+	}
+
+	void Renderer2D::DrawString(const std::string& string, const Ref<Font>& font, const glm::mat4& transform, const glm::vec4& color, float fontSize /*= 12.0f*/, float lineHeightOffset, float kerningOffset)
+	{
+		if (string.empty())
+			return;
+
 		const auto& fontGeometry = font->GetMSDFData()->FontGeometry;
 		const auto& metrics = fontGeometry.getMetrics();
 		Ref<Texture2D> fontAtlas = font->GetFontAtlas();
@@ -552,7 +552,8 @@ namespace Radiant
 		s_Data.FontAtlasTexture = fontAtlas;
 
 		double x = 0.0;
-		double fsScale = 1.0 / (metrics.ascenderY - metrics.descenderY);
+		// TODO: Standardize the size according to dpi like other programs (points per pixel scale), 30.f is just a default number for now
+		double fsScale = (fontSize / 30.f) / (metrics.ascenderY - metrics.descenderY);
 		double y = 0.0;
 		const float spaceGlyphAdvance = fontGeometry.getGlyph(' ')->getAdvance();
 

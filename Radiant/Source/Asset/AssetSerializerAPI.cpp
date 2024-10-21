@@ -143,8 +143,7 @@ namespace Radiant {
 	{
 		outInfo.Offset = stream.GetStreamPosition();
 
-		// TODO: Make GetAsset<T>();
-		Ref<Font> font = std::static_pointer_cast<Font>(AssetManager::GetAsset(handle));
+		Ref<Font> font = AssetManager::GetAsset<Font>(handle);
 		auto path = AssetManager::GetFileSystemPath(handle);
 		stream.WriteString(font->GetName());
 		Buffer fontData = FileSystem::ReadBytes(path);

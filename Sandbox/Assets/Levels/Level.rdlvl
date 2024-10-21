@@ -1,6 +1,6 @@
 Level: UntitledLevel
 Entities:
-  - Entity: 2545156181385760189
+  - Entity: 301154576189130776
     MetadataComponent:
       Tag: Camera
     TransformComponent:
@@ -21,12 +21,12 @@ Entities:
       FixedAspectRatio: false
     NativeScriptComponent:
       {}
-  - Entity: 6464393003077280968
+  - Entity: 3722572621464345604
     MetadataComponent:
       Tag: Green Square
     TransformComponent:
-      Translation: [1.73231278e-08, -2.98053217, 0]
-      Rotation: [0, 0, -3.31652004e-08]
+      Translation: [-2.36275461e-08, -2.98107862, 0]
+      Rotation: [0, 0, 4.61100278e-08]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [0, 1, 0, 1]
@@ -42,7 +42,42 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-  - Entity: 6815245969219264086
+  - Entity: 10648497653623159601
+    MetadataComponent:
+      Tag: Checkerboard
+    TransformComponent:
+      Translation: [4, -2.98107862, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteComponent:
+      Color: [1, 1, 1, 1]
+      TextureHandle: 12979861245956966833
+      TilingFactor: 1
+    RigidBody2DComponent:
+      BodyType: Dynamic
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 16953915907645856911
+    MetadataComponent:
+      Tag: Text
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    TextComponent:
+      TextString: Hello World!
+      FontHandle: 12045035358232015408
+      Color: [1, 1, 1, 1]
+      TextSize: 24
+      LineSpacing: 0
+      Kerning: 0
+  - Entity: 17140355152630378771
     MetadataComponent:
       Tag: Platform
     TransformComponent:
@@ -63,37 +98,3 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-  - Entity: 14506585145941934254
-    MetadataComponent:
-      Tag: Checkerboard
-    TransformComponent:
-      Translation: [4, -2.98053217, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    SpriteComponent:
-      Color: [1, 1, 1, 1]
-      TextureHandle: 10171132235690176599
-      TilingFactor: 1
-    RigidBody2DComponent:
-      BodyType: Dynamic
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-  - Entity: 18030572527110519079
-    MetadataComponent:
-      Tag: Text
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    TextComponent:
-      TextString: Hello World!
-      FontHandle: 13831431163184053214
-      Color: [1, 1, 1, 1]
-      LineSpacing: 0
-      Kerning: 0

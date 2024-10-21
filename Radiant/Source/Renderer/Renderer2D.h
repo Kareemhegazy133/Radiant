@@ -46,11 +46,12 @@ namespace Radiant {
 		static void DrawRect(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color);
 		static void DrawRect(const glm::mat4& transform, const glm::vec4& color);
 
-		static void DrawSprite(const glm::mat4& transform, SpriteComponent& src);
+		static void DrawSprite(const glm::mat4& transform, const Ref<Texture2D>& texture, float tilingFactor = 1.0f, const glm::vec4& color = glm::vec4(1.0f));
+		static void DrawSprite(const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f));
 
-		static void DrawString(const std::string& string, const glm::vec3& position, const glm::vec4& color = glm::vec4(1.0f));
-		static void DrawString(const std::string& string, const Ref<Font>& font, const glm::vec3& position, const glm::vec4& color = glm::vec4(1.0f));
-		static void DrawString(const std::string& string, const Ref<Font>& font, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f), float lineHeightOffset = 0.0f, float kerningOffset = 0.0f);
+		static void DrawString(const std::string& string, const glm::vec3& position, const glm::vec4& color = glm::vec4(1.0f), float fontSize = 12.0f);
+		static void DrawString(const std::string& string, const Ref<Font>& font, const glm::vec3& position, const glm::vec4& color = glm::vec4(1.0f), float fontSize = 12.0f);
+		static void DrawString(const std::string& string, const Ref<Font>& font, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f), float fontSize = 12.0f, float lineHeightOffset = 0.0f, float kerningOffset = 0.0f);
 
 		static float GetLineWidth();
 		static void SetLineWidth(float width);

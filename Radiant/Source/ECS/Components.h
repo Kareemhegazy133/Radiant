@@ -13,6 +13,13 @@
 #include "LevelCamera.h"
 #include "Renderer/Texture.h"
 
+// ADDING A NEW COMPONENT
+// ----------------------
+// If you add a new type of component, there are several pieces of code that need updating:
+// 1) Add new component here (obviously).
+// 2) Update LevelSerializer to (de)serialize the new component.
+// 3) If it contains an asset, update GetAssetsList() in Level.cpp
+
 namespace Radiant {
 
 	struct MetadataComponent
@@ -54,14 +61,14 @@ namespace Radiant {
 
 	struct SpriteComponent
 	{
-		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
-		AssetHandle Texture = 0;
+		glm::vec4 Color{ 1.0f };
+		AssetHandle TextureHandle = 0;
 		float TilingFactor = 1.0f;
 
 		SpriteComponent() = default;
 		SpriteComponent(const SpriteComponent&) = default;
 		SpriteComponent(const AssetHandle& textureHandle)
-			: Texture(textureHandle) {}
+			: TextureHandle(textureHandle) {}
 		SpriteComponent(const glm::vec4& color)
 			: Color(color) {}
 	};
@@ -162,15 +169,16 @@ namespace Radiant {
 	{
 		std::string TextString;
 
-		AssetHandle FontHandle;
+		AssetHandle FontHandle = 0;
 		glm::vec4 Color{ 1.0f };
+		float TextSize = 12.0f;
 		float Kerning = 0.0f;
 		float LineSpacing = 0.0f;
 
 		TextComponent() = default;
 		TextComponent(const TextComponent& other) = default;
-		TextComponent(const std::string& text)
-			: TextString(text) {}
+		TextComponent(const std::string& text, float size = 12.0f)
+			: TextString(text), TextSize(size) {}
 	};
 
 }

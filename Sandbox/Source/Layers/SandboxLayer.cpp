@@ -25,7 +25,6 @@ void SandboxLayer::OnAttach()
 
 	s_Font = AssetManager::LoadAsset<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
 	m_Level = AssetManager::LoadAsset<Level>("Assets/Levels/Level.rdlvl");
-	s_Font = AssetManager::LoadAsset<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
 	//m_Level = CreateRef<Level>();
 
 	//auto square = m_Level->CreateEntity("Green Square");
@@ -42,7 +41,7 @@ void SandboxLayer::OnAttach()
 	//checkerboard.AddComponent<BoxCollider2DComponent>();
 
 	//auto text = m_Level->CreateEntity("Text");
-	//text.AddComponent<TextComponent>("Hello World!");
+	//text.AddComponent<TextComponent>("Hello World!", 24.f);
 
 	////m_CheckerboardTexture = Texture2D::Create("Assets/Textures/Checkerboard.png");
 	////m_SpriteSheet = Texture2D::Create("Assets/SpriteSheets/RPGpack_sheet_2X.png");

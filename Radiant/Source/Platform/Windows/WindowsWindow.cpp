@@ -44,7 +44,6 @@ namespace Radiant {
 
         if (!s_GLFWInitialized)
         {
-            // TODO: glfwTerminate on system shutdown
             int success = glfwInit();
             RADIANT_ASSERT(success, "Could not intialize GLFW!");
             glfwSetErrorCallback(GLFWErrorCallback);
@@ -150,6 +149,7 @@ namespace Radiant {
 		RADIANT_PROFILE_FUNCTION();
 
         glfwDestroyWindow(m_Window);
+		glfwTerminate();
     }
 
     void WindowsWindow::OnUpdate()

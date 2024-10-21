@@ -23,7 +23,7 @@ namespace Radiant {
 		const MSDFData* GetMSDFData() const { return m_MSDFData; }
 
 		static Ref<Font> GetDefaultFont();
-		static Ref<Font> GetFontAssetForTextComponent(const TextComponent& textComponent);
+		static Ref<Font> GetFontAssetForTextComponent(TextComponent& textComponent);
 
 		static AssetType GetStaticType() { return AssetType::Font; }
 		virtual AssetType GetAssetType() const override { return GetStaticType(); }
