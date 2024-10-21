@@ -169,6 +169,8 @@ namespace Radiant {
 
 		TextComponent() = default;
 		TextComponent(const TextComponent& other) = default;
+		TextComponent(const std::string& text)
+			: TextString(text) {}
 	};
 
 }

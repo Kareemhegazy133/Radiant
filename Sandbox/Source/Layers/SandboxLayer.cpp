@@ -12,8 +12,6 @@ SandboxLayer::SandboxLayer()
 	GAME_TRACE("SandboxLayer Constructor");
 
 	AssetManager::Init();
-
-	
 }
 
 SandboxLayer::~SandboxLayer()
@@ -25,9 +23,10 @@ void SandboxLayer::OnAttach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
-	Font::Init();
-	//m_Level = CreateRef<Level>();
+	s_Font = AssetManager::LoadAsset<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
 	m_Level = AssetManager::LoadAsset<Level>("Assets/Levels/Level.rdlvl");
+	s_Font = AssetManager::LoadAsset<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
+	//m_Level = CreateRef<Level>();
 
 	//auto square = m_Level->CreateEntity("Green Square");
 	//square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
@@ -41,6 +40,9 @@ void SandboxLayer::OnAttach()
 	//checkerboard.GetComponent<TransformComponent>().Translation = { 4.0f, 0.0f, 0.0f };
 	//checkerboard.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
 	//checkerboard.AddComponent<BoxCollider2DComponent>();
+
+	//auto text = m_Level->CreateEntity("Text");
+	//text.AddComponent<TextComponent>("Hello World!");
 
 	////m_CheckerboardTexture = Texture2D::Create("Assets/Textures/Checkerboard.png");
 	////m_SpriteSheet = Texture2D::Create("Assets/SpriteSheets/RPGpack_sheet_2X.png");
@@ -71,10 +73,8 @@ void SandboxLayer::OnDetach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
-
 	AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
 	//AssetManager::CreateAssetPack("Assets/AssetPack.rdap");
-	Font::Shutdown();
 }
 
 void SandboxLayer::OnUpdate(Timestep ts)

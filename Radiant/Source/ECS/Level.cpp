@@ -179,8 +179,6 @@ namespace Radiant {
 						Physics2D::DebugDraw(transform, *bc2d);
 				}
 			}
-
-			Renderer2D::DrawString("Hello", Font::GetDefaultFont(), glm::mat4(1.0f), glm::vec4(1.0f));
 			
 			// Draw text
 			{

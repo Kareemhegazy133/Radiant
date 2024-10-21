@@ -16,7 +16,7 @@ namespace Radiant {
 		Font(const std::string& name, Buffer buffer);
 		virtual ~Font();
 
-		static void Init(const std::filesystem::path& filepath = "Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
+		static Ref<Font> Init(const std::filesystem::path& filepath = "Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
 		static void Shutdown();
 
 		Ref<Texture2D> GetFontAtlas() const { return m_TextureAtlas; }

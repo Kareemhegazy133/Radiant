@@ -133,7 +133,7 @@ namespace Radiant {
 
 	bool FontSerializerAPI::Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const
 	{
-		asset = CreateRef<Font>(AssetManager::GetFileSystemPath(metadata));
+		asset = Font::Init(AssetManager::GetFileSystemPath(metadata));
 		asset->Handle = metadata.Handle;
 
 		return true;

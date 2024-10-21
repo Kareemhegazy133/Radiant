@@ -1,7 +1,10 @@
 AssetRegistry:
-  - Handle: 12974086989157345301
-    FilePath: Assets/Levels/Level.rdlvl
-    Type: Level
-  - Handle: 11361504105087898389
+  - Handle: 13831431163184053214
+    FilePath: Assets/Fonts/OpenSans/OpenSans-Regular.ttf
+    Type: Font
+  - Handle: 10171132235690176599
     FilePath: Assets/Textures/Checkerboard.png
     Type: Texture2D
+  - Handle: 13144835331215876385
+    FilePath: Assets/Levels/Level.rdlvl
+    Type: Level

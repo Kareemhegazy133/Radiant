@@ -36,9 +36,6 @@ namespace Radiant {
 
 		static void SaveLevel(const Ref<Level>& level, const std::filesystem::path& filepath);
 
-		static bool IsAssetHandleValid(AssetHandle assetHandle);
-		static bool IsAssetLoaded(AssetHandle assetHandle);
-
 		template<typename T>
 		static Ref<T> GetAsset(AssetHandle assetHandle)
 		{
@@ -67,8 +64,11 @@ namespace Radiant {
 		}
 
 		static Ref<Asset> GetAsset(AssetHandle assetHandle);
-		static AssetType GetAssetType(AssetHandle assetHandle);
 
+		static bool IsAssetHandleValid(AssetHandle assetHandle);
+		static bool IsAssetLoaded(AssetHandle assetHandle);
+
+		static AssetType GetAssetType(AssetHandle assetHandle);
 		static std::unordered_set<AssetHandle> GetAllAssetsWithType(AssetType type);
 
 		static void SetMetadata(AssetHandle assetHandle, const AssetMetadata& metadata);

@@ -8,6 +8,9 @@
 #include "Entity.h"
 #include "Components.h"
 
+#include "Asset/AssetManager.h"
+#include "Renderer/UI/Font.h"
+
 #include "Utilities/YAMLSerializationHelpers.h"
 
 namespace Radiant {
@@ -192,6 +195,21 @@ namespace Radiant {
 			out << YAML::EndMap; // BoxCollider2DComponent
 		}
 
+		if (entity.HasComponent<TextComponent>())
+		{
+			out << YAML::Key << "TextComponent";
+			out << YAML::BeginMap; // TextComponent
+
+			auto& textComponent = entity.GetComponent<TextComponent>();
+			out << YAML::Key << "TextString" << YAML::Value << textComponent.TextString;
+			out << YAML::Key << "FontHandle" << YAML::Value << textComponent.FontHandle;
+			out << YAML::Key << "Color" << YAML::Value << textComponent.Color;
+			out << YAML::Key << "LineSpacing" << YAML::Value << textComponent.LineSpacing;
+			out << YAML::Key << "Kerning" << YAML::Value << textComponent.Kerning;
+
+			out << YAML::EndMap; // TextComponent
+		}
+
 		out << YAML::EndMap; // Entity
 	}
 
@@ -355,6 +373,21 @@ namespace Radiant {
 				bc2d.Restitution = boxCollider2DComponent["Restitution"].as<float>();
 				bc2d.RestitutionThreshold = boxCollider2DComponent["RestitutionThreshold"].as<float>();
 				deserializedEntity.AddComponent<BoxCollider2DComponent>(bc2d);
+			}
+
+			auto textComponent = entity["TextComponent"];
+			if (textComponent)
+			{
+				auto& component = deserializedEntity.AddComponent<TextComponent>();
+				component.TextString = textComponent["TextString"].as<std::string>();
+				AssetHandle fontHandle = textComponent["FontHandle"].as<uint64_t>();
+				if (AssetManager::IsAssetHandleValid(fontHandle))
+					component.FontHandle = fontHandle;
+				else
+					component.FontHandle = Font::GetDefaultFont()->Handle;
+				component.Color = textComponent["Color"].as<glm::vec4>();
+				component.LineSpacing = textComponent["LineSpacing"].as<float>();
+				component.Kerning = textComponent["Kerning"].as<float>();
 			}
 		}
 

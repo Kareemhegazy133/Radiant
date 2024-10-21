@@ -36,6 +36,11 @@ namespace Radiant {
 			RADIANT_ASSERT(metadata.Type != AssetType::None);
 		}
 
+		if (IsAssetLoaded(metadata.Handle))
+		{
+			return s_AssetManagerData->m_LoadedAssets.at(metadata.Handle);
+		}
+
 		Ref<Asset> asset = nullptr;
 		bool result = AssetSerializer::LoadAsset(metadata, asset);
 		if (!result || !asset)
@@ -63,16 +68,6 @@ namespace Radiant {
 		SerializeAssetRegistry();
 	}
 
-	bool AssetManager::IsAssetHandleValid(AssetHandle assetHandle)
-	{
-		return assetHandle != 0 && s_AssetManagerData->m_AssetRegistry.Contains(assetHandle);
-	}
-
-	bool AssetManager::IsAssetLoaded(AssetHandle assetHandle)
-	{
-		return s_AssetManagerData->m_LoadedAssets.find(assetHandle) != s_AssetManagerData->m_LoadedAssets.end();;
-	}
-
 	Ref<Asset> AssetManager::GetAsset(AssetHandle assetHandle)
 	{
 		RADIANT_PROFILE_FUNCTION();
@@ -97,6 +92,16 @@ namespace Radiant {
 			s_AssetManagerData->m_LoadedAssets[assetHandle] = asset;
 		}
 		return asset;
+	}
+
+	bool AssetManager::IsAssetHandleValid(AssetHandle assetHandle)
+	{
+		return assetHandle != 0 && s_AssetManagerData->m_AssetRegistry.Contains(assetHandle);
+	}
+
+	bool AssetManager::IsAssetLoaded(AssetHandle assetHandle)
+	{
+		return s_AssetManagerData->m_LoadedAssets.find(assetHandle) != s_AssetManagerData->m_LoadedAssets.end();;
 	}
 
 	AssetType AssetManager::GetAssetType(AssetHandle assetHandle)
@@ -196,7 +201,7 @@ namespace Radiant {
 		const std::string& assetRegistryPath = s_AssetManagerData->AssetRegistryPath;
 		if (!FileSystem::Exists(assetRegistryPath))
 		{
-			RADIANT_WARN("Asset Manager: AssetRegistry file at {0} was not found", assetRegistryPath);
+			RADIANT_WARN("AssetManager: AssetRegistry file at {0} was not found", assetRegistryPath);
 			return false;
 		}
 
