@@ -1,6 +1,48 @@
 Level: UntitledLevel
 Entities:
-  - Entity: 301154576189130776
+  - Entity: 4036826900607874111
+    MetadataComponent:
+      Tag: Platform
+    TransformComponent:
+      Translation: [0, -4, 0]
+      Rotation: [0, 0, 0]
+      Scale: [15, 1, 0]
+    SpriteComponent:
+      Color: [0, 1, 1, 1]
+      TextureHandle: 0
+      TilingFactor: 1
+    RigidBody2DComponent:
+      BodyType: Static
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 7504134532841139632
+    MetadataComponent:
+      Tag: Green Square
+    TransformComponent:
+      Translation: [2.93747235e-05, -2.98500109, 0]
+      Rotation: [0, 0, 1.37830384e-07]
+      Scale: [1, 1, 1]
+    SpriteComponent:
+      Color: [0, 1, 0, 1]
+      TextureHandle: 0
+      TilingFactor: 1
+    RigidBody2DComponent:
+      BodyType: Dynamic
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 8175032424126986924
     MetadataComponent:
       Tag: Camera
     TransformComponent:
@@ -21,49 +63,7 @@ Entities:
       FixedAspectRatio: false
     NativeScriptComponent:
       {}
-  - Entity: 3722572621464345604
-    MetadataComponent:
-      Tag: Green Square
-    TransformComponent:
-      Translation: [-2.36275461e-08, -2.98107862, 0]
-      Rotation: [0, 0, 4.61100278e-08]
-      Scale: [1, 1, 1]
-    SpriteComponent:
-      Color: [0, 1, 0, 1]
-      TextureHandle: 0
-      TilingFactor: 1
-    RigidBody2DComponent:
-      BodyType: Dynamic
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-  - Entity: 10648497653623159601
-    MetadataComponent:
-      Tag: Checkerboard
-    TransformComponent:
-      Translation: [4, -2.98107862, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    SpriteComponent:
-      Color: [1, 1, 1, 1]
-      TextureHandle: 12979861245956966833
-      TilingFactor: 1
-    RigidBody2DComponent:
-      BodyType: Dynamic
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-  - Entity: 16953915907645856911
+  - Entity: 14343048476935107744
     MetadataComponent:
       Tag: Text
     TransformComponent:
@@ -72,24 +72,24 @@ Entities:
       Scale: [1, 1, 1]
     TextComponent:
       TextString: Hello World!
-      FontHandle: 12045035358232015408
+      FontHandle: 10197413063581720595
       Color: [1, 1, 1, 1]
       TextSize: 24
       LineSpacing: 0
       Kerning: 0
-  - Entity: 17140355152630378771
+  - Entity: 15512550336160256415
     MetadataComponent:
-      Tag: Platform
+      Tag: Checkerboard
     TransformComponent:
-      Translation: [0, -4, 0]
-      Rotation: [0, 0, 0]
-      Scale: [15, 1, 0]
+      Translation: [4.00002956, -2.98500109, 0]
+      Rotation: [0, 0, 2.18836078e-08]
+      Scale: [1, 1, 1]
     SpriteComponent:
-      Color: [0, 1, 1, 1]
-      TextureHandle: 0
+      Color: [1, 1, 1, 1]
+      TextureHandle: 2841180525654932064
       TilingFactor: 1
     RigidBody2DComponent:
-      BodyType: Static
+      BodyType: Dynamic
       FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]

@@ -22,6 +22,10 @@ namespace Radiant {
 		m_Window->SetEventCallback(RADIANT_BIND_EVENT_FN(GameApplication::OnEvent));
 
 		Renderer::Init();
+
+		m_ImGuiLayer = ImGuiLayer::Create();
+		PushOverlay(m_ImGuiLayer);
+
 		RADIANT_TRACE("GameApplication Constructed");
 	}
 
@@ -101,6 +105,15 @@ namespace Radiant {
 					for (Layer* layer : m_LayerStack)
 						layer->OnUpdate(timestep);
 				}
+
+				m_ImGuiLayer->Begin();
+				{
+					RADIANT_PROFILE_SCOPE("LayerStack OnImGuiRender");
+
+					for (Layer* layer : m_LayerStack)
+						layer->OnImGuiRender();
+				}
+				m_ImGuiLayer->End();
 			}
 
 			m_Window->OnUpdate();

@@ -10,6 +10,8 @@
 
 #include "Core/Timestep.h"
 
+#include "ImGui/ImGuiLayer.h"
+
 int main(int argc, char** argv);
 
 namespace Radiant {
@@ -45,7 +47,7 @@ namespace Radiant {
 		void PopOverlay(Layer* layer);
 
 		inline static Window& GetWindow() { return *(s_Instance->m_Window); }
-
+		inline static ImGuiLayer& GetImGuiLayer() { return *(s_Instance->m_ImGuiLayer); }
 		inline static GameApplication& Get() { return *s_Instance; }
 
 		GameApplicationCommandLineArgs GetCommandLineArgs() const { return m_CommandLineArgs; }
@@ -57,6 +59,7 @@ namespace Radiant {
 	private:
 		GameApplicationCommandLineArgs m_CommandLineArgs;
 		Scope<Window> m_Window;
+		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;
 		bool m_Minimized = false;
 		LayerStack m_LayerStack;

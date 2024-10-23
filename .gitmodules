@@ -16,3 +16,6 @@
 [submodule "Radiant/Vendor/msdf-atlas-gen"]
 	path = Radiant/Vendor/msdf-atlas-gen
 	url = https://github.com/TheCherno/msdf-atlas-gen
+[submodule "Radiant/Vendor/imgui"]
+	path = Radiant/Vendor/imgui
+	url = https://github.com/Kareemhegazy133/imgui.git
