@@ -25,8 +25,8 @@ Entities:
     MetadataComponent:
       Tag: Green Square
     TransformComponent:
-      Translation: [2.93747235e-05, -2.98500109, 0]
-      Rotation: [0, 0, 1.37830384e-07]
+      Translation: [2.93956455e-05, -2.98500109, 0]
+      Rotation: [0, 0, 9.67092006e-08]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [0, 1, 0, 1]

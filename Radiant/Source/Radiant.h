@@ -18,6 +18,8 @@
 #include "Events/MouseEvent.h"
 #include "Events/KeyEvent.h"
 
+#include "ImGui/ImGuiLayer.h"
+
 #include "Physics/Physics2D.h"
 
 #include "ECS/Level.h"

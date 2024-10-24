@@ -87,7 +87,7 @@ void SandboxLayer::OnUpdate(Timestep ts)
 
 	//Renderer2D::DrawString("Hello", s_Font, glm::mat4(1.0f), {0.2f, 0.3f, 0.8f, 1.f});
 
-	//{1
+	//{
 	//	static float rotation = 0.0f;
 	//	rotation += ts * 50.0f;
 
