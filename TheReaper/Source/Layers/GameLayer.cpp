@@ -52,8 +52,24 @@ void GameLayer::OnUpdate(Timestep ts)
 	RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 	RenderCommand::Clear();
 
-	m_Level->OnUpdate(ts);
-	m_Level->OnRender();
+	switch (m_GameState)
+	{
+		case GameState::MainMenu:
+		{
+			//OnUpdateMainMenu(ts);
+			break;
+		}
+		case GameState::Gameplay:
+		{
+			OnUpdateGameplay(ts);
+			break;
+		}
+		case GameState::Paused:
+		{
+			//OnUpdatePauseMenu(ts);
+			break;
+		}
+	}
 
 	m_Framebuffer->Unbind();
 }
@@ -62,10 +78,59 @@ void GameLayer::OnImGuiRender()
 {
 	RADIANT_PROFILE_FUNCTION();
 
+	switch (m_GameState)
+	{
+		case GameState::MainMenu:
+		{
+			//OnRenderMainMenu();
+			break;
+		}
+		case GameState::Gameplay:
+		{
+			OnRenderGameplay();
+			break;
+		}
+		case GameState::Paused:
+		{
+			//OnRenderPauseMenu();
+			break;
+		}
+	}
+}
+
+void GameLayer::OnEvent(Event& e)
+{
+	EventDispatcher dispatcher(e);
+	dispatcher.Dispatch<WindowResizeEvent>(RADIANT_BIND_EVENT_FN(GameLayer::OnWindowResized));
+}
+
+void GameLayer::OnUpdateMainMenu(Timestep ts)
+{
+
+}
+
+void GameLayer::OnUpdateGameplay(Timestep ts)
+{
+	m_Level->OnUpdate(ts);
+	m_Level->OnRender();
+}
+
+void GameLayer::OnUpdatePaused(Timestep ts)
+{
+
+}
+
+void GameLayer::OnRenderMainMenu()
+{
+
+}
+
+void GameLayer::OnRenderGameplay()
+{
 	// Disable window decorations and force ImGui window to take the size of the game texture
-	ImGui::SetNextWindowPos(ImVec2(0, 0)); // Set window position to top-left corner
-	ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize); // Set window size to match display size
-	
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+
 	// Temporarily remove window padding
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
@@ -80,7 +145,6 @@ void GameLayer::OnImGuiRender()
 		ImGuiWindowFlags_NoScrollWithMouse
 	);
 
-	// Get the texture ID from your framebuffer
 	uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 
 	// Display the game texture using ImGui::Image
@@ -92,10 +156,9 @@ void GameLayer::OnImGuiRender()
 	ImGui::PopStyleVar();
 }
 
-void GameLayer::OnEvent(Event& e)
+void GameLayer::OnRenderPaused()
 {
-	EventDispatcher dispatcher(e);
-	dispatcher.Dispatch<WindowResizeEvent>(RADIANT_BIND_EVENT_FN(GameLayer::OnWindowResized));
+
 }
 
 bool GameLayer::OnWindowResized(WindowResizeEvent& e)

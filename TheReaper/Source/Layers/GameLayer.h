@@ -16,7 +16,17 @@ public:
 
 	void OnUpdate(Timestep ts) override;
 	virtual void OnImGuiRender() override;
+
 	void OnEvent(Event& e) override;
+
+private:
+	void OnUpdateMainMenu(Timestep ts);
+	void OnUpdateGameplay(Timestep ts);
+	void OnUpdatePaused(Timestep ts);
+
+	void OnRenderMainMenu();
+	void OnRenderGameplay();
+	void OnRenderPaused();
 
 private:
 	bool OnWindowResized(WindowResizeEvent& e);
@@ -29,8 +39,13 @@ private:
 
 private:
 	Ref<Level> m_Level;
-
 	Ref<Framebuffer> m_Framebuffer;
+
+	enum class GameState
+	{
+		MainMenu = 0, Gameplay = 1, Paused = 2
+	};
+	GameState m_GameState = GameState::Gameplay;
 
 	// TEMP
 	Ref<Texture2D> m_CheckerboardTexture;
