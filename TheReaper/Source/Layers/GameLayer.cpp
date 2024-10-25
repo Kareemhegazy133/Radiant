@@ -48,7 +48,7 @@ void GameLayer::OnUpdate(Timestep ts)
 
 	if (!m_StateStack.empty())
 	{
-		m_StateStack.back()->OnUpdate(ts);
+		m_StateStack[m_StateStackSize - 1]->OnUpdate(ts);
 	}
 }
 
@@ -58,7 +58,7 @@ void GameLayer::OnImGuiRender()
 
 	if (!m_StateStack.empty())
 	{
-		m_StateStack.back()->OnRender();
+		m_StateStack[m_StateStackSize - 1]->OnRender();
 	}
 }
 
@@ -68,7 +68,7 @@ void GameLayer::OnEvent(Event& e)
 
 	if (!m_StateStack.empty())
 	{
-		m_StateStack.back()->OnEvent(e);
+		m_StateStack[m_StateStackSize - 1]->OnEvent(e);
 	}
 }
 
@@ -78,7 +78,7 @@ void GameLayer::PopState()
 
 	if (!m_StateStack.empty())
 	{
-		m_StateStack.back()->OnExit();
-		m_StateStack.pop_back();
+		m_StateStack[m_StateStackSize - 1]->OnExit();
+		m_StateStack[--m_StateStackSize].reset();
 	}
 }

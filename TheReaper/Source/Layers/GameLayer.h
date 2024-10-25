@@ -26,15 +26,16 @@ public:
 	{
 		RADIANT_PROFILE_FUNCTION();
 
-		static_assert(std::is_base_of<GameState, T>::value, "PushState<T> can only be used with types derived from GameState");
+		static_assert(std::is_base_of<GameState, T>::value, "GameLayer: PushState<T> can only be used with types derived from GameState");
 		if (!newState)
 		{
 			newState = CreateRef<T>();
 		}
 
 		newState->OnEnter();
-		m_StateStack.emplace_back(newState);
 
+		RADIANT_ASSERT(m_StateStackSize < m_StateStack.size(), "GameLayer: m_StateStackSize has exceeded the array size");
+		m_StateStack[m_StateStackSize++] = newState;
 	}
 
 	void PopState();
@@ -44,7 +45,7 @@ public:
 	{
 		RADIANT_PROFILE_FUNCTION();
 
-		static_assert(std::is_base_of<GameState, T>::value, "ChangeState<T> can only be used with types derived from GameState");
+		static_assert(std::is_base_of<GameState, T>::value, "GameLayer: ChangeState<T> can only be used with types derived from GameState");
 
 		m_NextState = newState;
 		while (!m_StateStack.empty())
@@ -69,6 +70,6 @@ private:
 	Ref<GamePausedState> m_GamePausedState;
 	Ref<GameplayState> m_GameplayState;
 
-	// TODO: make this an std::array
-	std::vector<Ref<GameState>> m_StateStack;
+	std::array<Ref<GameState>, 3> m_StateStack;
+	size_t m_StateStackSize = 0;
 };
