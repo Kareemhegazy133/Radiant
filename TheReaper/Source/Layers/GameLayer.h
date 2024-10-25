@@ -2,7 +2,9 @@
 
 #include <Radiant.h>
 
-using namespace Radiant;
+#include "GameStates/MainMenuState.h"
+#include "GameStates/GamePausedState.h"
+#include "GameStates/GameplayState.h"
 
 class GameLayer : public Layer
 {
@@ -19,40 +21,54 @@ public:
 
 	void OnEvent(Event& e) override;
 
-private:
-	void OnUpdateMainMenu(Timestep ts);
-	void OnUpdateGameplay(Timestep ts);
-	void OnUpdatePaused(Timestep ts);
-
-	void OnRenderMainMenu();
-	void OnRenderGameplay();
-	void OnRenderPaused();
-
-private:
-	bool OnWindowResized(WindowResizeEvent& e);
-
-// TEMP
-private:
-	void CreateDEBUG();
-	void LoadDEBUG();
-	void SaveDEBUG();
-
-private:
-	Ref<Level> m_Level;
-	Ref<Framebuffer> m_Framebuffer;
-
-	enum class GameState
+	template<typename T>
+	void PushState(Ref<T> newState)
 	{
-		MainMenu = 0, Gameplay = 1, Paused = 2
-	};
-	GameState m_GameState = GameState::Gameplay;
+		RADIANT_PROFILE_FUNCTION();
 
-	// TEMP
-	Ref<Texture2D> m_CheckerboardTexture;
-	Ref<Texture2D> m_SpriteSheet;
-	Ref<SubTexture2D> m_TextureStairs, m_TextureBarrel, m_TextureTree;
-	Entity m_Camera;
+		static_assert(std::is_base_of<GameState, T>::value, "PushState<T> can only be used with types derived from GameState");
+		if (!newState)
+		{
+			newState = CreateRef<T>();
+		}
 
-	glm::vec4 m_SquareColor = { 0.2f, 0.3f, 0.8f, 1.0f };
+		newState->OnEnter();
+		m_StateStack.emplace_back(newState);
+
+	}
+
+	void PopState();
+
+	template<typename T>
+	void ChangeState(Ref<T> newState)
+	{
+		RADIANT_PROFILE_FUNCTION();
+
+		static_assert(std::is_base_of<GameState, T>::value, "ChangeState<T> can only be used with types derived from GameState");
+
+		m_NextState = newState;
+		while (!m_StateStack.empty())
+		{
+			PopState();
+		}
+		PushState(newState);
+	}
+
+	Ref<GameState> GetNextState() { return m_NextState; }
+	Ref<MainMenuState> GetMainMenuState() { return m_MainMenuState; }
+	Ref<GamePausedState> GetGamePausedState() { return m_GamePausedState; }
+	Ref<GameplayState> GetGameplayState() { return m_GameplayState; }
+
+	static GameLayer* Get() { return s_Instance; }
+
+private:
+	inline static GameLayer* s_Instance = nullptr;
+
+	Ref<GameState> m_NextState;
+	Ref<MainMenuState> m_MainMenuState;
+	Ref<GamePausedState> m_GamePausedState;
+	Ref<GameplayState> m_GameplayState;
+
+	// TODO: make this an std::array
+	std::vector<Ref<GameState>> m_StateStack;
 };
-

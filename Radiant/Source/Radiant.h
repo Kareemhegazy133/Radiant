@@ -6,6 +6,7 @@
 
 #include "Core/GameApplication.h"
 #include "Core/Layer.h"
+#include "Core/GameState.h"
 #include "Core/Log.h"
 
 #include "Core/Timestep.h"
