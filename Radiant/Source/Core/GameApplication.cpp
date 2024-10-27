@@ -4,6 +4,7 @@
 #include <glfw/glfw3.h>
 
 #include "Renderer/Renderer.h"
+#include "Renderer/UI/Font.h"
 
 namespace Radiant {
 
@@ -26,6 +27,8 @@ namespace Radiant {
 		m_ImGuiLayer = ImGuiLayer::Create();
 		PushOverlay(m_ImGuiLayer);
 
+		Font::Init();
+
 		RADIANT_TRACE("GameApplication Constructed");
 	}
 
@@ -34,6 +37,9 @@ namespace Radiant {
 		RADIANT_PROFILE_FUNCTION();
 
 		RADIANT_TRACE("GameApplication Destructor");
+
+		Font::Shutdown();
+		
 		Renderer::Shutdown();
 	}
 
@@ -127,7 +133,7 @@ namespace Radiant {
 
 	bool GameApplication::OnWindowClose(WindowCloseEvent& e)
 	{
-		m_Running = false;
+		Close();
 		return true;
 	}
 

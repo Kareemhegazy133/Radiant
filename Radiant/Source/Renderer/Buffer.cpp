@@ -15,7 +15,7 @@ namespace Radiant {
 				RADIANT_ASSERT(false, "RendererAPI::None is currently not supported!");
 				return nullptr;
 			case RendererAPI::API::OpenGL:
-				return CreateRef<OpenGLVertexBuffer>(size);
+				return Ref<OpenGLVertexBuffer>::Create(size);
 		}
 		RADIANT_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
@@ -29,7 +29,7 @@ namespace Radiant {
 				RADIANT_ASSERT(false, "RendererAPI::None is currently not supported!");
 				return nullptr;
 			case RendererAPI::API::OpenGL:
-				return CreateRef<OpenGLVertexBuffer>(vertices, size);
+				return Ref<OpenGLVertexBuffer>::Create(vertices, size);
 		}
 
 		RADIANT_ASSERT(false, "Unknown RendererAPI!");
@@ -44,7 +44,7 @@ namespace Radiant {
 			RADIANT_ASSERT(false, "RendererAPI::None is currently not supported!");
 			return nullptr;
 		case RendererAPI::API::OpenGL:
-			return CreateRef<OpenGLIndexBuffer>(indices, count);
+			return Ref<OpenGLIndexBuffer>::Create(indices, count);
 		}
 
 		RADIANT_ASSERT(false, "Unknown RendererAPI!");

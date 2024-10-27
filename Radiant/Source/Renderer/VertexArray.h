@@ -4,7 +4,7 @@
 
 namespace Radiant {
 
-	class VertexArray
+	class VertexArray : public RefCounted
 	{
 	public:
 		virtual ~VertexArray() = default;

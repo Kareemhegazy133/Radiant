@@ -10,7 +10,7 @@
 
 namespace Radiant {
 
-	class Renderer2D
+	class Renderer2D : public RefCounted
 	{
 	public:
 		static void Init();

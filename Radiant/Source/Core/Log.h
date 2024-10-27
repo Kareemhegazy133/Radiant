@@ -1,15 +1,15 @@
 #pragma once
 
-#include "Core/Base.h"
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/gtx/string_cast.hpp"
-
 // This ignores all warnings raised inside External headers
 #pragma warning(push, 0)
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 #pragma warning(pop)
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
+
+#include "Base.h"
 
 namespace Radiant {
 
@@ -18,11 +18,11 @@ namespace Radiant {
 	public:
 		static void Init();
 
-		static Ref<spdlog::logger>& GetRadiantLogger() { return s_RadiantLogger; }
-		static Ref<spdlog::logger>& GetGameLogger() { return s_GameLogger; }
+		static std::shared_ptr<spdlog::logger>& GetRadiantLogger() { return s_RadiantLogger; }
+		static std::shared_ptr<spdlog::logger>& GetGameLogger() { return s_GameLogger; }
 	private:
-		static Ref<spdlog::logger> s_RadiantLogger;
-		static Ref<spdlog::logger> s_GameLogger;
+		static std::shared_ptr<spdlog::logger> s_RadiantLogger;
+		static std::shared_ptr<spdlog::logger> s_GameLogger;
 	};
 
 }

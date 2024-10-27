@@ -29,7 +29,7 @@ public:
 		static_assert(std::is_base_of<GameState, T>::value, "GameLayer: PushState<T> can only be used with types derived from GameState");
 		if (!newState)
 		{
-			newState = CreateRef<T>();
+			newState = Ref<T>::Create();
 		}
 
 		newState->OnEnter();

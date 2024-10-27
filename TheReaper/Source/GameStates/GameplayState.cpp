@@ -19,8 +19,7 @@ void GameplayState::OnEnter()
 
 	if (!AssetManager::LoadAssetRegistry(m_AssetRegistryPath))
 	{
-		m_Level = CreateRef<Level>();
-
+		m_Level = Ref<Level>::Create();
 		CreateDEBUG();
 	}
 	else
@@ -40,7 +39,8 @@ void GameplayState::OnExit()
 		AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
 		AssetManager::SaveAssetRegistry(m_AssetRegistryPath);
 		AssetManager::ClearAssetRegistry();
-		m_Level.reset();
+
+		m_Level.Reset();
 	}
 }
 

@@ -80,23 +80,21 @@ namespace Radiant {
 
 	void LevelAssetSerializerAPI::Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const
 	{
-		const Ref<Level> level = std::static_pointer_cast<Level>(asset);
-		LevelSerializer serializer(level);
+		LevelSerializer serializer(asset.As<Level>());
 		serializer.Serialize(metadata.FilePath.string());
 	}
 
 	bool LevelAssetSerializerAPI::Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const
 	{
-		asset = CreateRef<Level>();
-		Ref<Level> level = std::static_pointer_cast<Level>(asset);
-		LevelSerializer serializer(level);
+		asset = Ref<Level>::Create();
+		LevelSerializer serializer(asset.As<Level>());
 		serializer.Deserialize(metadata.FilePath.string());
 		return true;
 	}
 
 	bool LevelAssetSerializerAPI::SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const
 	{
-		Ref<Level> level = CreateRef<Level>("AssetPackTemp", false);
+		Ref<Level> level = Ref<Level>::Create("AssetPackTemp", false);
 		const auto& metadata = AssetManager::GetMetadata(handle);
 		LevelSerializer serializer(level);
 		if (serializer.Deserialize(metadata.FilePath))
@@ -114,7 +112,7 @@ namespace Radiant {
 
 	Ref<Level> LevelAssetSerializerAPI::DeserializeLevelFromAssetPack(FileStreamReader& stream, const AssetPackFile::LevelInfo& levelInfo) const
 	{
-		Ref<Level> level = CreateRef<Level>();
+		Ref<Level> level = Ref<Level>::Create();
 		LevelSerializer serializer(level);
 		if (serializer.DeserializeFromAssetPack(stream, levelInfo))
 			return level;
@@ -133,7 +131,7 @@ namespace Radiant {
 
 	bool FontSerializerAPI::Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const
 	{
-		asset = Font::Init(AssetManager::GetFileSystemPath(metadata));
+		asset = Ref<Font>::Create(AssetManager::GetFileSystemPath(metadata));
 		asset->Handle = metadata.Handle;
 
 		return true;
@@ -162,7 +160,7 @@ namespace Radiant {
 		Buffer fontData;
 		stream.ReadBuffer(fontData);
 
-		return CreateRef<Font>(name, fontData);;
+		return Ref<Font>::Create(name, fontData);;
 	}
 
 }

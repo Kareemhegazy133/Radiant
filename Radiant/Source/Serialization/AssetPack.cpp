@@ -169,7 +169,7 @@ namespace Radiant {
 		{
 			const auto metadata = AssetManager::GetMetadata(levelHandle);
 
-			Ref<Level> level = CreateRef<Level>("AssetPack", false);
+			Ref<Level> level = Ref<Level>::Create("AssetPack", false);
 			LevelSerializer serializer(level);
 			RADIANT_TRACE("AssetPack: Deserializing Level: {0}", metadata.FilePath.string());
 			if (serializer.Deserialize(metadata.FilePath))
@@ -222,7 +222,7 @@ namespace Radiant {
 
 	Ref<AssetPack> AssetPack::Load(const std::filesystem::path& path)
 	{
-		Ref<AssetPack> assetPack = CreateRef<AssetPack>();
+		Ref<AssetPack> assetPack = Ref<AssetPack>::Create();
 		assetPack->m_Path = path;
 		bool success = AssetPackSerializer::DeserializeIndex(assetPack->m_Path, assetPack->m_File);
 		RADIANT_ASSERT(success);

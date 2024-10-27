@@ -32,13 +32,13 @@ void GameLayer::OnDetach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
-	m_MainMenuState.reset();
-	m_GamePausedState.reset();
-	m_GameplayState.reset();
+	m_MainMenuState.Reset();
+	m_GamePausedState.Reset();
+	m_GameplayState.Reset();
 
 	if (m_NextState)
 	{
-		m_NextState.reset();
+		m_NextState.Reset();
 	}
 }
 
@@ -77,6 +77,6 @@ void GameLayer::PopState()
 	if (m_StateStackSize > 0)
 	{
 		m_StateStack[m_StateStackSize - 1]->OnExit();
-		m_StateStack[--m_StateStackSize].reset();
+		m_StateStack[--m_StateStackSize].Reset();
 	}
 }

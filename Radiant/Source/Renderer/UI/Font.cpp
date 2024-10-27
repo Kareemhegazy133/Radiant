@@ -152,10 +152,9 @@ namespace Radiant {
 		m_MSDFData = nullptr;
 	}
 
-	Ref<Font> Font::Init(const std::filesystem::path& filepath /*= "Assets/Fonts/OpenSans/OpenSans-Regular.ttf"*/)
+	void Font::Init(const std::filesystem::path& filepath /*= "Assets/Fonts/OpenSans/OpenSans-Regular.ttf"*/)
 	{
-		s_DefaultFont = CreateRef<Font>(filepath);
-		return s_DefaultFont;
+		s_DefaultFont = Ref<Font>::Create(filepath);
 	}
 
 	Ref<Font> Font::GetDefaultFont()
@@ -168,8 +167,6 @@ namespace Radiant {
 	{
 		if (textComponent.FontHandle == s_DefaultFont->Handle || !AssetManager::IsAssetHandleValid(textComponent.FontHandle))
 		{
-			// Set the TextComponent's handle to the default font's handle we are using to serialize correctly
-			textComponent.FontHandle = s_DefaultFont->Handle;
 			return s_DefaultFont;
 		}
 
@@ -381,7 +378,7 @@ namespace Radiant {
 
 	void Font::Shutdown()
 	{
-		s_DefaultFont.reset();
+		s_DefaultFont.Reset();
 	}
 
 }

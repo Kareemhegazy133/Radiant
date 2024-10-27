@@ -8,7 +8,7 @@ namespace Radiant {
 
 	using AssetHandle = UUID;
 
-	class Asset
+	class Asset : public RefCounted
 	{
 	public:
 

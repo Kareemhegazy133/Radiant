@@ -5,7 +5,7 @@
 
 namespace Radiant {
 
-	class GameState
+	class GameState : public RefCounted
 	{
 	public:
 		virtual ~GameState() = default;

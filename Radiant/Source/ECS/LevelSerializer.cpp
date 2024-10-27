@@ -67,7 +67,7 @@ namespace Radiant {
 
 		// Serialize sorted entities
 		for (auto [id, entity] : sortedEntityMap)
-			SerializeEntity(out, { entity, m_Level.get() });
+			SerializeEntity(out, { entity, m_Level.Raw() });
 
 		out << YAML::EndSeq;
 		out << YAML::EndMap;

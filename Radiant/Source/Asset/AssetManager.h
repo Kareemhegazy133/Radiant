@@ -6,6 +6,7 @@
 
 namespace Radiant {
 
+	// TODO: Multi threading
 	class AssetManager
 	{
 	public:
@@ -19,17 +20,15 @@ namespace Radiant {
 			static_assert(std::is_base_of<Asset, T>::value, "LoadAsset<T> can only be used with types derived from Asset");
 
 			// Call the original LoadAsset function
-			Ref<Asset> baseAsset = LoadAsset(filepath);
+			Ref<Asset> asset = LoadAsset(filepath);
 
-			// Cast to the desired type T
-			Ref<T> asset = std::static_pointer_cast<T>(baseAsset);
 			if (!asset)
 			{
 				RADIANT_ERROR("AssetManager: Asset at {0} is not of type requested!", filepath.string());
 				return nullptr;
 			}
 
-			return asset;
+			return asset.As<T>();
 		}
 
 		static Ref<AssetPack> LoadAssetPack(const std::filesystem::path& filepath);
@@ -43,24 +42,15 @@ namespace Radiant {
 			static_assert(std::is_base_of<Asset, T>::value, "GetAsset<T> can only be used with types derived from Asset");
 
 			// Call the original GetAsset function to retrieve the asset
-			Ref<Asset> baseAsset = GetAsset(assetHandle);
+			Ref<Asset> asset = GetAsset(assetHandle);
 
-			// Check if the asset exists
-			if (!baseAsset)
+			if (!asset)
 			{
 				RADIANT_ERROR("AssetManager: Asset with handle {0} not found!", (uint64_t)assetHandle);
 				return nullptr;
 			}
 
-			// Attempt to cast to the requested type
-			Ref<T> asset = std::static_pointer_cast<T>(baseAsset);
-			if (!asset)
-			{
-				RADIANT_ERROR("AssetManager: Asset with handle {0} is not of the requested type!", (uint64_t)assetHandle);
-				return nullptr;
-			}
-
-			return asset;
+			return asset.As<T>();
 		}
 
 		static Ref<Asset> GetAsset(AssetHandle assetHandle);
