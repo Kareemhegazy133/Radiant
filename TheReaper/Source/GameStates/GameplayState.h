@@ -27,11 +27,12 @@ private:
 private:
 	void CreateDEBUG();
 	void LoadDEBUG();
-	void SaveDEBUG();
 
 private:
-	Ref<Level> m_Level;
 	Ref<Framebuffer> m_Framebuffer;
+	Ref<Level> m_Level;
+
+	const std::string& m_AssetRegistryPath = "Assets/Gameplay.rdar";
 
 	// TEMP
 	Entity m_Camera;

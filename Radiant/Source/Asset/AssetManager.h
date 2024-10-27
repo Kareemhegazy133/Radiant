@@ -75,22 +75,27 @@ namespace Radiant {
 		static AssetMetadata GetMetadata(AssetHandle assetHandle);
 		static const AssetMetadata& GetMetadata(const std::filesystem::path& filepath);
 
+		template<typename T>
+		static Ref<T> GetAssetFromFilePath(const std::filesystem::path& filepath)
+		{
+			return GetAsset<T>(GetAssetHandleFromFilePath(filepath));
+		}
+
+		static Ref<Asset> GetAssetFromFilePath(const std::filesystem::path& filepath);
 		static AssetHandle GetAssetHandleFromFilePath(const std::filesystem::path& filepath);
 		static AssetType GetAssetTypeFromPath(const std::filesystem::path& path);
 		static std::filesystem::path GetFileSystemPath(AssetHandle assetHandle);
 		static std::filesystem::path GetFileSystemPath(const AssetMetadata& metadata);
 
-	private:
-		static void SerializeAssetRegistry();
-		static bool DeserializeAssetRegistry();
+		static bool LoadAssetRegistry(const std::filesystem::path& assetRegistryPath);
+		static void SaveAssetRegistry(const std::filesystem::path& assetRegistryPath);
+		static void ClearAssetRegistry();
 
 	private:
 		struct AssetManagerData
 		{
 			AssetRegistry m_AssetRegistry;
 			std::unordered_map<AssetHandle, Ref<Asset>> m_LoadedAssets;
-
-			std::string AssetRegistryPath = "Assets/AssetRegistry.rdar";
 		};
 		
 		static Scope<AssetManagerData> s_AssetManagerData;

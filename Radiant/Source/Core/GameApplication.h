@@ -41,6 +41,8 @@ namespace Radiant {
 
 		void OnEvent(Event& e);
 
+		void Close();
+
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
 		void PopLayer(Layer* layer);

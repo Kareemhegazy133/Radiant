@@ -10,7 +10,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include "Core/UUID.h"
-#include "LevelCamera.h"
+#include "Renderer/SceneCamera.h"
 #include "Renderer/Texture.h"
 
 // ADDING A NEW COMPONENT
@@ -75,7 +75,7 @@ namespace Radiant {
 
 	struct CameraComponent
 	{
-		LevelCamera Camera;
+		SceneCamera Camera;
 		bool Primary = false; // TODO: think about moving to Level maybe
 		bool FixedAspectRatio = false;
 

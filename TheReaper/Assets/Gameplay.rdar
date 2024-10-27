@@ -1,0 +1,10 @@
+AssetRegistry:
+  - Handle: 2358738045439326511
+    FilePath: Assets/Fonts/OpenSans/OpenSans-Regular.ttf
+    Type: Font
+  - Handle: 14694987869867798245
+    FilePath: Assets/Textures/Checkerboard.png
+    Type: Texture2D
+  - Handle: 5897778123474834955
+    FilePath: Assets/Levels/Level.rdlvl
+    Type: Level

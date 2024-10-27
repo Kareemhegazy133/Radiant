@@ -44,5 +44,4 @@
 #include "Renderer/SubTexture2D.h"
 #include "Renderer/VertexArray.h"
 
-#include "Renderer/OrthographicCamera.h"
-#include "Renderer/OrthographicCameraController.h"
+#include "Renderer/SceneCamera.h"

@@ -48,17 +48,17 @@ public:
 		static_assert(std::is_base_of<GameState, T>::value, "GameLayer: ChangeState<T> can only be used with types derived from GameState");
 
 		m_NextState = newState;
-		while (!m_StateStack.empty())
+		while (m_StateStackSize > 0)
 		{
 			PopState();
 		}
 		PushState(newState);
 	}
 
-	Ref<GameState> GetNextState() { return m_NextState; }
-	Ref<MainMenuState> GetMainMenuState() { return m_MainMenuState; }
-	Ref<GamePausedState> GetGamePausedState() { return m_GamePausedState; }
-	Ref<GameplayState> GetGameplayState() { return m_GameplayState; }
+	static Ref<GameState> GetNextState() { return s_Instance->m_NextState; }
+	static Ref<MainMenuState> GetMainMenuState() { return s_Instance->m_MainMenuState; }
+	static Ref<GamePausedState> GetGamePausedState() { return s_Instance->m_GamePausedState; }
+	static Ref<GameplayState> GetGameplayState() { return s_Instance->m_GameplayState; }
 
 	static GameLayer* Get() { return s_Instance; }
 

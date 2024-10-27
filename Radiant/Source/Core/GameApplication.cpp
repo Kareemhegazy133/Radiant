@@ -85,6 +85,11 @@ namespace Radiant {
 		}
 	}
 
+	void GameApplication::Close()
+	{
+		m_Running = false;
+	}
+
 	void GameApplication::Run()
 	{
 		RADIANT_PROFILE_FUNCTION();

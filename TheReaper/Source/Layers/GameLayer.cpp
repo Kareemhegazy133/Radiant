@@ -25,7 +25,7 @@ void GameLayer::OnAttach()
 {
 	RADIANT_PROFILE_FUNCTION();
 
-	PushState(m_GameplayState);
+	PushState(m_MainMenuState);
 }
 
 void GameLayer::OnDetach()
@@ -44,9 +44,7 @@ void GameLayer::OnDetach()
 
 void GameLayer::OnUpdate(Timestep ts)
 {
-	RADIANT_PROFILE_SCOPE("Renderer Prep");
-
-	if (!m_StateStack.empty())
+	if (m_StateStackSize > 0)
 	{
 		m_StateStack[m_StateStackSize - 1]->OnUpdate(ts);
 	}
@@ -56,7 +54,7 @@ void GameLayer::OnImGuiRender()
 {
 	RADIANT_PROFILE_FUNCTION();
 
-	if (!m_StateStack.empty())
+	if (m_StateStackSize > 0)
 	{
 		m_StateStack[m_StateStackSize - 1]->OnRender();
 	}
@@ -66,7 +64,7 @@ void GameLayer::OnEvent(Event& e)
 {
 	RADIANT_PROFILE_FUNCTION();
 
-	if (!m_StateStack.empty())
+	if (m_StateStackSize > 0)
 	{
 		m_StateStack[m_StateStackSize - 1]->OnEvent(e);
 	}
@@ -76,7 +74,7 @@ void GameLayer::PopState()
 {
 	RADIANT_PROFILE_FUNCTION();
 
-	if (!m_StateStack.empty())
+	if (m_StateStackSize > 0)
 	{
 		m_StateStack[m_StateStackSize - 1]->OnExit();
 		m_StateStack[--m_StateStackSize].reset();

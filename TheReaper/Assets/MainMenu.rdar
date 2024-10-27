@@ -1,0 +1,4 @@
+AssetRegistry:
+  - Handle: 15466785176894902312
+    FilePath: Assets/Textures/UI/MainMenuBackground.png
+    Type: Texture2D

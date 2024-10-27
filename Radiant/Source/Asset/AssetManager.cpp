@@ -19,9 +19,6 @@ namespace Radiant {
 	void AssetManager::Init()
 	{
 		AssetSerializer::Init();
-
-		if (!DeserializeAssetRegistry())
-			RADIANT_WARN("AssetManager: Failed to Deserialize Asset Registry");
 	}
 
 	Ref<Asset> AssetManager::LoadAsset(const std::filesystem::path& filepath)
@@ -52,7 +49,6 @@ namespace Radiant {
 		asset->Handle = metadata.Handle;
 		s_AssetManagerData->m_LoadedAssets[metadata.Handle] = asset;
 		s_AssetManagerData->m_AssetRegistry.Set(metadata.Handle, metadata);
-		SerializeAssetRegistry();
 		return asset;
 	}
 
@@ -66,7 +62,6 @@ namespace Radiant {
 
 		AssetSerializer::SaveAsset(metadata, level);
 		s_AssetManagerData->m_AssetRegistry.Set(metadata.Handle, metadata);
-		SerializeAssetRegistry();
 	}
 
 	Ref<Asset> AssetManager::GetAsset(AssetHandle assetHandle)
@@ -151,6 +146,11 @@ namespace Radiant {
 		return s_NullMetadata;
 	}
 
+	Ref<Asset> AssetManager::GetAssetFromFilePath(const std::filesystem::path& filepath)
+	{
+		return GetAsset(GetAssetHandleFromFilePath(filepath));
+	}
+
 	AssetHandle AssetManager::GetAssetHandleFromFilePath(const std::filesystem::path& filepath)
 	{
 		return GetMetadata(filepath).Handle;
@@ -171,38 +171,11 @@ namespace Radiant {
 		return metadata.FilePath;
 	}
 
-	void AssetManager::SerializeAssetRegistry()
+	bool AssetManager::LoadAssetRegistry(const std::filesystem::path& assetRegistryPath)
 	{
-		const std::string& assetRegistryPath = s_AssetManagerData->AssetRegistryPath;
-		YAML::Emitter out;
-		{
-			out << YAML::BeginMap; // Root
-			out << YAML::Key << "AssetRegistry" << YAML::Value;
-
-			out << YAML::BeginSeq;
-			for (const auto& [handle, metadata] : s_AssetManagerData->m_AssetRegistry)
-			{
-				out << YAML::BeginMap;
-				out << YAML::Key << "Handle" << YAML::Value << handle;
-				std::string filepathStr = metadata.FilePath.generic_string();
-				out << YAML::Key << "FilePath" << YAML::Value << filepathStr;
-				out << YAML::Key << "Type" << YAML::Value << Utils::AssetTypeToString(metadata.Type);
-				out << YAML::EndMap;
-			}
-			out << YAML::EndSeq;
-			out << YAML::EndMap; // Root
-		}
-
-		std::ofstream fout(assetRegistryPath);
-		fout << out.c_str();
-	}
-
-	bool AssetManager::DeserializeAssetRegistry()
-	{
-		const std::string& assetRegistryPath = s_AssetManagerData->AssetRegistryPath;
 		if (!FileSystem::Exists(assetRegistryPath))
 		{
-			RADIANT_WARN("AssetManager: AssetRegistry file at {0} was not found", assetRegistryPath);
+			RADIANT_WARN("AssetManager: AssetRegistry file at {0} was not found", assetRegistryPath.string());
 			return false;
 		}
 
@@ -247,9 +220,42 @@ namespace Radiant {
 			SetMetadata(metadata.Handle, metadata);
 		}
 
-		RADIANT_INFO("AssetManager: Loaded {0} asset entries", s_AssetManagerData->m_AssetRegistry.Count());
+		RADIANT_INFO("AssetManager: Loaded AssetRegistry file at {0} with {1} asset entries", assetRegistryPath.string(), s_AssetManagerData->m_AssetRegistry.Count());
 
 		return true;
+	}
+
+	void AssetManager::SaveAssetRegistry(const std::filesystem::path& assetRegistryPath)
+	{
+		YAML::Emitter out;
+		{
+			out << YAML::BeginMap; // Root
+			out << YAML::Key << "AssetRegistry" << YAML::Value;
+
+			out << YAML::BeginSeq;
+			for (const auto& [handle, metadata] : s_AssetManagerData->m_AssetRegistry)
+			{
+				out << YAML::BeginMap;
+				out << YAML::Key << "Handle" << YAML::Value << handle;
+				std::string filepathStr = metadata.FilePath.generic_string();
+				out << YAML::Key << "FilePath" << YAML::Value << filepathStr;
+				out << YAML::Key << "Type" << YAML::Value << Utils::AssetTypeToString(metadata.Type);
+				out << YAML::EndMap;
+			}
+			out << YAML::EndSeq;
+			out << YAML::EndMap; // Root
+		}
+
+		std::ofstream fout(assetRegistryPath);
+		fout << out.c_str();
+
+		RADIANT_INFO("AssetManager: AssetRegistry file saved at {0}", assetRegistryPath.string());
+	}
+
+	void AssetManager::ClearAssetRegistry()
+	{
+		s_AssetManagerData->m_AssetRegistry.Clear();
+		RADIANT_INFO("AssetManager: Cleared AssetRegistry");
 	}
 
 }

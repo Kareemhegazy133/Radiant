@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Camera.h"
-#include "OrthographicCamera.h"
 
 #include "Texture.h"
 #include "SubTexture2D.h"
@@ -18,7 +17,6 @@ namespace Radiant {
 		static void Shutdown();
 
 		static void BeginScene(const Camera& camera, const glm::mat4& transform);
-		static void BeginScene(const OrthographicCamera& camera);
 		static void EndScene();
 		static void Flush();
 

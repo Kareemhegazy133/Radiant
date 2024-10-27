@@ -8,6 +8,8 @@
 
 void GameplayState::OnEnter()
 {
+	GAME_INFO("Gameplay OnEnter");
+
 	FramebufferSpecification fbSpec;
 	fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
 	GameApplication& game = GameApplication::Get();
@@ -15,24 +17,37 @@ void GameplayState::OnEnter()
 	fbSpec.Height = game.GetWindow().GetHeight();
 	m_Framebuffer = Framebuffer::Create(fbSpec);
 
-	m_Level = CreateRef<Level>();
+	if (!AssetManager::LoadAssetRegistry(m_AssetRegistryPath))
+	{
+		m_Level = CreateRef<Level>();
 
-	CreateDEBUG();
-	//LoadDEBUG();
+		CreateDEBUG();
+	}
+	else
+	{
+		LoadDEBUG();
+	}
+
 }
 
 void GameplayState::OnExit()
 {
-	// Destroy the level if transitioning to MainMenuState
+	GAME_INFO("Gameplay OnExit");
+
+	// Save everything if transitioning to MainMenuState
 	if (GameLayer::Get()->GetNextState() == GameLayer::Get()->GetMainMenuState())
 	{
-		//SaveDEBUG();
+		AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
+		AssetManager::SaveAssetRegistry(m_AssetRegistryPath);
+		AssetManager::ClearAssetRegistry();
 		m_Level.reset();
 	}
 }
 
 void GameplayState::OnUpdate(Timestep ts)
 {
+	RADIANT_PROFILE_SCOPE("GameplayState Renderer Prep");
+
 	m_Framebuffer->Bind();
 
 	RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
@@ -55,7 +70,7 @@ void GameplayState::OnRender()
 
 	ImGui::Begin(
 		"Gameplay",
-		NULL,
+		nullptr,
 		ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove |
@@ -95,7 +110,13 @@ bool GameplayState::OnKeyPressed(KeyPressedEvent& e)
 {
 	if (e.GetKeyCode() == Key::Escape)
 	{
-		GameLayer::Get()->PushState(GameLayer::Get()->GetGamePausedState());
+		//GameLayer::Get()->PushState(GameLayer::Get()->GetGamePausedState());
+	}
+
+	// TEMP
+	if (e.GetKeyCode() == Key::X)
+	{
+		GameLayer::Get()->ChangeState(GameLayer::Get()->GetMainMenuState());
 	}
 	return true;
 }
@@ -146,12 +167,7 @@ void GameplayState::LoadDEBUG()
 	AssetManager::LoadAsset<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
 	m_Level = AssetManager::LoadAsset<Level>("Assets/Levels/Level.rdlvl");
 
-	m_Level->FindEntityByName("Camera").AddComponent<NativeScriptComponent>().Bind<CameraController>();
+	m_Level->FindEntityByName("Camera").AddOrReplaceComponent<NativeScriptComponent>().Bind<CameraController>();
 	//AssetManager::LoadAssetPack("Assets/AssetPack.rdap");
 }
 
-void GameplayState::SaveDEBUG()
-{
-	AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
-	//AssetManager::CreateAssetPack("Assets/AssetPack.rdap");
-}

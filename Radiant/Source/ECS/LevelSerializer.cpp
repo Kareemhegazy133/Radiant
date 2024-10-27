@@ -304,13 +304,13 @@ namespace Radiant {
 
 				const auto& cameraNode = cameraComponent["Camera"];
 
-				cc.Camera = LevelCamera();
+				cc.Camera = SceneCamera();
 				auto& camera = cc.Camera;
 
 				if (cameraNode.IsMap())
 				{
 					if (cameraNode["ProjectionType"])
-						camera.SetProjectionType((LevelCamera::ProjectionType)cameraNode["ProjectionType"].as<int>());
+						camera.SetProjectionType((SceneCamera::ProjectionType)cameraNode["ProjectionType"].as<int>());
 					if(cameraNode["AspectRatio"])
 						camera.SetAspectRatio(cameraNode["AspectRatio"].as<float>());
 					if (cameraNode["PerspectiveFOV"])
