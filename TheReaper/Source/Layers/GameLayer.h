@@ -63,6 +63,8 @@ public:
 	static GameLayer* Get() { return s_Instance; }
 
 private:
+	void SetGameTheme();
+private:
 	inline static GameLayer* s_Instance = nullptr;
 
 	Ref<GameState> m_NextState;

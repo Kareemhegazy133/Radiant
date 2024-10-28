@@ -26,9 +26,4 @@ namespace Radiant {
 		return nullptr;
 	}
 
-	void ImGuiLayer::SetDarkThemeColors()
-	{
-
-	}
-
 }

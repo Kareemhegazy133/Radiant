@@ -1,7 +1,5 @@
 #include "GameplayState.h"
 
-#include <imgui/imgui.h>
-
 #include "Layers/GameLayer.h"
 
 #include "CameraController.h"
@@ -64,8 +62,6 @@ void GameplayState::OnRender()
 	// Disable window decorations and force ImGui window to take the size of the game texture
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
-
-	// Temporarily remove window padding
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
 	ImGui::Begin(
@@ -80,13 +76,10 @@ void GameplayState::OnRender()
 	);
 
 	uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
-
-	// Display the game texture using ImGui::Image
 	ImGui::Image(textureID, ImGui::GetIO().DisplaySize, ImVec2(0, 1), ImVec2(1, 0));
 
 	ImGui::End();
 
-	// Restore previous padding style
 	ImGui::PopStyleVar();
 }
 
@@ -110,13 +103,7 @@ bool GameplayState::OnKeyPressed(KeyPressedEvent& e)
 {
 	if (e.GetKeyCode() == Key::Escape)
 	{
-		//GameLayer::Get()->PushState(GameLayer::Get()->GetGamePausedState());
-	}
-
-	// TEMP
-	if (e.GetKeyCode() == Key::X)
-	{
-		GameLayer::Get()->ChangeState(GameLayer::Get()->GetMainMenuState());
+		GameLayer::Get()->PushState(GameLayer::Get()->GetGamePausedState());
 	}
 	return true;
 }

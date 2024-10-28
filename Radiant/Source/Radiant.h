@@ -19,7 +19,7 @@
 #include "Events/MouseEvent.h"
 #include "Events/KeyEvent.h"
 
-#include "ImGui/ImGuiLayer.h"
+#include "imgui/imgui.h"
 
 #include "Physics/Physics2D.h"
 

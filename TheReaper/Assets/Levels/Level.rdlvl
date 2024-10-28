@@ -51,7 +51,7 @@ Entities:
       Scale: [1, 1, 1]
     TextComponent:
       TextString: Hello World!
-      FontHandle: 9915712466068761472
+      FontHandle: 16744993378849919588
       Color: [1, 1, 1, 1]
       TextSize: 24
       LineSpacing: 0
@@ -81,7 +81,7 @@ Entities:
     MetadataComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [-0.636280775, -0.429748297, 0]
+      Translation: [1.5173924, -0.429748297, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:

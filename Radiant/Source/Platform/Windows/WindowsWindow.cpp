@@ -1,7 +1,7 @@
-#pragma once
-
 #include "rdpch.h"
 #include "WindowsWindow.h"
+
+#include <stb_image.h>
 
 #include "Events/ApplicationEvent.h"
 #include "Events/MouseEvent.h"
@@ -18,11 +18,12 @@ namespace Radiant {
         RADIANT_ERROR("GLFW Error ({0}): {1}", error, description);
     }
 
-    WindowsWindow::WindowsWindow(const WindowProps& props)
+    WindowsWindow::WindowsWindow(const WindowSpecification& specification)
+		: m_Specification(specification)
 	{
 		RADIANT_PROFILE_FUNCTION();
 
-        Init(props);
+        Init(specification);
     }
 
     WindowsWindow::~WindowsWindow()
@@ -32,15 +33,15 @@ namespace Radiant {
         Shutdown();
     }
 
-    void WindowsWindow::Init(const WindowProps& props)
+    void WindowsWindow::Init(const WindowSpecification& specification)
 	{
 		RADIANT_PROFILE_FUNCTION();
 
-        m_Data.Title = props.Title;
-        m_Data.Width = props.Width;
-        m_Data.Height = props.Height;
+        m_Data.Title = specification.Title;
+        m_Data.Width = specification.Width;
+        m_Data.Height = specification.Height;
 
-        RADIANT_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
+        RADIANT_INFO("Creating window {0} ({1}, {2})", specification.Title, specification.Width, specification.Height);
 
         if (!s_GLFWInitialized)
         {
@@ -52,7 +53,30 @@ namespace Radiant {
 
         {
 			RADIANT_PROFILE_SCOPE("glfwCreateWindow");
-			m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow((int)specification.Width, (int)specification.Height, m_Data.Title.c_str(), nullptr, nullptr);
+		}
+
+		// Set icon
+		{
+			GLFWimage icon;
+			int channels;
+
+			bool useIcon = !m_Specification.IconPath.empty();
+
+			if (useIcon)
+			{
+				std::string iconPathStr = m_Specification.IconPath.string();
+				icon.pixels = stbi_load(iconPathStr.c_str(), &icon.width, &icon.height, &channels, 4);
+				if (icon.pixels)
+				{
+					glfwSetWindowIcon(m_Window, 1, &icon);
+					stbi_image_free(icon.pixels);
+				}
+				else
+				{
+					useIcon = false;
+				}
+			}
 		}
 
 		m_Context = GraphicsContext::Create(m_Window);
@@ -166,12 +190,12 @@ namespace Radiant {
 
 		enabled ? glfwSwapInterval(1) : glfwSwapInterval(0);
 
-        m_Data.VSync = enabled;
+        m_Specification.VSync = enabled;
     }
 
     bool WindowsWindow::IsVSync() const
     {
-        return m_Data.VSync;
+        return m_Specification.VSync;
     }
 
 }

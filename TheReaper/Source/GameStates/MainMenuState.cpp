@@ -1,7 +1,5 @@
 #include "MainMenuState.h"
 
-#include <imgui/imgui.h>
-
 #include "Layers/GameLayer.h"
 
 void MainMenuState::OnEnter()
@@ -37,9 +35,8 @@ void MainMenuState::OnRender()
 	// Set ImGui window position and size
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
-
-	// Center-align window with no padding
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
 	ImGui::Begin(
 		"MainMenu",
 		nullptr,
@@ -54,11 +51,8 @@ void MainMenuState::OnRender()
 	uint64_t textureID = m_BgTexture->GetRendererID();
 	ImGui::Image(textureID, ImGui::GetIO().DisplaySize, ImVec2(0, 1), ImVec2(1, 0));
 
-	// Add spacing to center buttons vertically
 	ImGui::SetCursorPosY(ImGui::GetWindowHeight() * 0.4f);
-
-	// Center buttons horizontally
-	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f); // Adjust 200 to be the width of your buttons
+	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
 
 	if (ImGui::Button("Play", ImVec2(200, 50)))
 	{
@@ -68,7 +62,7 @@ void MainMenuState::OnRender()
 	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
 	if (ImGui::Button("Options", ImVec2(200, 50)))
 	{
-		// Open options menu or change to options state
+		
 	}
 
 	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
@@ -78,6 +72,7 @@ void MainMenuState::OnRender()
 	}
 
 	ImGui::End();
+
 	ImGui::PopStyleVar();
 }
 

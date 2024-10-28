@@ -47,7 +47,6 @@ namespace Radiant {
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
-		SetDarkThemeColors();
 
 		GameApplication& game = GameApplication::Get();
 		GLFWwindow* window = static_cast<GLFWwindow*>(game.GetWindow().GetNativeWindow());

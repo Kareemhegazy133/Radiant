@@ -7,18 +7,13 @@
 
 namespace Radiant {
 
-	struct WindowProps
+	struct WindowSpecification
 	{
-		std::string Title;
-		uint32_t Width;
-		uint32_t Height;
-
-		WindowProps(const std::string& title = "Radiant",
-			uint32_t width = 1280,
-			uint32_t height = 720) : Title(title), Width(width), Height(height)
-		{
-
-		}
+		std::string Title = "Game";
+		uint32_t Width = 1280;
+		uint32_t Height = 720;
+		bool VSync = true;
+		std::filesystem::path IconPath;
 	};
 
 	// Interface representing a desktop system based Window
@@ -41,7 +36,7 @@ namespace Radiant {
 
 		virtual void* GetNativeWindow() const = 0;
 
-		static Scope<Window> Create(const WindowProps& props = WindowProps());
+		static Scope<Window> Create(const WindowSpecification& specification = WindowSpecification());
 	};
 
 }

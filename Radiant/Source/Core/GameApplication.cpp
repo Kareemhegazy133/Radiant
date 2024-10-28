@@ -10,8 +10,8 @@ namespace Radiant {
 
 	GameApplication* GameApplication::s_Instance = nullptr;
 
-	GameApplication::GameApplication(const std::string& name, const uint32_t width, const uint32_t height, GameApplicationCommandLineArgs args)
-		: m_CommandLineArgs(args)
+	GameApplication::GameApplication(const GameApplicationSpecification& specification)
+		: m_Specification(specification)
 	{
 		RADIANT_PROFILE_FUNCTION();
 
@@ -19,7 +19,14 @@ namespace Radiant {
 		RADIANT_ASSERT(!s_Instance, "GameApplication already exists!");
 		s_Instance = this;
 		
-		m_Window = Window::Create(WindowProps(name, width, height));
+		WindowSpecification windowSpec;
+		windowSpec.Title = specification.Name;
+		windowSpec.Width = specification.WindowWidth;
+		windowSpec.Height = specification.WindowHeight;
+		windowSpec.VSync = specification.VSync;
+		windowSpec.IconPath = specification.IconPath;
+
+		m_Window = Window::Create(WindowSpecification(specification.Name, specification.WindowWidth, specification.WindowHeight));
 		m_Window->SetEventCallback(RADIANT_BIND_EVENT_FN(GameApplication::OnEvent));
 
 		Renderer::Init();

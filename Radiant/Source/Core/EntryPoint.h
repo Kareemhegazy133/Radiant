@@ -5,14 +5,14 @@
 
 #ifdef RADIANT_PLATFORM_WINDOWS
 
-extern Radiant::GameApplication* Radiant::CreateGameApplication(GameApplicationCommandLineArgs);
+extern Radiant::GameApplication* Radiant::CreateGameApplication();
 
 int main(int argc, char** argv)
 {
 	Radiant::Log::Init();
 
 	RADIANT_PROFILE_BEGIN_SESSION("Startup", "RadiantProfile-Startup.json");
-	auto gameApp = Radiant::CreateGameApplication({ argc, argv });
+	auto gameApp = Radiant::CreateGameApplication();
 	RADIANT_PROFILE_END_SESSION();
 
 	RADIANT_PROFILE_BEGIN_SESSION("Runtime", "RadiantProfile-Runtime.json");

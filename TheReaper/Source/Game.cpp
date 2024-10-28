@@ -7,8 +7,8 @@ class TheReaper : public Radiant::GameApplication
 {
 public:
 	// TODO Support Multiple Resolutions
-	TheReaper(GameApplicationCommandLineArgs args)
-		: GameApplication("TheReaper", 1280, 720, args)
+	TheReaper(const GameApplicationSpecification& specification)
+		: GameApplication(specification)
 	{
 		PushLayer(gameLayer);
 	}
@@ -18,10 +18,16 @@ public:
 		PopLayer(gameLayer);
 	}
 
+private:
 	Layer* gameLayer = new GameLayer();
 };
 
-Radiant::GameApplication* Radiant::CreateGameApplication(GameApplicationCommandLineArgs args)
+Radiant::GameApplication* Radiant::CreateGameApplication()
 {
-	return new TheReaper(args);
+	GameApplicationSpecification specification;
+	specification.Name = "TheReaper";
+	specification.WindowWidth = 1280;
+	specification.WindowHeight = 720;
+	specification.VSync = true;
+	return new TheReaper(specification);
 }
