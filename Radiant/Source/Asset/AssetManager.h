@@ -21,13 +21,11 @@ namespace Radiant {
 
 			// Call the original LoadAsset function
 			Ref<Asset> asset = LoadAsset(filepath);
-
 			if (!asset)
 			{
 				RADIANT_ERROR("AssetManager: Asset at {0} is not of type requested!", filepath.string());
 				return nullptr;
 			}
-
 			return asset.As<T>();
 		}
 
@@ -79,7 +77,7 @@ namespace Radiant {
 
 		static bool LoadAssetRegistry(const std::filesystem::path& assetRegistryPath);
 		static void SaveAssetRegistry(const std::filesystem::path& assetRegistryPath);
-		static void ClearAssetRegistry();
+		static void ClearAssets();
 
 	private:
 		struct AssetManagerData

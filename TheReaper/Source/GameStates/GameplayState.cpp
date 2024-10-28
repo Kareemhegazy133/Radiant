@@ -38,7 +38,7 @@ void GameplayState::OnExit()
 	{
 		AssetManager::SaveLevel(m_Level, "Assets/Levels/Level.rdlvl");
 		AssetManager::SaveAssetRegistry(m_AssetRegistryPath);
-		AssetManager::ClearAssetRegistry();
+		AssetManager::ClearAssets();
 
 		m_Level.Reset();
 	}
@@ -166,7 +166,6 @@ void GameplayState::LoadDEBUG()
 {
 	AssetManager::LoadAsset<Font>("Assets/Fonts/OpenSans/OpenSans-Regular.ttf");
 	m_Level = AssetManager::LoadAsset<Level>("Assets/Levels/Level.rdlvl");
-
 	m_Level->FindEntityByName("Camera").AddOrReplaceComponent<NativeScriptComponent>().Bind<CameraController>();
 	//AssetManager::LoadAssetPack("Assets/AssetPack.rdap");
 }

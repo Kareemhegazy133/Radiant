@@ -25,7 +25,7 @@ Entities:
     MetadataComponent:
       Tag: Green Square
     TransformComponent:
-      Translation: [2.99862222e-05, -2.98500109, 0]
+      Translation: [2.99862222e-05, -2.98249578, 0]
       Rotation: [0, 0, 3.82818968e-08]
       Scale: [1, 1, 1]
     SpriteComponent:
@@ -51,7 +51,7 @@ Entities:
       Scale: [1, 1, 1]
     TextComponent:
       TextString: Hello World!
-      FontHandle: 15627150732208295410
+      FontHandle: 9915712466068761472
       Color: [1, 1, 1, 1]
       TextSize: 24
       LineSpacing: 0
@@ -60,7 +60,7 @@ Entities:
     MetadataComponent:
       Tag: Checkerboard
     TransformComponent:
-      Translation: [4.00003052, -2.98500109, 0]
+      Translation: [4.00003052, -2.98247313, 0]
       Rotation: [0, 0, 2.19957599e-08]
       Scale: [1, 1, 1]
     SpriteComponent:
@@ -81,7 +81,7 @@ Entities:
     MetadataComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [-0.696741343, -0.429748297, 0]
+      Translation: [-0.636280775, -0.429748297, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:

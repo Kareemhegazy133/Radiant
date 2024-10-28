@@ -38,6 +38,12 @@ namespace Radiant {
 
 		RADIANT_TRACE("GameApplication Destructor");
 
+		for (Layer* layer : m_LayerStack)
+		{
+			layer->OnDetach();
+			delete layer;
+		}
+
 		Font::Shutdown();
 		
 		Renderer::Shutdown();

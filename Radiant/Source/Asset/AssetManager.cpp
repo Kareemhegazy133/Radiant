@@ -49,6 +49,7 @@ namespace Radiant {
 		asset->Handle = metadata.Handle;
 		s_AssetManagerData->m_LoadedAssets[metadata.Handle] = asset;
 		s_AssetManagerData->m_AssetRegistry.Set(metadata.Handle, metadata);
+
 		return asset;
 	}
 
@@ -252,8 +253,10 @@ namespace Radiant {
 		RADIANT_INFO("AssetManager: AssetRegistry file saved at {0}", assetRegistryPath.string());
 	}
 
-	void AssetManager::ClearAssetRegistry()
+	void AssetManager::ClearAssets()
 	{
+		s_AssetManagerData->m_LoadedAssets.clear();
+		RADIANT_INFO("AssetManager: Cleared Loaded Assets");
 		s_AssetManagerData->m_AssetRegistry.Clear();
 		RADIANT_INFO("AssetManager: Cleared AssetRegistry");
 	}

@@ -24,7 +24,7 @@ void MainMenuState::OnExit()
 	GAME_INFO("MainMenu OnExit");
 
 	AssetManager::SaveAssetRegistry(m_AssetRegistryPath);
-	AssetManager::ClearAssetRegistry();
+	AssetManager::ClearAssets();
 }
 
 void MainMenuState::OnUpdate(Timestep ts)

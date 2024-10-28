@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Memory.h"
+#include <Memory.h>
 
 #include <atomic>
 #include <cstddef>
 #include <type_traits>
+#include <iostream>
 
 namespace Radiant {
 
@@ -178,6 +179,7 @@ namespace Radiant {
 		{
 			if (m_Instance)
 			{
+				std::cout << "Incrementing RefCount for " << m_Instance << std::endl;
 				m_Instance->IncRefCount();
 				RefUtils::AddToLiveReferences((void*)m_Instance);
 			}
@@ -187,6 +189,7 @@ namespace Radiant {
 		{
 			if (m_Instance)
 			{
+				std::cout << "Decrementing RefCount for " << m_Instance << std::endl;
 				m_Instance->DecRefCount();
 
 				if (m_Instance->GetRefCount() == 0)
