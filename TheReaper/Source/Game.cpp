@@ -29,5 +29,6 @@ Radiant::GameApplication* Radiant::CreateGameApplication()
 	specification.WindowWidth = 1280;
 	specification.WindowHeight = 720;
 	specification.VSync = true;
+	specification.IconPath = "Assets/Textures/TheReaperIcon.jpg";
 	return new TheReaper(specification);
 }

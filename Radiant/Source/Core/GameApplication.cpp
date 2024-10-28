@@ -26,7 +26,7 @@ namespace Radiant {
 		windowSpec.VSync = specification.VSync;
 		windowSpec.IconPath = specification.IconPath;
 
-		m_Window = Window::Create(WindowSpecification(specification.Name, specification.WindowWidth, specification.WindowHeight));
+		m_Window = Window::Create(windowSpec);
 		m_Window->SetEventCallback(RADIANT_BIND_EVENT_FN(GameApplication::OnEvent));
 
 		Renderer::Init();
