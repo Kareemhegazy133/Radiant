@@ -12,15 +12,8 @@
 
 namespace Radiant {
 
-	OpenGLImGuiLayer::OpenGLImGuiLayer()
-	{
-	}
-
-	OpenGLImGuiLayer::OpenGLImGuiLayer(const std::string& name)
-	{
-	}
-
-	OpenGLImGuiLayer::~OpenGLImGuiLayer()
+	OpenGLImGuiLayer::OpenGLImGuiLayer(const FontConfiguration& config)
+		: m_FontConfig(config)
 	{
 	}
 
@@ -36,6 +29,9 @@ namespace Radiant {
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;			// Enable Docking
 		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+
+		if(!m_FontConfig.FilePath.empty())
+			SetFont(m_FontConfig);
 
 		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
 		ImGuiStyle& style = ImGui::GetStyle();

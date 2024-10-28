@@ -51,7 +51,7 @@ Entities:
       Scale: [1, 1, 1]
     TextComponent:
       TextString: Hello World!
-      FontHandle: 16744993378849919588
+      FontHandle: 6070137812814147509
       Color: [1, 1, 1, 1]
       TextSize: 24
       LineSpacing: 0

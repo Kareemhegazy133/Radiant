@@ -152,7 +152,7 @@ namespace Radiant {
 		m_MSDFData = nullptr;
 	}
 
-	void Font::Init(const std::filesystem::path& filepath /*= "Assets/Fonts/OpenSans/OpenSans-Regular.ttf"*/)
+	void Font::Init(const std::filesystem::path& filepath /*= "Assets/Fonts/Roboto/Roboto-Regular.ttf"*/)
 	{
 		s_DefaultFont = Ref<Font>::Create(filepath);
 	}

@@ -7,9 +7,9 @@ namespace Radiant {
 	class OpenGLImGuiLayer : public ImGuiLayer
 	{
 	public:
-		OpenGLImGuiLayer();
-		OpenGLImGuiLayer(const std::string& name);
-		virtual ~OpenGLImGuiLayer();
+		OpenGLImGuiLayer() = default;
+		OpenGLImGuiLayer(const FontConfiguration& config);
+		virtual ~OpenGLImGuiLayer() = default;
 
 		virtual void OnAttach() override;
 		virtual void OnDetach() override;
@@ -20,7 +20,7 @@ namespace Radiant {
 		virtual void OnImGuiRender() override;
 
 	private:
-		float m_Time = 0.0f;
+		FontConfiguration m_FontConfig;
 	};
 
 }

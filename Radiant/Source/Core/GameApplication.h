@@ -22,6 +22,8 @@ namespace Radiant {
 		uint32_t WindowWidth = 1280, WindowHeight = 720;
 		bool VSync = true;
 		std::filesystem::path IconPath;
+		std::filesystem::path FontPath;
+		float fontSize = 18.0f;
 	};
 
 	class GameApplication

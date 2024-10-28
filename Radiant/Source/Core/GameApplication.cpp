@@ -31,10 +31,18 @@ namespace Radiant {
 
 		Renderer::Init();
 
-		m_ImGuiLayer = ImGuiLayer::Create();
-		PushOverlay(m_ImGuiLayer);
+		if (!specification.FontPath.empty())
+		{
+			m_ImGuiLayer = ImGuiLayer::Create(FontConfiguration(specification.FontPath, specification.fontSize));
+			Font::Init(specification.FontPath);
+		}
+		else
+		{
+			m_ImGuiLayer = ImGuiLayer::Create();
+			Font::Init();
+		}
 
-		Font::Init();
+		PushOverlay(m_ImGuiLayer);
 
 		RADIANT_TRACE("GameApplication Constructed");
 	}
