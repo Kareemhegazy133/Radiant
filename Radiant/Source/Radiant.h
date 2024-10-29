@@ -6,7 +6,6 @@
 
 #include "Core/GameApplication.h"
 #include "Core/Layer.h"
-#include "Core/GameState.h"
 #include "Core/Log.h"
 
 #include "Core/Timestep.h"
@@ -19,7 +18,7 @@
 #include "Events/MouseEvent.h"
 #include "Events/KeyEvent.h"
 
-#include "imgui/imgui.h"
+#include <imgui/imgui.h>
 
 #include "Physics/Physics2D.h"
 
@@ -45,3 +44,5 @@
 #include "Renderer/VertexArray.h"
 
 #include "Renderer/SceneCamera.h"
+
+using namespace Radiant;

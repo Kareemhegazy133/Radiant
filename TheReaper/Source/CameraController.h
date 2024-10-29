@@ -2,7 +2,7 @@
 
 #include <Radiant.h>
 
-using namespace Radiant;
+
 
 class CameraController : public ScriptableEntity
 {

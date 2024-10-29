@@ -8,8 +8,8 @@ class Sandbox : public Radiant::GameApplication
 
 public:
 	// TODO Support Multiple Resolutions
-	Sandbox(GameApplicationCommandLineArgs args)
-		: GameApplication("Sandbox", 1280, 720, args)
+	Sandbox(const GameApplicationSpecification& specification)
+		: GameApplication(specification)
 	{
 		PushLayer(sandboxLayer);
 	}
@@ -22,7 +22,13 @@ public:
 	Layer* sandboxLayer = new SandboxLayer();
 };
 
-Radiant::GameApplication* Radiant::CreateGameApplication(GameApplicationCommandLineArgs args)
+Radiant::GameApplication* Radiant::CreateGameApplication()
 {
-	return new Sandbox(args);
+	GameApplicationSpecification specification;
+	specification.Name = "Sandbox";
+	specification.WindowWidth = 1280;
+	specification.WindowHeight = 720;
+	specification.VSync = true;
+
+	return new Sandbox(specification);
 }

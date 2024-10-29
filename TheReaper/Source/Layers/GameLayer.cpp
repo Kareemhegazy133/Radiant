@@ -1,6 +1,6 @@
 #include "GameLayer.h"
 
-using namespace Radiant;
+
 
 GameLayer::GameLayer()
 	: Layer("GameLayer")
@@ -10,7 +10,6 @@ GameLayer::GameLayer()
 	RADIANT_ASSERT(!s_Instance, "GameLayer already exists!");
 	s_Instance = this;
 
-	AssetManager::Init();
 }
 
 GameLayer::~GameLayer()

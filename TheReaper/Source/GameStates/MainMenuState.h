@@ -2,7 +2,7 @@
 
 #include <Radiant.h>
 
-using namespace Radiant;
+#include "Core/GameState.h"
 
 class MainMenuState : public GameState
 {
