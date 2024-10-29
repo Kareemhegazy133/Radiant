@@ -22,6 +22,7 @@ namespace Radiant {
 		auto end() { return m_AssetRegistry.end(); }
 		auto begin() const { return m_AssetRegistry.cbegin(); }
 		auto end() const { return m_AssetRegistry.cend(); }
+
 	private:
 		std::unordered_map<AssetHandle, AssetMetadata> m_AssetRegistry;
 	};

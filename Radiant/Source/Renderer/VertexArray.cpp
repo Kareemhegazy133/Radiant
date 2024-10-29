@@ -15,7 +15,7 @@ namespace Radiant {
 				RADIANT_ASSERT(false, "RendererAPI::None is currently not supported!");
 				return nullptr;
 			case RendererAPI::API::OpenGL:
-				return CreateRef<OpenGLVertexArray>();
+				return Ref<OpenGLVertexArray>::Create();
 		}
 
 		RADIANT_ASSERT(false, "Unknown RendererAPI!");

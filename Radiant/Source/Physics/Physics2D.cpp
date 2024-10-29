@@ -154,7 +154,7 @@ namespace Radiant {
 		auto* rb2d = entity.TryGetComponent<RigidBody2DComponent>();
 		if (!rb2d)
 		{
-			RADIANT_WARN("Cannot Update Entity: {0}'s Transform does not have a RigidBody", entity.GetComponent<MetadataComponent>().Tag);
+			RADIANT_WARN("Physics2D: Cannot Update Entity: {0}'s Transform does not have a RigidBody", entity.GetComponent<MetadataComponent>().Tag);
 			return;
 		}
 

@@ -4,13 +4,14 @@
 #include <glfw/glfw3.h>
 
 #include "Renderer/Renderer.h"
+#include "Renderer/UI/Font.h"
 
 namespace Radiant {
 
 	GameApplication* GameApplication::s_Instance = nullptr;
 
-	GameApplication::GameApplication(const std::string& name, const uint32_t width, const uint32_t height, GameApplicationCommandLineArgs args)
-		: m_CommandLineArgs(args)
+	GameApplication::GameApplication(const GameApplicationSpecification& specification)
+		: m_Specification(specification)
 	{
 		RADIANT_PROFILE_FUNCTION();
 
@@ -18,10 +19,31 @@ namespace Radiant {
 		RADIANT_ASSERT(!s_Instance, "GameApplication already exists!");
 		s_Instance = this;
 		
-		m_Window = Window::Create(WindowProps(name, width, height));
+		WindowSpecification windowSpec;
+		windowSpec.Title = specification.Name;
+		windowSpec.Width = specification.WindowWidth;
+		windowSpec.Height = specification.WindowHeight;
+		windowSpec.VSync = specification.VSync;
+		windowSpec.IconPath = specification.IconPath;
+
+		m_Window = Window::Create(windowSpec);
 		m_Window->SetEventCallback(RADIANT_BIND_EVENT_FN(GameApplication::OnEvent));
 
 		Renderer::Init();
+
+		if (!specification.FontPath.empty())
+		{
+			m_ImGuiLayer = ImGuiLayer::Create(FontConfiguration(specification.FontPath, specification.fontSize));
+			Font::Init(specification.FontPath);
+		}
+		else
+		{
+			m_ImGuiLayer = ImGuiLayer::Create();
+			Font::Init();
+		}
+
+		PushOverlay(m_ImGuiLayer);
+
 		RADIANT_TRACE("GameApplication Constructed");
 	}
 
@@ -30,6 +52,15 @@ namespace Radiant {
 		RADIANT_PROFILE_FUNCTION();
 
 		RADIANT_TRACE("GameApplication Destructor");
+
+		for (Layer* layer : m_LayerStack)
+		{
+			layer->OnDetach();
+			delete layer;
+		}
+
+		Font::Shutdown();
+		
 		Renderer::Shutdown();
 	}
 
@@ -81,6 +112,11 @@ namespace Radiant {
 		}
 	}
 
+	void GameApplication::Close()
+	{
+		m_Running = false;
+	}
+
 	void GameApplication::Run()
 	{
 		RADIANT_PROFILE_FUNCTION();
@@ -101,6 +137,15 @@ namespace Radiant {
 					for (Layer* layer : m_LayerStack)
 						layer->OnUpdate(timestep);
 				}
+
+				m_ImGuiLayer->Begin();
+				{
+					RADIANT_PROFILE_SCOPE("LayerStack OnImGuiRender");
+
+					for (Layer* layer : m_LayerStack)
+						layer->OnImGuiRender();
+				}
+				m_ImGuiLayer->End();
 			}
 
 			m_Window->OnUpdate();
@@ -109,7 +154,7 @@ namespace Radiant {
 
 	bool GameApplication::OnWindowClose(WindowCloseEvent& e)
 	{
-		m_Running = false;
+		Close();
 		return true;
 	}
 

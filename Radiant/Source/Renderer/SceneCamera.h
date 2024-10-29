@@ -1,16 +1,16 @@
 #pragma once
 
-#include "Renderer/Camera.h"
+#include "Camera.h"
 
 namespace Radiant {
 
-	class LevelCamera : public Camera
+	class SceneCamera : public Camera
 	{
 	public:
 		enum class ProjectionType { Perspective = 0, Orthographic = 1 };
 	public:
-		LevelCamera();
-		virtual ~LevelCamera() = default;
+		SceneCamera();
+		virtual ~SceneCamera() = default;
 
 		void SetPerspective(float verticalFOV, float nearClip, float farClip);
 		void SetOrthographic(float size, float nearClip, float farClip);

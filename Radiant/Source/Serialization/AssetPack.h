@@ -11,7 +11,7 @@
 
 namespace Radiant {
 
-	class AssetPack
+	class AssetPack : public RefCounted
 	{
 	public:
 		AssetPack() = default;

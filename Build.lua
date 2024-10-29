@@ -1,7 +1,7 @@
 workspace "Radiant"
    architecture "x64"
    configurations { "Debug", "Release", "Dist" }
-   startproject "Sandbox"
+   startproject "TheReaper"
    
    flags
 	{
@@ -27,6 +27,7 @@ IncludeDir["box2d"] = "Radiant/Vendor/box2d/include"
 IncludeDir["yaml_cpp"] = "Radiant/Vendor/yaml-cpp/include"
 IncludeDir["msdf_atlas_gen"] = "Radiant/Vendor/msdf-atlas-gen/msdf-atlas-gen"
 IncludeDir["msdfgen"] = "Radiant/Vendor/msdf-atlas-gen/msdfgen"
+IncludeDir["ImGui"] = "Radiant/Vendor/imgui"
 
 group "Dependencies"
 		include "Radiant/Vendor/glfw"
@@ -34,6 +35,7 @@ group "Dependencies"
 		include "Radiant/Vendor/box2d"
 		include "Radiant/Vendor/yaml-cpp"
 		include "Radiant/Vendor/msdf-atlas-gen"
+		include "Radiant/Vendor/imgui"
 group ""
 
 project "Radiant"
@@ -45,6 +47,9 @@ project "Radiant"
 
 	pchheader "rdpch.h"
 	pchsource "%{prj.name}/Source/rdpch.cpp"
+	
+	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
 	files
 	{
@@ -54,12 +59,10 @@ project "Radiant"
 		"%{prj.name}/Vendor/glm/glm/**.hpp",
 		"%{prj.name}/Vendor/glm/glm/**.inl",
 		"%{prj.name}/Vendor/stb_image/**.h",
-		"%{prj.name}/Vendor/stb_image/**.cpp"
-	}
-	
-	defines
-	{
-		"GLFW_INCLUDE_NONE"
+		"%{prj.name}/Vendor/stb_image/**.cpp",
+		
+		"%{prj.name}/Vendor/imgui/misc/cpp/imgui_stdlib.h",
+		"%{prj.name}/Vendor/imgui/misc/cpp/imgui_stdlib.cpp"
 	}
 
 	includedirs
@@ -74,7 +77,8 @@ project "Radiant"
 		"%{IncludeDir.box2d}",
 		"%{IncludeDir.yaml_cpp}",
 		"%{IncludeDir.msdf_atlas_gen}",
-		"%{IncludeDir.msdfgen}"
+		"%{IncludeDir.msdfgen}",
+		"%{IncludeDir.ImGui}"
 	}
 	
 	links
@@ -83,16 +87,18 @@ project "Radiant"
 		"glad",
 		"box2d",
 		"yaml-cpp",
-		"msdf-atlas-gen"
+		"msdf-atlas-gen",
+		"ImGui"
 	}
 	
 	defines
 	{
+		"GLFW_INCLUDE_NONE",
 		"YAML_CPP_STATIC_DEFINE"
 	}
-
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	
+	filter "files:Radiant/Vendor/imgui/misc/cpp/imgui_stdlib.cpp"
+	flags { "NoPCH" }
 
 	filter "system:windows"
 	systemversion "latest"
@@ -119,6 +125,9 @@ project "Sandbox"
 	cppdialect "C++20"
 	staticruntime "off"
 
+	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+
 	files
 	{
 		"%{prj.name}/Source/**.h",
@@ -132,6 +141,7 @@ project "Sandbox"
 
 		-- Include Radiant
 		"Radiant/Source",
+		"Radiant/Vendor",
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
@@ -144,24 +154,76 @@ project "Sandbox"
 		"Radiant"
 	}
 
+	filter "system:windows"
+		systemversion "latest"
+		defines { "WINDOWS" }
+
+	filter "configurations:Debug"
+		defines { "RD_DEBUG" }
+		runtime "Debug"
+		symbols "on"
+
+	filter "configurations:Release"
+		defines { "RD_RELEASE" }
+		runtime "Release"
+		optimize "on"
+
+	filter "configurations:Dist"
+		defines { "RD_DIST" }
+		runtime "Release"
+		optimize "on"
+		
+project "TheReaper"
+	location "TheReaper"
+	kind "ConsoleApp"
+	language "C++"
+	cppdialect "C++20"
+	staticruntime "off"
+
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+
+	files
+	{
+		"%{prj.name}/Source/**.h",
+		"%{prj.name}/Source/**.hpp",
+		"%{prj.name}/Source/**.cpp"
+	}
+
+	includedirs
+	{
+		"%{prj.name}/Source",
+
+		-- Include Radiant
+		"Radiant/Source",
+		"Radiant/Vendor",
+		"%{IncludeDir.spdlog}",
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.box2d}",
+		"%{IncludeDir.yaml_cpp}"
+	}
+	
+	links
+	{
+		"Radiant"
+	}
 
 	filter "system:windows"
 		systemversion "latest"
 		defines { "WINDOWS" }
 
 	filter "configurations:Debug"
-		defines { "Sandbox_DEBUG" }
+		defines { "RD_DEBUG" }
 		runtime "Debug"
 		symbols "on"
 
 	filter "configurations:Release"
-		defines { "Sandbox_RELEASE" }
+		defines { "RD_RELEASE" }
 		runtime "Release"
 		optimize "on"
 
 	filter "configurations:Dist"
-		defines { "Sandbox_DIST" }
+		defines { "RD_DIST" }
 		runtime "Release"
 		optimize "on"

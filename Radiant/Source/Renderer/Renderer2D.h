@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Camera.h"
-#include "OrthographicCamera.h"
 
 #include "Texture.h"
 #include "SubTexture2D.h"
@@ -11,14 +10,13 @@
 
 namespace Radiant {
 
-	class Renderer2D
+	class Renderer2D : public RefCounted
 	{
 	public:
 		static void Init();
 		static void Shutdown();
 
 		static void BeginScene(const Camera& camera, const glm::mat4& transform);
-		static void BeginScene(const OrthographicCamera& camera);
 		static void EndScene();
 		static void Flush();
 

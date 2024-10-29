@@ -18,6 +18,8 @@
 #include "Events/MouseEvent.h"
 #include "Events/KeyEvent.h"
 
+#include <imgui/imgui.h>
+
 #include "Physics/Physics2D.h"
 
 #include "ECS/Level.h"
@@ -41,5 +43,6 @@
 #include "Renderer/SubTexture2D.h"
 #include "Renderer/VertexArray.h"
 
-#include "Renderer/OrthographicCamera.h"
-#include "Renderer/OrthographicCameraController.h"
+#include "Renderer/SceneCamera.h"
+
+using namespace Radiant;

@@ -15,7 +15,7 @@ namespace Radiant {
 				RADIANT_ASSERT(false, "RendererAPI::None is currently not supported!");
 				return nullptr;
 			case RendererAPI::API::OpenGL:
-				return CreateRef<OpenGLShader>(filepath);
+				return Ref<OpenGLShader>::Create(filepath);
 		}
 
 		RADIANT_ASSERT(false, "Unknown RendererAPI!");
@@ -30,7 +30,7 @@ namespace Radiant {
 				RADIANT_ASSERT(false, "RendererAPI::None is currently not supported!");
 				return nullptr;
 			case RendererAPI::API::OpenGL:
-				return CreateRef<OpenGLShader>(name, vertexSrc, fragmentSrc);
+				return Ref<OpenGLShader>::Create(name, vertexSrc, fragmentSrc);
 		}
 
 		RADIANT_ASSERT(false, "Unknown RendererAPI!");

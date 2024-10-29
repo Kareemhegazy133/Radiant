@@ -21,6 +21,8 @@ namespace Radiant {
 
 		virtual void Bind(uint32_t slot = 0) const override;
 
+		virtual uint32_t GetRendererID() const override { return m_RendererID; }
+
 		virtual bool operator==(const Texture& other) const override
 		{
 			return m_RendererID == ((OpenGLTexture2D&)other).m_RendererID;
