@@ -33,7 +33,7 @@ namespace Radiant {
 
 		if (!specification.FontPath.empty())
 		{
-			m_ImGuiLayer = ImGuiLayer::Create(FontConfiguration(specification.FontPath, specification.fontSize));
+			m_ImGuiLayer = ImGuiLayer::Create(FontConfiguration(specification.FontPath, specification.FontSize));
 			Font::Init(specification.FontPath);
 		}
 		else

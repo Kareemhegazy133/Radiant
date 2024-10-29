@@ -23,7 +23,7 @@ namespace Radiant {
 		bool VSync = true;
 		std::filesystem::path IconPath;
 		std::filesystem::path FontPath;
-		float fontSize = 18.0f;
+		float FontSize = 18.0f;
 	};
 
 	class GameApplication

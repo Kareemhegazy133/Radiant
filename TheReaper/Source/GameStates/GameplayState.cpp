@@ -1,6 +1,6 @@
 #include "GameplayState.h"
 
-#include "Layers/GameLayer.h"
+#include "Core/GameLayer.h"
 
 #include "CameraController.h"
 

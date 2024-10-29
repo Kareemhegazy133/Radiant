@@ -2,7 +2,7 @@
 #include <Core/EntryPoint.h>
 
 #include "GameContext.h"
-#include "Layers/GameLayer.h"
+#include "Core/GameLayer.h"
 
 class TheReaper : public Radiant::GameApplication
 {
@@ -33,6 +33,6 @@ Radiant::GameApplication* Radiant::CreateGameApplication()
 	specification.VSync = true;
 	specification.IconPath = "Assets/Textures/TheReaperIcon.jpg";
 	specification.FontPath = "Assets/Fonts/Euljiro.ttf";
-
+	specification.FontSize = 20.0f;
 	return new TheReaper(specification);
 }

@@ -1,6 +1,6 @@
 #include "GamePausedState.h"
 
-#include "Layers/GameLayer.h"
+#include "Core/GameLayer.h"
 
 void GamePausedState::OnEnter()
 {
@@ -35,28 +35,34 @@ void GamePausedState::OnRender()
 		ImGuiWindowFlags_NoScrollWithMouse
 	);
 
-	ImGui::SetCursorPosY(ImGui::GetWindowHeight() * 0.4f);
-	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
+	float windowWidth = ImGui::GetWindowWidth();
+	float windowHeight = ImGui::GetWindowHeight();
+	ImVec2 buttonSize(windowWidth * 0.2f, windowHeight * 0.1f);
 
-	if (ImGui::Button("Resume", ImVec2(200, 50)))
+	float horizontalOffset = (windowWidth - buttonSize.x) * 0.5f;
+	float verticalOffset = windowHeight * 0.3f;
+
+	float vSpace = 15.0f;
+	ImGui::SetCursorPos(ImVec2(horizontalOffset, verticalOffset));
+	if (ImGui::Button("Resume", buttonSize))
 	{
 		GameLayer::Get()->ChangeState(GameLayer::GetGameplayState());
 	}
 
-	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
-	if (ImGui::Button("Options", ImVec2(200, 50)))
+	ImGui::SetCursorPos(ImVec2(horizontalOffset, verticalOffset + buttonSize.y + vSpace));
+	if (ImGui::Button("Options", buttonSize))
 	{
 
 	}
 
-	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
-	if (ImGui::Button("Back to Main Menu", ImVec2(200, 50)))
+	ImGui::SetCursorPos(ImVec2(horizontalOffset, verticalOffset + 2 * (buttonSize.y + vSpace)));
+	if (ImGui::Button("Back to Main Menu", buttonSize))
 	{
 		GameLayer::Get()->ChangeState(GameLayer::GetMainMenuState());
 	}
 
-	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
-	if (ImGui::Button("Exit to Desktop", ImVec2(200, 50)))
+	ImGui::SetCursorPos(ImVec2(horizontalOffset, verticalOffset + 3 * (buttonSize.y + vSpace)));
+	if (ImGui::Button("Exit to Desktop", buttonSize))
 	{
 		GameApplication::Get().Close();
 	}

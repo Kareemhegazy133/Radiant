@@ -1,6 +1,6 @@
 #include "MainMenuState.h"
 
-#include "Layers/GameLayer.h"
+#include "Core/GameLayer.h"
 
 void MainMenuState::OnEnter()
 {
@@ -51,22 +51,28 @@ void MainMenuState::OnRender()
 	uint64_t textureID = m_BgTexture->GetRendererID();
 	ImGui::Image(textureID, ImGui::GetIO().DisplaySize, ImVec2(0, 1), ImVec2(1, 0));
 
-	ImGui::SetCursorPosY(ImGui::GetWindowHeight() * 0.4f);
-	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
+	float windowWidth = ImGui::GetWindowWidth();
+	float windowHeight = ImGui::GetWindowHeight();
+	ImVec2 buttonSize(windowWidth * 0.2f, windowHeight * 0.1f);
 
-	if (ImGui::Button("Play", ImVec2(200, 50)))
+	float horizontalOffset = windowWidth * 0.075f;
+	float verticalOffset = windowHeight * 0.4f;
+
+	float vSpace = 20.0f;
+	ImGui::SetCursorPos(ImVec2(horizontalOffset, verticalOffset));
+	if (ImGui::Button("Play", buttonSize))
 	{
 		GameLayer::Get()->ChangeState(GameLayer::GetGameplayState());
 	}
 
-	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
-	if (ImGui::Button("Options", ImVec2(200, 50)))
+	ImGui::SetCursorPos(ImVec2(horizontalOffset, verticalOffset + buttonSize.y + vSpace));
+	if (ImGui::Button("Options", buttonSize))
 	{
-		
+		// Add options logic here
 	}
 
-	ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
-	if (ImGui::Button("Quit", ImVec2(200, 50)))
+	ImGui::SetCursorPos(ImVec2(horizontalOffset, verticalOffset + 2 * (buttonSize.y + vSpace)));
+	if (ImGui::Button("Quit", buttonSize))
 	{
 		GameApplication::Get().Close();
 	}
