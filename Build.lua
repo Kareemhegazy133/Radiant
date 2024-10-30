@@ -1,7 +1,7 @@
 workspace "Radiant"
    architecture "x64"
    configurations { "Debug", "Release", "Dist" }
-   startproject "TheReaper"
+   startproject "Reaper"
    
    flags
 	{
@@ -173,8 +173,8 @@ project "Sandbox"
 		runtime "Release"
 		optimize "on"
 		
-project "TheReaper"
-	location "TheReaper"
+project "Reaper"
+	location "Reaper"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++20"
