@@ -2,6 +2,8 @@
 
 #include <Radiant.h>
 
+#include "GameStateManager.h"
+
 struct ReaperConfig
 {
 	std::string MainMenuAssetRegistryPath = "Assets/MainMenu.rdar";
@@ -14,7 +16,6 @@ struct ReaperConfig
 class ReaperContext
 {
 public:
-
 	ReaperContext();
 	~ReaperContext();
 
@@ -28,6 +29,7 @@ private:
 
 private:
 	ReaperConfig m_Config;
+	GameStateManager* m_StateManager = nullptr;
 
 	inline static ReaperContext* s_Instance = nullptr;
 

@@ -1,0 +1,7 @@
+AssetRegistry:
+  - Handle: 15801976172722640583
+    FilePath: Assets/Textures/ReaperIcon.jpg
+    Type: Texture2D
+  - Handle: 1884831931909150987
+    FilePath: Assets/Levels/Level.rdlvl
+    Type: Level

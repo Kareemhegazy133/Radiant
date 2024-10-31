@@ -2,36 +2,37 @@
 #include <Core/EntryPoint.h>
 
 #include "ReaperContext.h"
-#include "GameLayer.h"
+#include "Layers/UILayer.h"
 
-class TheReaper : public Radiant::GameApplication
+class Reaper : public Radiant::GameApplication
 {
 public:
-	TheReaper(const GameApplicationSpecification& specification)
+	Reaper(const GameApplicationSpecification& specification)
 		: GameApplication(specification)
 	{
-		PushLayer(gameLayer);
+		PushOverlay(m_UILayer);
 	}
 
-	~TheReaper()
+	~Reaper()
 	{
-		PopLayer(gameLayer);
+		PopOverlay(m_UILayer);
 	}
 
 private:
 	ReaperContext gameContext;
-	Layer* gameLayer = new GameLayer();
+	Layer* m_UILayer = new UILayer();
 };
 
 Radiant::GameApplication* Radiant::CreateGameApplication()
 {
 	GameApplicationSpecification specification;
-	specification.Name = "TheReaper";
+	specification.Name = "Reaper";
 	specification.WindowWidth = 1280;
 	specification.WindowHeight = 720;
 	specification.VSync = true;
 	specification.IconPath = "Assets/Textures/ReaperIcon.jpg";
 	specification.FontPath = "Assets/Fonts/Euljiro.ttf";
 	specification.FontSize = 20.0f;
-	return new TheReaper(specification);
+
+	return new Reaper(specification);
 }

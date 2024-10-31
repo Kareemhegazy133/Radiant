@@ -15,13 +15,14 @@ namespace Radiant {
 
 	void LayerStack::PushLayer(Layer* layer)
 	{
-		m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
-		m_LayerInsertIndex++;
+		layer->m_Type = LayerType::Normal;
+		m_PendingLayersToAdd.emplace_back(layer);
 	}
 
 	void LayerStack::PushOverlay(Layer* overlay)
 	{
-		m_Layers.emplace_back(overlay);
+		overlay->m_Type = LayerType::Overlay;
+		m_PendingLayersToAdd.emplace_back(overlay);
 	}
 
 	void LayerStack::PopLayer(Layer* layer)
@@ -29,8 +30,7 @@ namespace Radiant {
 		auto it = std::find(m_Layers.begin(), m_Layers.end(), layer);
 		if (it != m_Layers.end())
 		{
-			m_Layers.erase(it);
-			m_LayerInsertIndex--;
+			m_PendingLayersToRemove.emplace_back(*it);
 		}
 	}
 
@@ -38,7 +38,42 @@ namespace Radiant {
 	{
 		auto it = std::find(m_Layers.begin(), m_Layers.end(), overlay);
 		if (it != m_Layers.end())
-			m_Layers.erase(it);
+			m_PendingLayersToRemove.emplace_back(*it);
+	}
+
+	void LayerStack::ProcessPendingLayers()
+	{
+		// Add pending layers
+		for (Layer* layer : m_PendingLayersToAdd)
+		{
+			if (layer->GetType() == LayerType::Normal)
+			{
+				m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
+				m_LayerInsertIndex++;
+			}
+			else
+			{
+				m_Layers.emplace_back(layer);
+			}
+		}
+
+		m_PendingLayersToAdd.clear();
+
+		// Remove pending layers
+		for (Layer* layer : m_PendingLayersToRemove)
+		{
+			auto it = std::find(m_Layers.begin(), m_Layers.end(), layer);
+			if (it != m_Layers.end())
+			{
+				m_Layers.erase(it);
+				if (layer->GetType() == LayerType::Normal)
+				{
+					m_LayerInsertIndex--;
+				}
+				delete layer;
+			}
+		}
+		m_PendingLayersToRemove.clear();
 	}
 
 }

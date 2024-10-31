@@ -2,6 +2,14 @@
 
 #include <Radiant.h>
 
+enum class GameStateType
+{
+	None,
+	MainMenu,
+	Gameplay,
+	GamePaused
+};
+
 class GameState : public RefCounted
 {
 public:
@@ -13,12 +21,16 @@ public:
 	// Called when the state is exited
 	virtual void OnExit() = 0;
 
-	// Called every frame to update the state
-	virtual void OnUpdate(Timestep ts) = 0;
+	virtual GameStateType GetStateType() const = 0;
 
-	// Called every frame to render the state
-	virtual void OnRender() = 0;
+	virtual bool operator==(const GameState& other) const
+	{
+		return GetStateType() == other.GetStateType();
+	}
 
-	// Called when an event occurs
-	virtual void OnEvent(Event& e) = 0;
+	virtual bool operator!=(const GameState& other) const
+	{
+		return !(*this == other);
+	}
+
 };

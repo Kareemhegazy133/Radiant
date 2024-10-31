@@ -53,6 +53,8 @@ namespace Radiant {
 
 		RADIANT_TRACE("GameApplication Destructor");
 
+		m_LayerStack.ProcessPendingLayers();
+
 		for (Layer* layer : m_LayerStack)
 		{
 			layer->OnDetach();
@@ -149,6 +151,8 @@ namespace Radiant {
 			}
 
 			m_Window->OnUpdate();
+
+			m_LayerStack.ProcessPendingLayers();
 		}
 	}
 

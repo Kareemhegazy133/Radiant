@@ -8,12 +8,15 @@ ReaperContext::ReaperContext()
 	// Initialize Systems
 	AssetManager::Init();
 
+	m_StateManager = new GameStateManager();
+
 	SetGameTheme();
 }
 
 ReaperContext::~ReaperContext()
 {
-	s_Instance = nullptr;
+	delete m_StateManager;
+	m_StateManager = nullptr;
 }
 
 void ReaperContext::SetGameTheme()

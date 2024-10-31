@@ -1,6 +1,27 @@
 Level: UntitledLevel
 Entities:
-  - Entity: 209285557031297334
+  - Entity: 1629000733166122870
+    MetadataComponent:
+      Tag: Reaper
+    TransformComponent:
+      Translation: [4, -2.98352933, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteComponent:
+      Color: [1, 1, 1, 1]
+      TextureHandle: 15801976172722640583
+      TilingFactor: 1
+    RigidBody2DComponent:
+      BodyType: Dynamic
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 2589908872759367616
     MetadataComponent:
       Tag: Platform
     TransformComponent:
@@ -21,12 +42,12 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-  - Entity: 2615543911877761184
+  - Entity: 10471230256855920021
     MetadataComponent:
       Tag: Green Square
     TransformComponent:
-      Translation: [2.99862222e-05, -2.98249578, 0]
-      Rotation: [0, 0, 3.82818968e-08]
+      Translation: [-1.55974811e-09, -2.98308015, 0]
+      Rotation: [0, 0, 3.53675467e-09]
       Scale: [1, 1, 1]
     SpriteComponent:
       Color: [0, 1, 0, 1]
@@ -42,46 +63,11 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-  - Entity: 6240272050722816678
-    MetadataComponent:
-      Tag: Text
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    TextComponent:
-      TextString: Hello World!
-      FontHandle: 6070137812814147509
-      Color: [1, 1, 1, 1]
-      TextSize: 24
-      LineSpacing: 0
-      Kerning: 0
-  - Entity: 13042788608112970702
-    MetadataComponent:
-      Tag: Checkerboard
-    TransformComponent:
-      Translation: [4.00003052, -2.98247313, 0]
-      Rotation: [0, 0, 2.19957599e-08]
-      Scale: [1, 1, 1]
-    SpriteComponent:
-      Color: [1, 1, 1, 1]
-      TextureHandle: 741112066733660790
-      TilingFactor: 1
-    RigidBody2DComponent:
-      BodyType: Dynamic
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-  - Entity: 15194709995471683423
+  - Entity: 11590680016467369427
     MetadataComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [1.5173924, -0.429748297, 0]
+      Translation: [-0.0913512707, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
@@ -98,3 +84,17 @@ Entities:
       FixedAspectRatio: false
     NativeScriptComponent:
       {}
+  - Entity: 17150451600015318612
+    MetadataComponent:
+      Tag: Text
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    TextComponent:
+      TextString: Hello World!
+      FontHandle: 11791879813707660235
+      Color: [1, 1, 1, 1]
+      TextSize: 24
+      LineSpacing: 0
+      Kerning: 0

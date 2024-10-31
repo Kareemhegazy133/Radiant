@@ -5,6 +5,12 @@
 
 namespace Radiant {
 
+	enum class LayerType
+	{
+		Normal,
+		Overlay
+	};
+
 	class Layer
 	{
 	public:
@@ -18,8 +24,13 @@ namespace Radiant {
 		virtual void OnEvent(Event& event) {}
 
 		inline const std::string& GetName() const { return m_DebugName; }
+		inline const LayerType GetType() const { return m_Type; }
+
 	protected:
 		std::string m_DebugName;
+		LayerType m_Type = LayerType::Normal;
+
+		friend class LayerStack;
 	};
 
 }
