@@ -73,7 +73,7 @@ Entities:
     CameraComponent:
       Camera:
         ProjectionType: 1
-        AspectRatio: 1.77777779
+        AspectRatio: 1.86997807
         PerspectiveFOV: 45
         PerspectiveNear: 0.00999999978
         PerspectiveFar: 1000
@@ -93,7 +93,7 @@ Entities:
       Scale: [1, 1, 1]
     TextComponent:
       TextString: Hello World!
-      FontHandle: 11791879813707660235
+      FontHandle: 12031443954394130178
       Color: [1, 1, 1, 1]
       TextSize: 24
       LineSpacing: 0
