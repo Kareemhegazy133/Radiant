@@ -25,8 +25,6 @@ IncludeDir["stb_image"] = "Radiant/Vendor/stb_image"
 IncludeDir["entt"] = "Radiant/Vendor/entt/include"
 IncludeDir["box2d"] = "Radiant/Vendor/box2d/include"
 IncludeDir["yaml_cpp"] = "Radiant/Vendor/yaml-cpp/include"
-IncludeDir["msdf_atlas_gen"] = "Radiant/Vendor/msdf-atlas-gen/msdf-atlas-gen"
-IncludeDir["msdfgen"] = "Radiant/Vendor/msdf-atlas-gen/msdfgen"
 IncludeDir["ImGui"] = "Radiant/Vendor/imgui"
 
 group "Dependencies"
@@ -34,7 +32,6 @@ group "Dependencies"
 		include "Radiant/Vendor/glad"
 		include "Radiant/Vendor/box2d"
 		include "Radiant/Vendor/yaml-cpp"
-		include "Radiant/Vendor/msdf-atlas-gen"
 		include "Radiant/Vendor/imgui"
 group ""
 
@@ -76,8 +73,6 @@ project "Radiant"
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.box2d}",
 		"%{IncludeDir.yaml_cpp}",
-		"%{IncludeDir.msdf_atlas_gen}",
-		"%{IncludeDir.msdfgen}",
 		"%{IncludeDir.ImGui}"
 	}
 	
@@ -87,7 +82,6 @@ project "Radiant"
 		"glad",
 		"box2d",
 		"yaml-cpp",
-		"msdf-atlas-gen",
 		"ImGui"
 	}
 	
