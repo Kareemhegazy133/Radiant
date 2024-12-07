@@ -4,7 +4,7 @@
 #include <glfw/glfw3.h>
 
 #include "Renderer/Renderer.h"
-#include "Renderer/UI/Font.h"
+#include "ImGui/UI/Font.h"
 
 namespace Radiant {
 
@@ -31,15 +31,16 @@ namespace Radiant {
 
 		Renderer::Init();
 
+		m_ImGuiLayer = ImGuiLayer::Create();
+
+		RADIANT_ASSERT(m_ImGuiLayer, "Failed to Create ImGuiLayer");
 		if (!specification.FontPath.empty())
 		{
-			m_ImGuiLayer = ImGuiLayer::Create(FontConfiguration(specification.FontPath, specification.FontSize));
-			Font::Init(specification.FontPath);
+			Font::Init(FontConfiguration(specification.FontPath, specification.FontSize));
 		}
 		else
 		{
-			m_ImGuiLayer = ImGuiLayer::Create();
-			Font::Init();
+			Font::Init(FontConfiguration());
 		}
 
 		PushOverlay(m_ImGuiLayer);

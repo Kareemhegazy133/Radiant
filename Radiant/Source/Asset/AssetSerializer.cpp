@@ -10,7 +10,6 @@ namespace Radiant {
 	void AssetSerializer::Init()
 	{
 		s_Serializers.clear();
-		s_Serializers[AssetType::Font] = CreateScope<FontSerializerAPI>();
 		s_Serializers[AssetType::Level] = CreateScope<LevelAssetSerializerAPI>();
 		s_Serializers[AssetType::Texture2D] = CreateScope<TextureSerializerAPI>();
 	}

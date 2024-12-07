@@ -186,17 +186,6 @@ namespace Radiant {
 						Physics2D::DebugDraw(transform, *bc2d);
 				}
 			}
-			
-			// Draw text
-			{
-				auto view = m_Registry.view<TransformComponent, TextComponent>();
-				for (auto entity : view)
-				{
-					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
-					auto font = Font::GetFontAssetForTextComponent(text);
-					Renderer2D::DrawString(text.TextString, font, transform.GetTransform(), text.Color, text.TextSize, text.LineSpacing, text.Kerning);
-				}
-			}
 
 			Renderer2D::EndScene();
 		}

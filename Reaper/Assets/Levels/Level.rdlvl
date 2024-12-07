@@ -67,7 +67,7 @@ Entities:
     MetadataComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [-0.0913512707, 0, 0]
+      Translation: [-1.06323719, 0.373804569, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
@@ -93,7 +93,7 @@ Entities:
       Scale: [1, 1, 1]
     TextComponent:
       TextString: Hello World!
-      FontHandle: 12031443954394130178
+      FontHandle: 13274450654798748816
       Color: [1, 1, 1, 1]
       TextSize: 24
       LineSpacing: 0

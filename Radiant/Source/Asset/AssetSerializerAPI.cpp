@@ -7,8 +7,6 @@
 
 #include "ECS/LevelSerializer.h"
 
-#include "Renderer/UI/Font.h"
-
 #include "Utilities/FileSystem.h"
 
 namespace Radiant {
@@ -119,48 +117,4 @@ namespace Radiant {
 
 		return nullptr;
 	}
-
-	//////////////////////////////////////////////////////////////////////////////////
-	// FontSerializerAPI
-	//////////////////////////////////////////////////////////////////////////////////
-
-	void FontSerializerAPI::Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const
-	{
-		RADIANT_ASSERT(false); // Not needed
-	}
-
-	bool FontSerializerAPI::Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const
-	{
-		asset = Ref<Font>::Create(AssetManager::GetFileSystemPath(metadata));
-		asset->Handle = metadata.Handle;
-
-		return true;
-	}
-
-	bool FontSerializerAPI::SerializeToAssetPack(AssetHandle handle, FileStreamWriter& stream, AssetSerializationInfo& outInfo) const
-	{
-		outInfo.Offset = stream.GetStreamPosition();
-
-		Ref<Font> font = AssetManager::GetAsset<Font>(handle);
-		auto path = AssetManager::GetFileSystemPath(handle);
-		stream.WriteString(font->GetName());
-		Buffer fontData = FileSystem::ReadBytes(path);
-		stream.WriteBuffer(fontData);
-
-		outInfo.Size = stream.GetStreamPosition() - outInfo.Offset;
-		return true;
-	}
-
-	Ref<Asset> FontSerializerAPI::DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const
-	{
-		stream.SetStreamPosition(assetInfo.PackedOffset);
-
-		std::string name;
-		stream.ReadString(name);
-		Buffer fontData;
-		stream.ReadBuffer(fontData);
-
-		return Ref<Font>::Create(name, fontData);;
-	}
-
 }

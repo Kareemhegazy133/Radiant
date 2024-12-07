@@ -12,12 +12,7 @@
 
 namespace Radiant {
 
-	OpenGLImGuiLayer::OpenGLImGuiLayer(const FontConfiguration& config)
-		: m_FontConfig(config)
-	{
-	}
-
-	void OpenGLImGuiLayer::OnAttach()
+	OpenGLImGuiLayer::OpenGLImGuiLayer()
 	{
 		RADIANT_PROFILE_FUNCTION();
 
@@ -30,9 +25,6 @@ namespace Radiant {
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;			// Enable Docking
 		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
-		if(!m_FontConfig.FilePath.empty())
-			SetFont(m_FontConfig);
-
 		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -43,6 +35,11 @@ namespace Radiant {
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
+	}
+
+	void OpenGLImGuiLayer::OnAttach()
+	{
+		RADIANT_PROFILE_FUNCTION();
 
 		GameApplication& game = GameApplication::Get();
 		GLFWwindow* window = static_cast<GLFWwindow*>(game.GetWindow().GetNativeWindow());

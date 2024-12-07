@@ -82,6 +82,12 @@ void GameLayer::OnImGuiRender()
 	uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 	ImGui::Image(textureID, ImGui::GetIO().DisplaySize, ImVec2(0, 1), ImVec2(1, 0));
 
+	// Add text dynamically
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.2f, 1.0f)); // Yellowish text color
+	ImGui::SetCursorPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.4f, ImGui::GetIO().DisplaySize.y * 0.8f)); // Position at 40% width, 80% height
+	ImGui::Text("Press F to use");
+	ImGui::PopStyleColor();
+
 	ImGui::End();
 
 	ImGui::PopStyleVar();

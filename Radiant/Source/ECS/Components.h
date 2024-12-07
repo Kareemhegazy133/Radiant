@@ -165,6 +165,7 @@ namespace Radiant {
 		BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
 	};
 
+	// Currently not in use (Using ImGuiFont system instead)
 	struct TextComponent
 	{
 		std::string TextString;
@@ -176,7 +177,7 @@ namespace Radiant {
 		float LineSpacing = 0.0f;
 
 		TextComponent() = default;
-		TextComponent(const TextComponent& other) = default;
+		TextComponent(const TextComponent&) = default;
 		TextComponent(const std::string& text, float size = 12.0f)
 			: TextString(text), TextSize(size) {}
 	};
