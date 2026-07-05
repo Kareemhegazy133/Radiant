@@ -14,7 +14,7 @@ void MainMenuState::OnEnter()
 
 void MainMenuState::OnExit()
 {
-	AssetManager::SaveAssetRegistry(ReaperContext::GetMainMenuAssetRegistryPath());
+	// Deliberately no SaveAssetRegistry: running the game never writes assets (RAD-17)
 	AssetManager::ClearAssets();
 
 	GAME_TRACE("MainMenuState Exited");

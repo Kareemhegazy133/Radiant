@@ -1,8 +1,11 @@
 #pragma once
 
+#include "Radiant/Core/Base.h"
+
 namespace Radiant {
 
-	class GraphicsContext : public RefCounted
+	// Uniquely owned by the Window (Scope) — one ownership story per type
+	class GraphicsContext
 	{
 	public:
 		virtual ~GraphicsContext() = default;

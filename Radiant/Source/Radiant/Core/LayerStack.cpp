@@ -10,7 +10,24 @@ namespace Radiant {
 
 	LayerStack::~LayerStack()
 	{
+		Clear();
+	}
 
+	void LayerStack::Clear()
+	{
+		// Pending additions were never attached to the stack but are owned by it
+		for (Layer* layer : m_PendingLayersToAdd)
+			delete layer;
+		m_PendingLayersToAdd.clear();
+		m_PendingLayersToRemove.clear();
+
+		for (Layer* layer : m_Layers)
+		{
+			layer->OnDetach();
+			delete layer;
+		}
+		m_Layers.clear();
+		m_LayerInsertIndex = 0;
 	}
 
 	void LayerStack::PushLayer(Layer* layer)
@@ -70,6 +87,9 @@ namespace Radiant {
 				{
 					m_LayerInsertIndex--;
 				}
+				// Detach at actual removal — a popped layer receives updates/events
+				// until the end of the frame, so it must stay attached until here
+				layer->OnDetach();
 				delete layer;
 			}
 		}

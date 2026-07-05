@@ -42,9 +42,8 @@ void GameLayer::OnDetach()
 {
 	// Deliberately no SaveLevel/SaveAssetRegistry here: running the game must never
 	// mutate authored content — saving is an explicit editor/tool action (RAD-17).
-	// Persisting on exit was writing physics drift into the committed level file.
-	AssetManager::ClearAssets();
-
+	// Asset clearing lives in GameplayState::OnExit, not here: OnDetach runs deferred
+	// at end of frame, after the next state's OnEnter has already loaded its assets.
 	m_Framebuffer.Reset();
 	m_Level.Reset();
 }

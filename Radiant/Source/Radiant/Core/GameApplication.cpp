@@ -54,13 +54,9 @@ namespace Radiant {
 
 		RADIANT_TRACE("GameApplication Destructor");
 
-		m_LayerStack.ProcessPendingLayers();
-
-		for (Layer* layer : m_LayerStack)
-		{
-			layer->OnDetach();
-			delete layer;
-		}
+		// Explicit clear (rather than relying on the member destructor) so layers
+		// are detached and destroyed before the renderer and fonts shut down
+		m_LayerStack.Clear();
 
 		Font::Shutdown();
 		
@@ -87,8 +83,9 @@ namespace Radiant {
 	{
 		RADIANT_PROFILE_FUNCTION();
 
+		// OnDetach fires when the removal is actually applied (ProcessPendingLayers) —
+		// the layer keeps receiving updates/events until the end of this frame
 		m_LayerStack.PopLayer(layer);
-		layer->OnDetach();
 	}
 
 	void GameApplication::PopOverlay(Layer* layer)
@@ -96,7 +93,6 @@ namespace Radiant {
 		RADIANT_PROFILE_FUNCTION();
 
 		m_LayerStack.PopOverlay(layer);
-		layer->OnDetach();
 	}
 
 	void GameApplication::OnEvent(Event& e)
