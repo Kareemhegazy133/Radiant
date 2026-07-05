@@ -89,7 +89,7 @@ An engine story whose AC mentions `ReaperContext` or a Reaper asset is misplaced
 
 ## Status Workflow & Transition Discipline
 
-`To Do → In Progress → Done` (team-managed defaults; add `In Review` usage if the column is added later). `Won't Do` for superseded/cancelled.
+`To Do → In Progress → In Review → Done`. `Won't Do` for superseded/cancelled.
 - Move to **In Progress** when work actually starts — never leave started work in `To Do`.
 - Move to **Done** only when the Definition of Done is met **and the change is merged**.
 - When closing as superseded, use **Won't Do**, name the superseding issue in a closing comment, and add a `Duplicate`/`Relates` link.
