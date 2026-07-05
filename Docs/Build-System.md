@@ -32,7 +32,7 @@ Generated solution/project files are build artifacts and are gitignored (a few l
 | Config | Defines | Meaning |
 |--------|---------|---------|
 | Debug | `RD_DEBUG` | symbols, asserts, debug runtime |
-| Release | `RD_RELEASE` | optimized; asserts **on** once RAD-9 lands — the day-to-day iteration config |
+| Release | `RD_RELEASE` | optimized, asserts **on** (RAD-9) — the day-to-day iteration config |
 | Dist | `RD_DIST` | shipping: optimized, no asserts; becomes `WindowedApp` + LTO with RAD-21 |
 
 Workspace: x64 only, `MultiProcessorCompile`, output pattern `bin/<Config>-<system>-<arch>/<Project>`.

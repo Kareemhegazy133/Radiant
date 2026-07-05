@@ -63,7 +63,7 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 
 **Components are plain data** (rule enforced from Phase 2): trivially copyable, serializable, no owning raw pointers, no `std::function`. Runtime state (physics bodies, script instances) lives in Level-owned side tables keyed by entity. *If it can't be memcpy'd and serialized, it doesn't belong in a component.*
 
-**Asserts:** always `RADIANT_ASSERT(condition, "message")` — never message-only (a string literal is always truthy). Never put side effects in an assert expression (compiled out in Dist). Guards on config/content mistakes log a `WARN` and recover; asserts are for programmer errors.
+**Asserts:** always `RADIANT_ASSERT(condition, "message")` — never message-only (a string literal is always truthy). Never put side effects in an assert expression (compiled out in Dist). Asserts are active in Debug and Release, out in Dist. Guards on config/content mistakes log a `WARN` and recover; asserts are for programmer errors.
 
 **Logging:** `RADIANT_*` macros = engine, `GAME_*` macros = game code. Warn loudly on misconfiguration instead of failing silently.
 
@@ -87,7 +87,7 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 # Build & Run
 
 - Generate solution: `Scripts/Setup-Windows.bat` (runs vendored premake with `--file=Build.lua vs2022`).
-- Configs: **Debug** (symbols, asserts) / **Release** (optimized, asserts — once RAD-9 lands) / **Dist** (shipping, no asserts).
+- Configs: **Debug** (symbols, asserts) / **Release** (optimized, asserts) / **Dist** (shipping, no asserts).
 - Verify any engine change by **building all configs and running Reaper** (startproject). Assets load relative to the project working directory — run from the project dir (VS default).
 
 ---

@@ -99,7 +99,7 @@ namespace Radiant {
 		}
 		else
 		{
-			RADIANT_ASSERT("Entity must have a RigidBody2DComponent to create a box collider fixture");
+			RADIANT_ASSERT(false, "Entity must have a RigidBody2DComponent to create a box collider fixture");
 		}
 	}
 

@@ -66,4 +66,4 @@ The cost is that only `RefCounted` types participate — enforced by `static_ass
 ## Known Issues & Evolution
 
 - **Ownership inconsistencies (RAD-19):** `GraphicsContext` inherits `RefCounted` but is owned by a `Scope`; `LayerStack` stores raw `Layer*` but `GameApplication` deletes them. Both get one owner each in Phase 1.
-- **Over-release detection is Debug-only:** the underflow debug-break compiles out of Release/Dist; RAD-9 (asserts in Release) extends the window in which programmer errors fail fast.
+- **Over-release detection compiles out of Dist:** the underflow debug-break is active in Debug and Release (RAD-9), out of Dist — a Dist over-release corrupts silently. Acceptable: all iteration happens in checked configs; Dist is the player build.

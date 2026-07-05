@@ -4,7 +4,11 @@
 
 #include "Core/PlatformDetection.h"
 
-#ifdef RD_DEBUG
+// Checks are active in Debug AND Release (the day-to-day iteration configs) and
+// compile out only in Dist — the build a player receives. In Release without a
+// debugger attached, __debugbreak raises an unhandled breakpoint exception:
+// a loud, immediate crash at the violation site (fail-fast by design).
+#if defined(RD_DEBUG) || defined(RD_RELEASE)
 	#if defined(RADIANT_PLATFORM_WINDOWS)
 		#define RADIANT_DEBUGBREAK() __debugbreak()
 	#elif defined(RADIANT_PLATFORM_LINUX)
