@@ -16,6 +16,6 @@ bin-int/
 Makefile
 
 # Exclude
-!Vendor/Binaries
+!Tools/Binaries
 # Runtime-generated UI state
 imgui.ini
