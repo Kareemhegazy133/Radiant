@@ -77,14 +77,13 @@ namespace Radiant {
 	void Physics2D::CreateBoxColliderFixture(Entity& entity, BoxCollider2DComponent& component)
 	{
 		auto& transform = entity.GetComponent<TransformComponent>();
-		auto& sprite = entity.GetComponent<SpriteComponent>();
 
 		b2PolygonShape boxShape;
 		boxShape.SetAsBox(
 			component.Size.x * transform.Scale.x,
 			component.Size.y * transform.Scale.y,
 			b2Vec2(component.Offset.x, component.Offset.y),
-			transform.Translation.z);
+			transform.Rotation.z);
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &boxShape;

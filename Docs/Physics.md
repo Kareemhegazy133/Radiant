@@ -51,4 +51,3 @@ All tracked under Phase 2; the headline defects the current design carries:
 - **Readback coupled to rendering (RAD-28)** — a body without a sprite (or any body when no `Primary` camera exists) simulates but its ECS transform never moves.
 - **Variable timestep (RAD-25)** — framerate-dependent simulation.
 - **Unsafe callbacks (RAD-29)** — no validity checks on mid-destruction entities; components hold `std::function`s.
-- **Creation-path bugs (RAD-12)** — collider creation crashes on sprite-less entities (fetches an unused `SpriteComponent`) and passes a translation where Box2D expects an angle.
