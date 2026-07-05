@@ -27,24 +27,24 @@ public:
 		// Handle translation (W, A, S, D) based on camera's rotation
 		if (Input::IsKeyPressed(Key::A)) // Move left
 		{
-			m_CameraPosition.x -= cos(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * ts;
-			m_CameraPosition.y -= sin(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * ts;
+			m_CameraPosition.x -= cos(m_CameraRotation) * m_CameraTranslationSpeed * ts;
+			m_CameraPosition.y -= sin(m_CameraRotation) * m_CameraTranslationSpeed * ts;
 		}
 		else if (Input::IsKeyPressed(Key::D)) // Move right
 		{
-			m_CameraPosition.x += cos(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * ts;
-			m_CameraPosition.y += sin(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * ts;
+			m_CameraPosition.x += cos(m_CameraRotation) * m_CameraTranslationSpeed * ts;
+			m_CameraPosition.y += sin(m_CameraRotation) * m_CameraTranslationSpeed * ts;
 		}
 
 		if (Input::IsKeyPressed(Key::W)) // Move forward
 		{
-			m_CameraPosition.x += -sin(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * ts;
-			m_CameraPosition.y += cos(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * ts;
+			m_CameraPosition.x += -sin(m_CameraRotation) * m_CameraTranslationSpeed * ts;
+			m_CameraPosition.y += cos(m_CameraRotation) * m_CameraTranslationSpeed * ts;
 		}
 		else if (Input::IsKeyPressed(Key::S)) // Move backward
 		{
-			m_CameraPosition.x -= -sin(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * ts;
-			m_CameraPosition.y -= cos(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * ts;
+			m_CameraPosition.x -= -sin(m_CameraRotation) * m_CameraTranslationSpeed * ts;
+			m_CameraPosition.y -= cos(m_CameraRotation) * m_CameraTranslationSpeed * ts;
 		}
 
 		// Apply the calculated position to the entity's transform
