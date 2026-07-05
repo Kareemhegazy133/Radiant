@@ -51,5 +51,4 @@ Shutdown: `Close()` merely sets `m_Running = false`; the destructor detaches and
 
 - **Variable timestep** — simulation is framerate-dependent. Phase 2 (RAD-25) restructures the loop into: drain event queue → fixed-step simulation with accumulator → interpolated render. The first-frame timestep bug (`m_LastFrameTime` starts at 0, so frame one receives the full time since GLFW init) dies in the same rework.
 - **Events fire at end-of-frame from inside OS callbacks** — replaced by a frame-start event queue (RAD-26).
-- **VSync spec ignored** — `WindowsWindow::Init` hardcodes `SetVSync(true)` (RAD-18).
 - **Windows-only** — `PlatformDetection.h` hard-errors on other platforms; the `Window`/`Input` seams exist, but no other implementations do. Not on any phase roadmap; deliberate.
