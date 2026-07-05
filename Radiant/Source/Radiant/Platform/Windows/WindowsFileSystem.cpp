@@ -21,6 +21,8 @@ namespace Radiant {
 
 	Buffer FileSystem::ReadBytes(const std::filesystem::path& filepath)
 	{
+		// The returned Buffer owns a heap allocation the caller must Release() —
+		// Buffer has no destructor
 		Buffer buffer;
 
 		std::ifstream stream(filepath, std::ios::binary | std::ios::ate);

@@ -59,7 +59,7 @@ namespace Radiant {
 
 		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
-		// Sort entities by UUID (for better serializing)
+		// Sort entities by UUID so output order is deterministic — stable file diffs
 		std::map<UUID, entt::entity> sortedEntityMap;
 		auto view = m_Level->m_Registry.view<MetadataComponent>();
 		for (auto entity : view)
@@ -223,6 +223,8 @@ namespace Radiant {
 
 		try
 		{
+			// Result dropped — only YAML exceptions propagate as false; a parse
+			// without a "Level" key still reports success (see header note)
 			DeserializeFromYAML(strStream.str());
 		}
 		catch (const YAML::Exception& e)

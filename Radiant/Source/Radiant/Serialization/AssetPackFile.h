@@ -7,6 +7,12 @@
 
 namespace Radiant {
 
+	/**
+	 * PARKED DEAD CODE (RAD-46). In-memory description of the binary .rdap pack:
+	 * "RDAP" header -> index table (levels -> per-asset offset/size entries) ->
+	 * payload blobs. Wire-format debts (uninitialized AssetInfo padding written
+	 * to disk, size_t string prefixes upstream) are catalogued under RAD-45.
+	 */
 	struct AssetPackFile
 	{
 		struct AssetInfo

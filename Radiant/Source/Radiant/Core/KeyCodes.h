@@ -2,6 +2,8 @@
 
 namespace Radiant
 {
+	// Key codes mirror glfw3.h values exactly so the platform layer can pass
+	// GLFW codes through untranslated; any future input backend must map to these
 	using KeyCode = uint16_t;
 
 	namespace Key

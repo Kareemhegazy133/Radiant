@@ -31,6 +31,8 @@ namespace std {
 	};
 
 
+	// The glm formatters accept an optional presentation spec: {:f} fixed
+	// (default) or {:e} scientific
 	template<>
 	struct formatter<glm::vec2>
 	{

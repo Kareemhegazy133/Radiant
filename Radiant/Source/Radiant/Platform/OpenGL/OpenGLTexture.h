@@ -6,6 +6,11 @@
 
 namespace Radiant {
 
+	/**
+	 * GL 2D texture using immutable storage with a single mip level —
+	 * TextureSpecification::GenerateMips is not honored. Owns the GL texture
+	 * handle.
+	 */
 	class OpenGLTexture2D : public Texture2D
 	{
 	public:

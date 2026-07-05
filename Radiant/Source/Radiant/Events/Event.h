@@ -4,10 +4,12 @@
 
 namespace Radiant {
 
-	// Events in Radiant are currently blocking, meaning when an event occurs it
-	// immediately gets dispatched and must be dealt with right then an there.
-	// For the future, a better strategy might be to buffer events in an event
-	// bus and process them during the "event" part of the update stage.
+	// Events are currently BLOCKING: handlers execute synchronously inside the
+	// GLFW callbacks, which fire during end-of-frame event polling
+	// (Window::OnUpdate). Handlers therefore run inside OS callbacks — do not
+	// assume mid-frame safety or re-entrancy safety. Phase 2 (RAD-26) replaces
+	// this with a queue drained at a defined point at frame start; the type
+	// system and dispatcher below survive that change unchanged.
 
 	enum class EventType
 	{
@@ -28,12 +30,22 @@ namespace Radiant {
 		EventCategoryMouseButton = BIT(4)
 	};
 
+// Generates the static/virtual type pair that lets EventDispatcher match a
+// runtime event against a compile-time type without RTTI
 #define EVENT_CLASS_TYPE(type) static EventType GetStaticType() { return EventType::type; }\
 								virtual EventType GetEventType() const override { return GetStaticType(); }\
 								virtual const char* GetName() const override { return #type; }
 
+// Category bitflags let handlers filter event families via IsInCategory
+// without enumerating concrete types
 #define EVENT_CLASS_CATEGORY(category) virtual int GetCategoryFlags() const override { return category; }
 
+	/**
+	 * Base of the closed event hierarchy. Events are stack-allocated by the
+	 * platform layer and passed by reference — valid only for the duration of
+	 * dispatch; handlers must not store pointers or references to them. Setting
+	 * Handled stops propagation to the layers beneath the current one.
+	 */
 	class Event
 	{
 	public:
@@ -52,6 +64,13 @@ namespace Radiant {
 		}
 	};
 
+	/**
+	 * Type-switch helper over a single event, held by reference — use within
+	 * the scope that owns the event. Dispatch<T>(fn) runs fn only if the
+	 * wrapped event is a T, OR-ing fn's bool result into Handled. Its return
+	 * value reports whether the TYPE MATCHED, not whether the event was
+	 * handled.
+	 */
 	class EventDispatcher
 	{
 	public:

@@ -5,6 +5,7 @@
 // Reaper opts into the engine namespace (game-local choice; the engine no longer injects it)
 using namespace Radiant;
 
+/** Shared UI metrics; button sizes scale with the current window size. */
 struct UIConfig
 {
 	float SmallVSpace{ 10.0f };
@@ -27,6 +28,12 @@ struct UIConfig
 	}
 };
 
+/**
+ * Persistent ImGui overlay that draws whichever screen matches the current
+ * game state (main menu / gameplay HUD / pause menu). Pushed once by the
+ * Reaper application and lives for its whole run — state changes swap what it
+ * renders, not the layer itself. Also handles Escape-to-resume while paused.
+ */
 class UILayer : public Layer
 {
 public:

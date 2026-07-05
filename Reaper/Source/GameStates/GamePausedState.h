@@ -7,6 +7,12 @@ using namespace Radiant;
 
 #include "Core/GameState.h"
 
+/**
+ * Pause-menu state pushed on top of GameplayState (Escape). Owns no assets or
+ * layers — the UILayer swaps to the pause menu based on the top state type.
+ * Note: entering it does not halt the simulation; the GameLayer underneath
+ * keeps updating (pause gating is future work).
+ */
 class GamePausedState : public GameState
 {
 public:

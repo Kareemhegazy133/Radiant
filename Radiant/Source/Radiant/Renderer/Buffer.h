@@ -2,11 +2,13 @@
 
 namespace Radiant {
 
+	/** API-agnostic vocabulary for vertex attribute types, used to describe vertex buffer layouts. */
 	enum class ShaderDataType
 	{
 		None = 0, Float, Float2, Float3, Float4, Mat3, Mat4, Int, Int2, Int3, Int4, Bool
 	};
 
+	/** Size of a ShaderDataType in bytes. Asserts on ShaderDataType::None. */
 	static uint32_t ShaderDataTypeSize(ShaderDataType type)
 	{
 		switch (type)
@@ -28,6 +30,10 @@ namespace Radiant {
 		return 0;
 	}
 
+	/**
+	 * One vertex attribute within a BufferLayout. Offset is computed by the
+	 * owning layout when the layout is constructed — callers never set it.
+	 */
 	struct BufferElement
 	{
 		std::string Name;
@@ -65,6 +71,11 @@ namespace Radiant {
 		}
 	};
 
+	/**
+	 * Ordered description of a vertex's attributes. Computes tightly-packed
+	 * per-element offsets and the overall stride (bytes) at construction.
+	 * Plain value type — copied freely, no GPU state.
+	 */
 	class BufferLayout
 	{
 	public:
@@ -100,6 +111,15 @@ namespace Radiant {
 		uint32_t m_Stride = 0;
 	};
 
+	/**
+	 * GPU vertex buffer. Ref-counted like all renderer resources; must be
+	 * released before the graphics context is destroyed. Main-thread only.
+	 *
+	 * Create(size) allocates uninitialized storage intended for per-frame
+	 * streaming via SetData (the batcher's path); Create(vertices, size)
+	 * uploads static data once, copying it during the call so the caller may
+	 * free it on return. Sizes are in bytes.
+	 */
 	class VertexBuffer : public RefCounted
 	{
 	public:
@@ -108,15 +128,27 @@ namespace Radiant {
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
+		/**
+		 * Uploads `size` bytes from `data` to the start of the buffer. The upload
+		 * is synchronous — the caller keeps ownership of `data` and may free it
+		 * on return. `size` must not exceed the size given at creation.
+		 */
 		virtual void SetData(const void* data, uint32_t size) = 0;
 
 		virtual const BufferLayout& GetLayout() const = 0;
+		/** Must be called before the buffer is added to a VertexArray (asserted there). */
 		virtual void SetLayout(const BufferLayout& layout) = 0;
 
 		static Ref<VertexBuffer> Create(uint32_t size);
 		static Ref<VertexBuffer> Create(float* vertices, uint32_t size);
 	};
 
+	/**
+	 * GPU index buffer of 32-bit indices; `count` is the number of indices, not
+	 * bytes. The source array is copied to the GPU during Create and may be
+	 * freed on return. Ref-counted; must be released before the graphics
+	 * context; main-thread only.
+	 */
 	class IndexBuffer : public RefCounted
 	{
 	public:

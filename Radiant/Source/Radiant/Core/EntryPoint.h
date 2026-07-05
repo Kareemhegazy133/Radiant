@@ -7,6 +7,10 @@
 
 extern Radiant::GameApplication* Radiant::CreateGameApplication();
 
+// The engine owns the entry point so init/shutdown ordering is guaranteed:
+// logging first (or nothing else can report its failure), then the game's
+// application, which main() owns and deletes. GameApplication::Run() is
+// private and befriends main — the loop cannot be started from game code.
 int main(int argc, char** argv)
 {
 	Radiant::Log::Init();

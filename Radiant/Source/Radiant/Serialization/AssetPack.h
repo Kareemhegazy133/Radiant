@@ -11,6 +11,12 @@
 
 namespace Radiant {
 
+	/**
+	 * PARKED DEAD CODE — nothing in the engine or Reaper calls this. Runtime view
+	 * over a binary .rdap asset pack (index held in memory, payloads streamed on
+	 * demand). Kept as the seed of the Phase 4 cook/runtime pipeline; RAD-46
+	 * rebuilds it before first real use. Do not extend until then.
+	 */
 	class AssetPack : public RefCounted
 	{
 	public:

@@ -5,6 +5,7 @@
 
 namespace Radiant {
 
+	/** Base for keyboard events: carries the key code (GLFW-mirrored values, see KeyCodes.h). */
 	class KeyEvent : public Event
 	{
 	public:
@@ -18,6 +19,7 @@ namespace Radiant {
 		KeyCode m_KeyCode;
 	};
 
+	/** Key went down. IsRepeat() distinguishes the OS key-repeat stream from the initial press. */
 	class KeyPressedEvent : public KeyEvent
 	{
 	public:
@@ -54,6 +56,11 @@ namespace Radiant {
 		EVENT_CLASS_TYPE(KeyReleased)
 	};
 
+	/**
+	 * Text-input event: the "key code" is really a character code, distinct
+	 * from the physical-key events above. Currently never emitted — the
+	 * platform layer registers no GLFW char callback.
+	 */
 	class KeyTypedEvent : public KeyEvent
 	{
 	public:

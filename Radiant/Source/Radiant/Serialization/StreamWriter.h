@@ -6,6 +6,13 @@
 
 namespace Radiant
 {
+	/**
+	 * Abstract binary stream writer: typed helpers layered on a single primitive,
+	 * WriteData. Implementations (see FileStreamWriter) supply position control
+	 * and the raw write. The wire format is declared little-endian and is only
+	 * ever read back by StreamReader — the helper pairs on both sides must stay
+	 * symmetric or the format silently diverges.
+	 */
 	class StreamWriter
 	{
 	public:
@@ -18,10 +25,14 @@ namespace Radiant
 
 		operator bool() const { return IsStreamGood(); }
 
+		/** Writes buffer.Size as a uint64_t prefix (unless writeSize is false), then the raw bytes. */
 		void WriteBuffer(Buffer buffer, bool writeSize = true);
+		/** Writes 'size' zero bytes — used to reserve index space that a later SetStreamPosition pass overwrites (see AssetPackSerializer). */
 		void WriteZero(uint64_t size);
+		/** Length-prefixed string. The prefix is currently size_t — ABI-dependent wire format; RAD-45 pins it to uint64_t. */
 		void WriteString(const std::string& string);
 
+		/** memcpy of T's object representation — trivially copyable types only; padding bytes are written as-is. */
 		template<typename T>
 		void WriteRaw(const T& type)
 		{
@@ -29,12 +40,22 @@ namespace Radiant
 			RADIANT_ASSERT(success);
 		}
 
+		/**
+		 * Serializes via the static-method contract: T must provide
+		 * static void Serialize(StreamWriter*, const T&). Keeps serializable
+		 * types vtable-free so plain structs can participate.
+		 */
 		template<typename T>
 		void WriteObject(const T& obj)
 		{
 			T::Serialize(this, obj);
 		}
 
+		/**
+		 * Writes an optional uint32_t element count, then each key/value —
+		 * WriteRaw for trivial types, WriteObject otherwise. The triviality
+		 * split must match the ReadMap side exactly.
+		 */
 		template<typename Key, typename Value>
 		void WriteMap(const std::map<Key, Value>& map, bool writeSize = true)
 		{
@@ -92,6 +113,7 @@ namespace Radiant
 			}
 		}
 
+		/** Same layout rules as WriteMap: optional uint32_t count, then elements via WriteRaw/WriteObject. */
 		template<typename T>
 		void WriteArray(const std::vector<T>& array, bool writeSize = true)
 		{

@@ -7,6 +7,14 @@ using namespace Radiant;
 
 
 
+/**
+ * Native script giving the camera entity WASD movement and Q/E roll, applied
+ * to its TransformComponent every update. Speeds are per-second (rotation in
+ * radians), scaled by ts for framerate independence. Position/rotation are
+ * cached from the transform once in OnCreate — external transform edits made
+ * afterwards get overwritten each frame. Bindings are code-only: GameLayer
+ * re-binds this to the "Camera" entity after level load.
+ */
 class CameraController : public ScriptableEntity
 {
 public:

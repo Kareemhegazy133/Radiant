@@ -102,6 +102,10 @@ namespace Radiant {
 				case ShaderDataType::Mat3:
 				case ShaderDataType::Mat4:
 				{
+					// glVertexAttribDivisor(..., 1) below makes matrix attributes
+					// advance per instance — only correct for instanced data. No
+					// current layout uses matrix attributes; audit before relying
+					// on this path for per-vertex matrices.
 					uint8_t count = element.GetComponentCount();
 					for (uint8_t i = 0; i < count; i++)
 					{

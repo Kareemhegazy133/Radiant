@@ -14,6 +14,8 @@ namespace Radiant {
 
 	Scope<AssetManager::AssetManagerData> AssetManager::s_AssetManagerData = CreateScope<AssetManager::AssetManagerData>();
 
+	// Shared "not found" record (IsValid() == false) — also backs the by-reference
+	// GetMetadata overload, so it must have static storage duration and never be mutated.
 	static AssetMetadata s_NullMetadata;
 
 	void AssetManager::Init()
@@ -27,6 +29,9 @@ namespace Radiant {
 
 		if (!IsAssetHandleValid(metadata.Handle))
 		{
+			// Unknown path: mint a fresh handle and register on the fly. This is an
+			// import operation fused into a runtime API — known design debt (RAD-43);
+			// the same unregistered file gets a different handle every run.
 			metadata.Handle = AssetHandle();
 			metadata.FilePath = filepath;
 			metadata.Type = GetAssetTypeFromFileExtension(filepath.extension());
@@ -143,6 +148,8 @@ namespace Radiant {
 
 	const AssetMetadata& AssetManager::GetMetadata(const std::filesystem::path& filepath)
 	{
+		// Linear scan is acceptable here: path lookups happen at import/registry
+		// time only, never per-frame — runtime resolution is by handle.
 		for (auto& [handle, metadata] : s_AssetManagerData->m_AssetRegistry)
 		{
 			if (metadata.FilePath == filepath)

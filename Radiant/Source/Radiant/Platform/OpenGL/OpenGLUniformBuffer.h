@@ -4,6 +4,7 @@
 
 namespace Radiant {
 
+	/** GL uniform buffer, bound once to its binding point (glBindBufferBase) at construction. Owns the GL buffer handle. */
 	class OpenGLUniformBuffer : public UniformBuffer
 	{
 	public:

@@ -8,6 +8,12 @@
 
 namespace Radiant {
 
+	/**
+	 * Base class for intrusively reference-counted types: the count lives inside
+	 * the object itself, so shared ownership travels with any raw pointer to it.
+	 * Every type managed by Ref<T> must derive from this (enforced by
+	 * static_assert). Count operations are atomic and thread-safe.
+	 */
 	class RefCounted
 	{
 	public:
@@ -48,6 +54,16 @@ namespace Radiant {
 	}
 #endif
 
+	/**
+	 * Intrusive reference-counted smart pointer — the shared-ownership half of
+	 * the engine's ownership vocabulary (Scope<T> is the unique half). Copying
+	 * shares ownership (+1); moving transfers it without touching the count;
+	 * the Ref that releases the last reference deletes the object. Because the
+	 * count is intrusive, a Ref can be reconstructed from a raw T* of any live
+	 * object. Count updates are atomic, so distinct Ref instances to the same
+	 * object may be used from different threads; a single Ref instance must not
+	 * be mutated concurrently. Prefer Ref<T>::Create() over wrapping a raw new.
+	 */
 	template<typename T>
 	class Ref
 	{
@@ -143,27 +159,45 @@ namespace Radiant {
 		T& operator*() { return *m_Instance; }
 		const T& operator*() const { return *m_Instance; }
 
+		/**
+		 * Non-owning access — does not touch the count. The pointer is valid
+		 * only while at least one Ref keeps the object alive.
+		 */
 		T* Raw() { return  m_Instance; }
 		const T* Raw() const { return  m_Instance; }
 
+		/**
+		 * Releases the held reference (deleting the object if it was the last).
+		 * CAUTION: a non-null replacement is adopted WITHOUT incrementing its
+		 * count — unlike the T* constructor — so passing a fresh object here
+		 * under-counts and later underflows. Only Reset()/Reset(nullptr) is
+		 * currently safe.
+		 */
 		void Reset(T* instance = nullptr)
 		{
 			DecRef();
 			m_Instance = instance;
 		}
 
+		/**
+		 * Conversion to a related type, sharing ownership (+1). Unchecked: a
+		 * plain pointer cast, no dynamic_cast — the caller guarantees the
+		 * object really is a T2.
+		 */
 		template<typename T2>
 		Ref<T2> As() const
 		{
 			return Ref<T2>(*this);
 		}
 
+		/** Preferred construction: allocates a T and returns the first owning reference to it. */
 		template<typename... Args>
 		static Ref<T> Create(Args&&... args)
 		{
 			return Ref<T>(new T(std::forward<Args>(args)...));
 		}
 
+		// Identity comparison (same object), not value equality — see EqualsObject()
 		bool operator==(const Ref<T>& other) const
 		{
 			return m_Instance == other.m_Instance;
@@ -174,6 +208,7 @@ namespace Radiant {
 			return !(*this == other);
 		}
 
+		/** Value equality via T::operator==. Returns false if either side is null. */
 		bool EqualsObject(const Ref<T>& other)
 		{
 			if (!m_Instance || !other.m_Instance)

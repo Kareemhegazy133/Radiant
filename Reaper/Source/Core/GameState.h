@@ -13,6 +13,16 @@ enum class GameStateType
 	GamePaused
 };
 
+/**
+ * One game state (screen/mode) in Reaper's stack FSM (see GameStateManager).
+ *
+ * Contract: OnEnter runs when the state is pushed; OnExit runs when it is
+ * popped — including during ChangeState's stack unwind and manager shutdown.
+ * States, not layers, own asset scope: a state loads its asset registry in
+ * OnEnter and clears assets in OnExit, because layer OnDetach runs deferred at
+ * end of frame and would wipe the NEXT state's freshly loaded assets.
+ * Ref-counted; owned by the GameStateManager's stack.
+ */
 class GameState : public RefCounted
 {
 public:

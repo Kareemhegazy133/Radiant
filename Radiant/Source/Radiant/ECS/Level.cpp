@@ -45,6 +45,8 @@ namespace Radiant {
 			DestroyEntity({ entity, this });
 		}
 
+		// Runs even for levels constructed with initialize == false — destroying a
+		// scratch level tears down the live level's shared physics world (RAD-27)
 		Physics2D::Shutdown();
 
 		RADIANT_TRACE("Level Destructed: {0}", (void*)this);
@@ -171,7 +173,9 @@ namespace Radiant {
 				// Skip inactive Entities
 				if (!metadata.IsActive) continue;
 
-				// Update Transforms/Colliders of all entities from physics
+				// Physics readback inside the render loop is a known defect (RAD-28):
+				// bodies without sprites — or all bodies when no Primary camera exists —
+				// never get their ECS transforms updated from the simulation
 				Entity entity = { entityHandle, this };
 				Physics2D::UpdateEntitiesTransforms(entity);
 

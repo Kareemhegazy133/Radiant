@@ -4,6 +4,13 @@
 
 namespace Radiant {
 
+	/**
+	 * Raw memory block with MANUAL lifetime: there is no destructor — whoever
+	 * owns the allocation must call Release() (or use BufferSafe). Copies and
+	 * the (data, size) constructor are shallow, non-owning views; Allocate()
+	 * and Copy() produce blocks the holder is responsible for freeing. Size is
+	 * in bytes. Bounds asserts compile out in Dist.
+	 */
 	struct Buffer
 	{
 		void* Data = nullptr;
@@ -55,6 +62,7 @@ namespace Radiant {
 				memset(Data, 0, Size);
 		}
 
+		/** Reinterprets the bytes at offset as a T. No bounds checking — unlike Write/ReadBytes, an invalid offset is never caught. */
 		template<typename T>
 		T& Read(uint64_t offset = 0)
 		{
@@ -67,6 +75,7 @@ namespace Radiant {
 			return *(T*)((byte*)Data + offset);
 		}
 
+		/** Heap-copies [offset, offset + size). Ownership transfers: the caller must delete[] the returned array. */
 		byte* ReadBytes(uint64_t size, uint64_t offset) const
 		{
 			RADIANT_ASSERT(offset + size <= Size, "Buffer overflow!");
@@ -105,6 +114,12 @@ namespace Radiant {
 		inline uint64_t GetSize() const { return Size; }
 	};
 
+	/**
+	 * Buffer that frees its memory on destruction. CAUTION: copy/move are not
+	 * controlled — copying one yields two owners of the same block (double
+	 * free), and Copy() returning by value relies on copy elision. Treat it as
+	 * a scoped local only.
+	 */
 	struct BufferSafe : public Buffer
 	{
 		~BufferSafe()

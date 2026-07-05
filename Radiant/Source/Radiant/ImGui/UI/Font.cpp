@@ -13,13 +13,15 @@ namespace Radiant {
 
 		ImGuiIO& io = ImGui::GetIO();
 
-		// Clear any previously loaded fonts
+		// The ImGui atlas is global: clearing evicts every previously loaded font,
+		// so only the font constructed last can render (see class doc — RAD-47).
 		io.Fonts->Clear();
 
 		std::string fontPathStr = config.FilePath.string();
 		io.Fonts->AddFontFromFileTTF(fontPathStr.c_str(), config.Size);
 
-		// Build the atlas
+		// GetTexDataAsRGBA32 forces the atlas build now rather than during the
+		// backend's next NewFrame; the pixel data itself is not used here.
 		unsigned char* tex_pixels = nullptr;
 		int tex_width, tex_height;
 		io.Fonts->GetTexDataAsRGBA32(&tex_pixels, &tex_width, &tex_height);

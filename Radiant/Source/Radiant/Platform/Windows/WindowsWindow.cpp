@@ -85,7 +85,10 @@ namespace Radiant {
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(specification.VSync);
 
-		// Set GLFW callbacks
+		// Set GLFW callbacks. Each one dispatches its Radiant event synchronously
+		// from inside the OS callback — the whole layer stack runs before the
+		// callback returns (a frame-start event queue replaces this in Phase 2,
+		// RAD-26)
 		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
@@ -173,6 +176,8 @@ namespace Radiant {
 		RADIANT_PROFILE_FUNCTION();
 
         glfwDestroyWindow(m_Window);
+		// Single-window assumption: terminating GLFW here tears down every
+		// window and context in the process
 		glfwTerminate();
     }
 

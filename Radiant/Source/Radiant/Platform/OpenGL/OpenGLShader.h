@@ -7,6 +7,12 @@ typedef unsigned int GLenum;
 
 namespace Radiant {
 
+	/**
+	 * GL shader program compiled from GLSL text at runtime. Every uniform
+	 * upload resolves its location with glGetUniformLocation by string, per
+	 * call — the GL-ism the RHI v2 redesign eliminates. Owns the GL program
+	 * handle.
+	 */
 	class OpenGLShader : public Shader
 	{
 	public:

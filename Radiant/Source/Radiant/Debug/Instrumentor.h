@@ -29,6 +29,13 @@ namespace Radiant {
 		std::string Name;
 	};
 
+	/**
+	 * Thread-safe singleton profiler that writes Chrome trace-event JSON —
+	 * open the output file in chrome://tracing or Perfetto. One session at a
+	 * time: BeginSession opens the file, WriteProfile appends events,
+	 * EndSession closes it. Use through the RADIANT_PROFILE_* macros, which
+	 * compile out entirely unless RADIANT_PROFILE is 1.
+	 */
 	class Instrumentor
 	{
 	public:
@@ -87,6 +94,7 @@ namespace Radiant {
 			json << "\"ts\":" << result.Start.count();
 			json << "}";
 
+			// Serialize before taking the lock — only the file write needs the mutex
 			std::lock_guard lock(m_Mutex);
 			if (m_CurrentSession)
 			{
@@ -141,6 +149,11 @@ namespace Radiant {
 		std::ofstream m_OutputStream;
 	};
 
+	/**
+	 * RAII scope timer: reports its lifetime to the Instrumentor on destruction
+	 * (or an explicit Stop()). Holds the name pointer without copying — it must
+	 * outlive the timer; the profiling macros pass static-storage strings.
+	 */
 	class InstrumentationTimer
 	{
 	public:
@@ -180,6 +193,8 @@ namespace Radiant {
 			char Data[N];
 		};
 
+		// Compile-time removal of a substring (used to strip "__cdecl " from MSVC
+		// signatures); double quotes become single so names cannot break the JSON
 		template <size_t N, size_t K>
 		constexpr auto CleanupOutputString(const char(&expr)[N], const char(&remove)[K])
 		{
@@ -202,6 +217,7 @@ namespace Radiant {
 	}
 }
 
+// Master profiling switch: when 0, every RADIANT_PROFILE_* macro compiles to nothing
 #define RADIANT_PROFILE 0
 #if RADIANT_PROFILE
 	// Resolve which function signature macro will be used. Note that this only

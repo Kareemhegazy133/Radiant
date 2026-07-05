@@ -7,6 +7,11 @@ using namespace Radiant;
 
 #include "Core/GameState.h"
 
+/**
+ * Front-end state: loads the main-menu asset registry on enter and clears
+ * assets on exit (never saving — running the game must not write assets,
+ * RAD-17). The UILayer draws the actual menu; this state only scopes assets.
+ */
 class MainMenuState : public GameState
 {
 public:

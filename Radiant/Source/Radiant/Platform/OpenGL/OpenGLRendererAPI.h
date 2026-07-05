@@ -4,6 +4,12 @@
 
 namespace Radiant {
 
+	/**
+	 * Immediate-mode GL backend: every call translates directly to GL against
+	 * global context state — no batching or deferral at this layer. Init()
+	 * enables alpha blending and depth testing, plus GL debug output in Debug
+	 * builds.
+	 */
 	class OpenGLRendererAPI : public RendererAPI
 	{
 	public:

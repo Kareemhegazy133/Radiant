@@ -5,6 +5,7 @@
 
 namespace Radiant {
 
+	/** Cursor moved. Coordinates are relative to the top-left of the window's client area. */
 	class MouseMovedEvent : public Event
 	{
 	public:
@@ -27,6 +28,7 @@ namespace Radiant {
 		float m_MouseX, m_MouseY;
 	};
 
+	/** Scroll input. Offsets are in GLFW scroll units (typically one per wheel detent, positive Y scrolling up). */
 	class MouseScrolledEvent : public Event
 	{
 	public:
@@ -49,6 +51,7 @@ namespace Radiant {
 		float m_XOffset, m_YOffset;
 	};
 
+	/** Base for mouse button events: carries the button code (GLFW-mirrored values, see MouseCodes.h). */
 	class MouseButtonEvent : public Event
 	{
 	public:

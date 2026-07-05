@@ -11,6 +11,13 @@ namespace Radiant
 {
 	//==============================================================================
 	/// FileStreamWriter
+	/**
+	 * StreamWriter over a std::ofstream. Opens the file in binary mode,
+	 * truncating existing content; the stream closes on destruction.
+	 * Non-copyable — it owns the file handle. Check IsStreamGood() (or the bool
+	 * conversion) after construction: an unopenable path is not otherwise
+	 * reported.
+	 */
 	class FileStreamWriter : public StreamWriter
 	{
 	public:
@@ -30,6 +37,12 @@ namespace Radiant
 
 	//==============================================================================
 	/// FileStreamReader
+	/**
+	 * StreamReader over a std::ifstream, opened in binary mode and closed on
+	 * destruction. Non-copyable — it owns the file handle. Check IsStreamGood()
+	 * (or the bool conversion) after construction: a missing file is not
+	 * otherwise reported.
+	 */
 	class FileStreamReader : public StreamReader
 	{
 	public:

@@ -17,6 +17,8 @@ namespace Radiant {
 	std::string Platform::GetCurrentDateTimeString()
 	{
 		std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		// std::localtime returns a pointer to shared static storage — not
+		// thread-safe; acceptable while callers stay on the main thread
 		std::tm* localTime = std::localtime(&currentTime);
 
 		int year = localTime->tm_year + 1900;

@@ -4,6 +4,11 @@
 
 namespace Radiant {
 
+	/**
+	 * Window client-area resize. Width/height are the OS-reported window size
+	 * in screen coordinates (not framebuffer pixels); 0x0 signals minimization
+	 * (GameApplication suspends updates on it).
+	 */
 	class WindowResizeEvent : public Event
 	{
 	public:
@@ -35,6 +40,8 @@ namespace Radiant {
 		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
+	// The GameAppTick/Update/Render events below are defined but never emitted
+	// by the engine (Hazel leftovers) — do not rely on receiving them
 	class GameAppTickEvent : public Event
 	{
 	public:

@@ -66,6 +66,8 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 
 **Logging:** `RADIANT_*` macros = engine, `GAME_*` macros = game code. Warn loudly on misconfiguration instead of failing silently.
 
+**Comments & API docs (three altitudes, no overlap):** `Docs/` explains systems; header doc comments state contracts; inline comments state constraints. Public engine API gets a Doxygen-compatible `/** */` block — full sentences, tag-light (`@param`/`@return` only when they add information beyond the signature) — always stating ownership, lifetime, threading, units, and failure semantics where applicable. Inline `//` comments exist only for why/constraints/invariants — never to restate what code does. No file-header boilerplate. A stale comment is worse than none: comments update with the code they describe (review-enforced).
+
 **Performance-first:** no per-frame heap allocations or GPU resource creation/destruction in hot paths; `reserve()` known sizes; no O(n) scans per frame where a map exists. Flag perf implications alongside correctness in every review.
 
 **Simulation (from Phase 2):** simulation must be framerate-independent (fixed timestep + accumulator); events are queued and drained at frame start; rendering never mutates simulation state.

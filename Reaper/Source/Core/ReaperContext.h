@@ -7,6 +7,7 @@ using namespace Radiant;
 
 #include "GameStateManager.h"
 
+/** Content paths for each state's asset registry and the gameplay level. */
 struct ReaperConfig
 {
 	std::string MainMenuAssetRegistryPath = "Assets/MainMenu.rdar";
@@ -16,6 +17,12 @@ struct ReaperConfig
 
 };
 
+/**
+ * Process-wide game context, created once by the Reaper application: boots the
+ * engine systems the game depends on (AssetManager), owns the GameStateManager,
+ * holds the content-path configuration behind static accessors, and applies the
+ * ImGui theme.
+ */
 class ReaperContext
 {
 public:

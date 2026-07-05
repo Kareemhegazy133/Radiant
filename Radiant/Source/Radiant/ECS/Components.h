@@ -17,10 +17,20 @@
 // If you add a new type of component, there are several pieces of code that need updating:
 // 1) Add new component here (obviously).
 // 2) Update LevelSerializer to (de)serialize the new component.
-// 3) If it contains an asset, update GetAssetsList() in Level.cpp
+// 3) If it contains an asset, update GetAssetList() in Level.cpp
+//
+// Components are meant to be plain data: trivially copyable and serializable, no
+// owning pointers, no std::function. The violations below are marked and tracked
+// (RAD-29/RAD-30) — do not add new ones.
 
 namespace Radiant {
 
+	/**
+	 * Identity every entity carries (added automatically at creation): persistent
+	 * UUID, human-readable tag, and active flag. IsActive gates script updates,
+	 * physics transform submission, and rendering — but is not serialized yet
+	 * (known round-trip gap).
+	 */
 	struct MetadataComponent
 	{
 		UUID ID;
@@ -34,6 +44,12 @@ namespace Radiant {
 
 	};
 
+	/**
+	 * World-space placement (added automatically at creation). Rotation is Euler
+	 * angles in RADIANS; GetTransform composes translate * rotate * scale on
+	 * demand. For entities with a dynamic rigidbody, the physics readback
+	 * overwrites Translation.xy and Rotation.z — physics owns those values.
+	 */
 	struct TransformComponent
 	{
 		glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
@@ -55,6 +71,11 @@ namespace Radiant {
 		}
 	};
 
+	/**
+	 * Renders the entity as a 2D quad. TextureHandle 0 means flat color;
+	 * otherwise the texture is resolved through the AssetManager each frame and
+	 * tinted by Color. Assets are referenced by handle, never by path.
+	 */
 	struct SpriteComponent
 	{
 		glm::vec4 Color{ 1.0f };
@@ -69,6 +90,11 @@ namespace Radiant {
 			: Color(color) {}
 	};
 
+	/**
+	 * Makes the entity a viewpoint. Level::OnRender uses the first camera it finds
+	 * with Primary set; nothing renders when no Primary camera exists.
+	 * FixedAspectRatio opts the camera out of Level::OnViewportResize.
+	 */
 	struct CameraComponent
 	{
 		SceneCamera Camera;
@@ -82,8 +108,16 @@ namespace Radiant {
 	// Forward declaration
 	class ScriptableEntity;
 
+	/**
+	 * Binds a native C++ script (a ScriptableEntity subclass) to the entity.
+	 * Bind<T>() stores factory/destroy callables; the Level instantiates the
+	 * script lazily on the first update after binding (see ScriptableEntity for
+	 * the lifecycle contract). One script per entity. Bindings are code-only —
+	 * never serialized — so they must be re-bound after level load.
+	 */
 	struct NativeScriptComponent
 	{
+		// Owning raw pointer — known plain-data violation; moves to a Level-owned side table (RAD-30)
 		ScriptableEntity* Instance = nullptr;
 
 		std::function<ScriptableEntity* ()> InstantiateScript;
@@ -102,6 +136,12 @@ namespace Radiant {
 	// Forward declaration
 	class Entity;
 
+	/**
+	 * Makes the entity a Box2D body — component presence IS the physics binding:
+	 * entt signals create the body on add and destroy it on remove. For Dynamic
+	 * bodies, physics owns the transform's Translation.xy and Rotation.z.
+	 * Requires a BoxCollider2DComponent (added after this component) to collide.
+	 */
 	struct RigidBody2DComponent
 	{
 		enum class BodyType { Static = 0, Dynamic, Kinematic };
@@ -109,28 +149,16 @@ namespace Radiant {
 		BodyType Type = BodyType::Static;
 		bool FixedRotation = false;
 
-		// Storage for runtime
+		// b2Body*, owned by the physics world — known plain-data violation; moves to a Level-owned side table (RAD-30)
 		void* RuntimeBody = nullptr;
-		/**
-		 * @brief Function pointer for handling collision events when a collision begins.
-		 *
-		 * This function pointer is used to define custom collision behavior when a collision
-		 * between entities starts. It can be assigned to a member function of a class or a lambda
-		 * function to handle collision events. The function should take a reference to an Entity
-		 * object representing the other entity involved in the collision.
-		 * @endcode
-		*/
+		// Invoked by CollisionListener2D during the physics step with the OTHER
+		// entity when contact begins — do not create/destroy bodies or entities
+		// from inside it (Box2D forbids world mutation during callbacks).
+		// std::function on a component is a known plain-data violation — replaced
+		// by queued collision events in the Phase 2 rework (RAD-29, RAD-30).
 		std::function<void(Entity&)> OnCollisionBegin = nullptr;
 
-		/**
-		 * @brief Function pointer for handling collision events when a collision ends.
-		 *
-		 * This function pointer is used to define custom collision behavior when a collision
-		 * between entities ends. It can be assigned to a member function of a class or a lambda
-		 * function to handle collision events. The function should take a reference to an Entity
-		 * object representing the other entity involved in the collision.
-		 * @endcode
-		*/
+		// Same contract as OnCollisionBegin, invoked when contact ends (RAD-29, RAD-30)
 		std::function<void(Entity&)> OnCollisionEnd = nullptr;
 
 		RigidBody2DComponent() = default;
@@ -139,6 +167,12 @@ namespace Radiant {
 			: Type(type) {}
 	};
 
+	/**
+	 * Box fixture for the entity's rigidbody. Size is HALF-extents in world units,
+	 * multiplied by the transform's scale (defaults produce a 1x1 box matching a
+	 * unit sprite); Offset is from the body origin. Adding this component requires
+	 * an existing RigidBody2DComponent — order matters (asserts otherwise).
+	 */
 	struct BoxCollider2DComponent
 	{
 		glm::vec2 Offset = { 0.0f, 0.0f };
@@ -154,7 +188,8 @@ namespace Radiant {
 		BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
 	};
 
-	// Currently not in use (Using ImGuiFont system instead)
+	// Currently not in use (using the ImGui font system instead) — parked until
+	// the MSDF text revival (RAD-47)
 	struct TextComponent
 	{
 		std::string TextString;

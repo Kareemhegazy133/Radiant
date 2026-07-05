@@ -18,6 +18,8 @@ namespace Radiant {
 		logSinks[0]->set_pattern("%^[%T] %n: %v%$");
 		logSinks[1]->set_pattern("[%T] [%l] %n: %v");
 
+		// flush_on(trace): flush every message so a crash never swallows the log
+		// tail — throughput traded for diagnosability, fine for iteration configs
 		s_RadiantLogger = std::make_shared<spdlog::logger>("RADIANT", begin(logSinks), end(logSinks));
 		spdlog::register_logger(s_RadiantLogger);
 		s_RadiantLogger->set_level(spdlog::level::trace);

@@ -4,6 +4,13 @@
 
 namespace Radiant
 {
+	/**
+	 * Abstract binary stream reader — the mirror of StreamWriter: typed helpers
+	 * layered on a single primitive, ReadData. Implementations (see
+	 * FileStreamReader) supply position control and the raw read. Every helper
+	 * must consume exactly what its StreamWriter counterpart produced; there is
+	 * no framing or validation in the format to catch drift.
+	 */
 	class StreamReader
 	{
 	public:
@@ -16,9 +23,16 @@ namespace Radiant
 
 		operator bool() const { return IsStreamGood(); }
 
+		/**
+		 * Reads a uint64_t size prefix when 'size' is 0, otherwise trusts the
+		 * caller-supplied byte count. Allocates the buffer's storage — ownership
+		 * passes to the caller, who must Release() it (Buffer is not RAII).
+		 */
 		void ReadBuffer(Buffer& buffer, uint32_t size = 0);
+		/** Length-prefixed string. The prefix is currently size_t — ABI-dependent wire format; RAD-45 pins it to uint64_t. */
 		void ReadString(std::string& string);
 
+		/** memcpy into T's object representation — trivially copyable types only. */
 		template<typename T>
 		void ReadRaw(T& type)
 		{
@@ -26,12 +40,22 @@ namespace Radiant
 			RADIANT_ASSERT(success);
 		}
 
+		/**
+		 * Deserializes via the static-method contract: T must provide
+		 * static void Deserialize(StreamReader*, T&) — the mirror of
+		 * StreamWriter::WriteObject.
+		 */
 		template<typename T>
 		void ReadObject(T& obj)
 		{
 			T::Deserialize(this, obj);
 		}
 
+		/**
+		 * Reads a uint32_t element count when 'size' is 0 (a count supplied
+		 * out-of-band skips the prefix), then each key/value — ReadRaw for
+		 * trivial types, ReadObject otherwise, matching WriteMap exactly.
+		 */
 		template<typename Key, typename Value>
 		void ReadMap(std::map<Key, Value>& map, uint32_t size = 0)
 		{
@@ -92,6 +116,7 @@ namespace Radiant
 			}
 		}
 
+		/** Same layout rules as ReadMap: uint32_t count (read when 'size' is 0), then elements via ReadRaw/ReadObject. */
 		template<typename T>
 		void ReadArray(std::vector<T>& array, uint32_t size = 0)
 		{

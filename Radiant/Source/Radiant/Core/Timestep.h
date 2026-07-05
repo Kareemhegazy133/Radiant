@@ -2,6 +2,11 @@
 
 namespace Radiant {
 
+	/**
+	 * A frame's delta time. Implicitly converts to float SECONDS — write
+	 * `velocity * ts`; use GetMilliseconds only for display. The value is a
+	 * variable per-frame delta until the fixed-timestep rework (RAD-25).
+	 */
 	class Timestep
 	{
 	public:

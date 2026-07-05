@@ -8,6 +8,14 @@
 
 namespace YAML {
 
+	// yaml-cpp convert<> specializations (node -> value decoding) for engine and
+	// glm types. Writing goes through the Emitter operator<< overloads at the
+	// bottom of this file — each pair must agree on layout and component order.
+
+	// NOTE: encode() produces a one-element sequence while decode() only accepts
+	// a scalar — assigning a UUID to a Node would not round-trip. Serializers
+	// write UUIDs through the Emitter as bare uint64 scalars, which is what
+	// decode() expects.
 	template<>
 	struct convert<Radiant::UUID>
 	{
@@ -100,6 +108,8 @@ namespace YAML {
 		}
 	};
 
+	// Quaternion component order on the wire is [w, x, y, z] — must stay in sync
+	// with the Emitter overload below.
 	template<>
 	struct convert<glm::quat>
 	{
@@ -152,6 +162,7 @@ namespace Radiant {
 		return out;
 	}
 
+	// [w, x, y, z] — matches convert<glm::quat> above.
 	inline YAML::Emitter& operator<<(YAML::Emitter& out, const glm::quat& v)
 	{
 		out << YAML::Flow;

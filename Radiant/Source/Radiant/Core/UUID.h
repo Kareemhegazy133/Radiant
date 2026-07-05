@@ -2,6 +2,12 @@
 
 namespace Radiant {
 
+	/**
+	 * 64-bit random identifier (not RFC 4122). Default construction draws from
+	 * a global Mersenne Twister seeded once per run; uniqueness is
+	 * probabilistic — there is no collision check. Value type: copy freely;
+	 * hashes by value for unordered containers.
+	 */
 	class UUID
 	{
 	public:

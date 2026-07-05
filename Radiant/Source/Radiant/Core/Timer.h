@@ -4,6 +4,11 @@
 
 namespace Radiant {
 
+	/**
+	 * Wall-clock stopwatch, started at construction. Elapsed() returns seconds,
+	 * ElapsedMillis() milliseconds. For instrumentation and load timing — the
+	 * frame timestep comes from GameApplication's loop, not from this.
+	 */
 	class Timer
 	{
 	public:

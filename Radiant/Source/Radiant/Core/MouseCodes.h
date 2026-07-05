@@ -2,6 +2,8 @@
 
 namespace Radiant
 {
+	// Button codes mirror glfw3.h values exactly — passed through untranslated
+	// by the platform layer
 	using MouseCode = uint16_t;
 
 	namespace Mouse

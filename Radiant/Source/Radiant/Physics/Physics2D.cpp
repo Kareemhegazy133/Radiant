@@ -28,6 +28,8 @@ namespace Radiant {
 	{
 		RADIANT_TRACE("Physics System Initializer");
 
+		// Rebinding overwrites (leaks) any previous world/listener — one Level's
+		// physics at a time until the world moves into the Level (RAD-27)
 		s_Physics2DData->LevelPtr = level;
 		s_Physics2DData->B2DWorld = new b2World({ 0.0f, -9.8f });
 		s_Physics2DData->CollisionListener = new CollisionListener2D(level);
@@ -140,6 +142,10 @@ namespace Radiant {
 			fixtureDef.restitution = bc2d->Restitution;
 			fixtureDef.restitutionThreshold = bc2d->RestitutionThreshold;
 
+			// Known defect (RAD-28): per-frame destroy/recreate wrecks contact
+			// persistence, sleeping, and warm-starting, and allocates every frame.
+			// DestroyFixture(GetFixtureList()) also removes only the HEAD fixture —
+			// safe only while bodies carry a single fixture.
 			body->DestroyFixture(body->GetFixtureList());
 			body->CreateFixture(&fixtureDef);
 		}

@@ -29,6 +29,8 @@ namespace Radiant {
 		Entity entityA = m_Level->GetEntityByUUID(static_cast<UUID>(bodyA->GetUserData().pointer));
 		Entity entityB = m_Level->GetEntityByUUID(static_cast<UUID>(bodyB->GetUserData().pointer));
 
+		// No validity checks yet: GetEntityByUUID returns an invalid entity for a
+		// mid-destruction body, and GetComponent on it asserts (RAD-29)
 		auto& entityARB2D = entityA.GetComponent<RigidBody2DComponent>();
 
 		//RADIANT_TRACE("Entity: {} collided with Entity {}.", entityA.GetComponent<MetadataComponent>().Tag, entityB.GetComponent<MetadataComponent>().Tag);

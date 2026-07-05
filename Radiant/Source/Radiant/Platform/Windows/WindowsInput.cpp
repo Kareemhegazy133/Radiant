@@ -8,6 +8,10 @@
 
 namespace Radiant {
 
+	// Implements the static Input polling API (Core/Input.h) by querying GLFW
+	// directly — results reflect device state at call time, independent of the
+	// event system
+
 	bool Input::IsKeyPressed(const KeyCode key)
 	{
 		auto* window = static_cast<GLFWwindow*>(GameApplication::Get().GetWindow().GetNativeWindow());

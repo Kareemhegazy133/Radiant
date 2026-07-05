@@ -5,6 +5,15 @@
 // Reaper opts into the engine namespace (game-local choice; the engine no longer injects it)
 using namespace Radiant;
 
+/**
+ * Drives the gameplay Level: loads it (or debug-creates one when no registry
+ * exists) on attach, re-binds the CameraController script (bindings are
+ * code-only and don't survive level load), then each frame runs
+ * Level::OnUpdate + OnRender into an offscreen framebuffer that OnImGuiRender
+ * presents as a fullscreen ImGui image. Owns the Level and Framebuffer via
+ * Ref. Escape pushes GamePausedState. Constructed by GameplayState::OnEnter;
+ * deleted by the engine LayerStack after the deferred pop.
+ */
 class GameLayer : public Layer
 {
 public:

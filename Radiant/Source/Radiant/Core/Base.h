@@ -35,6 +35,8 @@
 
 #define BIT(x) (1u << x)
 
+// Binds a member function of the enclosing class as an event handler. Captures
+// `this` raw — the resulting callable must not outlive the object it was made in.
 #define RADIANT_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
 #define BIND_MEMBER_FUNCTION(function, instance) std::bind(&function, instance, std::placeholders::_1)
@@ -44,6 +46,11 @@
 
 namespace Radiant {
 
+	/**
+	 * Unique-ownership half of the engine's ownership vocabulary: the single
+	 * owner creates and deletes (window, graphics context, subsystem data).
+	 * Shared engine resources use Ref<T> instead — never both on one type.
+	 */
 	template<typename T>
 	using Scope = std::unique_ptr<T>;
 	template<typename T, typename ... Args>

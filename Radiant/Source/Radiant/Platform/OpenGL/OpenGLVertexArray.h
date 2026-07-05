@@ -4,6 +4,11 @@
 
 namespace Radiant {
 
+	/**
+	 * GL VAO — the GL-only object the engine-level VertexArray mirrors; both
+	 * are deleted together at the end of Phase 3 (RAD-42). Owns the GL VAO
+	 * handle and holds Refs to its buffers.
+	 */
 	class OpenGLVertexArray : public VertexArray
 	{
 	public:

@@ -16,7 +16,7 @@ Every asset is identified by an `AssetHandle` — a random 64-bit `UUID`. Handle
 
 ### Registry & metadata
 
-`AssetMetadata` = `{Handle, AssetType, FilePath}`. The registry (`AssetRegistry`) is an in-memory `unordered_map<AssetHandle, AssetMetadata>`, persisted as YAML with the `.rdar` extension (handle / path / type triples, forward-slash paths). Asset types today: `Level` (`.rdlvl`) and `Texture2D` (`.png/.jpg/.jpeg`); `Font` is declared but not wired (RAD-47).
+`AssetMetadata` = `{Handle, AssetType, FilePath}`. The registry (`AssetRegistry`) is an in-memory `unordered_map<AssetHandle, AssetMetadata>`, persisted as YAML with the `.rdar` extension (handle / path / type triples, forward-slash paths). Asset types today: `Level` (`.rdlvl`) and `Texture2D` (`.png/.jpg/.jpeg`). There is no `Font` value in the `AssetType` enum — only an unregistered, definition-less `FontSerializerAPI` and `Font`'s commented-out asset hooks exist; the type gets wired in the MSDF revival (RAD-47).
 
 ### AssetManager (`Asset/AssetManager.{h,cpp}`)
 

@@ -32,6 +32,8 @@ namespace Radiant {
 			RADIANT_PROFILE_SCOPE("stbi_load - TextureSerializerAPI::Deserialize");
 			std::string pathStr = metadata.FilePath.string();
 			data.Data = stbi_load(pathStr.c_str(), &width, &height, &channels, 4);
+			// stbi reports the file's ORIGINAL channel count; req_comp=4 expanded the
+			// data to RGBA, so size math and format selection must use 4.
 			channels = 4;
 		}
 
@@ -86,6 +88,9 @@ namespace Radiant {
 	{
 		asset = Ref<Level>::Create();
 		LevelSerializer serializer(asset.As<Level>());
+		// Known gap: LevelSerializer's result is ignored, so a missing or corrupt
+		// .rdlvl yields an EMPTY level that reports success — levels bypass the
+		// RAD-13 failure contract the texture path honors.
 		serializer.Deserialize(metadata.FilePath.string());
 		return true;
 	}

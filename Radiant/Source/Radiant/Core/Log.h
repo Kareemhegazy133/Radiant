@@ -13,6 +13,13 @@
 
 namespace Radiant {
 
+	/**
+	 * Logging bootstrap over spdlog: one engine logger ("RADIANT") and one game
+	 * logger ("GAME"), both writing to stdout and Radiant.log. Init() must run
+	 * once before any log macro — the engine-owned main() calls it first;
+	 * logging before Init dereferences a null logger. Use the RADIANT_* /
+	 * GAME_* macros below rather than the loggers directly.
+	 */
 	class Log
 	{
 	public:
@@ -27,6 +34,7 @@ namespace Radiant {
 
 }
 
+// Lets glm types appear directly in log macros via spdlog's ostream fallback
 template<typename OStream, glm::length_t L, typename T, glm::qualifier Q>
 inline OStream& operator<<(OStream& os, const glm::vec<L, T, Q>& vector)
 {
@@ -52,7 +60,7 @@ inline OStream& operator<<(OStream& os, glm::qua<T, Q> quaternion)
 #define RADIANT_ERROR(...)    ::Radiant::Log::GetRadiantLogger()->error(__VA_ARGS__)
 #define RADIANT_CRITICAL(...) ::Radiant::Log::GetRadiantLogger()->critical(__VA_ARGS__)
 
-// Client log macros
+// Game log macros
 #define GAME_TRACE(...)         ::Radiant::Log::GetGameLogger()->trace(__VA_ARGS__)
 #define GAME_INFO(...)          ::Radiant::Log::GetGameLogger()->info(__VA_ARGS__)
 #define GAME_WARN(...)          ::Radiant::Log::GetGameLogger()->warn(__VA_ARGS__)

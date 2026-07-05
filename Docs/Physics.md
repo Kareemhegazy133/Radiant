@@ -1,6 +1,6 @@
 # Physics
 
-**Status:** Rework planned (Phase 2: RAD-25, RAD-27, RAD-28, RAD-29). This is the engine's weakest subsystem; this document describes both the current behavior and the target design so the rework has a written contract.
+**Status:** Rework planned (Phase 2: RAD-25, RAD-27, RAD-28, RAD-29) — **on Box2D v3** (upgrade decided 2026-07-05, RAD-60). This is the engine's weakest subsystem; this document describes both the current behavior (Box2D 2.4) and the target design so the rework has a written contract.
 
 ## The Problem This Solves
 
@@ -36,6 +36,8 @@ Level::OnRender (sprite loop, only when a Primary camera exists)
 `CollisionListener2D` implements `b2ContactListener`: on begin/end contact it resolves both bodies' UUIDs (from user data) to entities and invokes the `std::function` callbacks stored on their `RigidBody2DComponent`s, passing the *other* entity.
 
 ## Design Rationale (target — the Phase 2 contract, playbook §4)
+
+- **Box2D v3, not 2.4 (RAD-60, decided 2026-07-05).** The rework implements against v3's rewritten API because it *is* our target architecture: bodies are `b2BodyId` value handles (legal in data-only components, unlike `b2Body*`), worlds are `b2WorldId` (trivially per-Level), and contact reporting is an **event buffer drained after the step** (`b2World_GetContactEvents`) — no listener callbacks exist to misuse. Costs accepted: C API migration (free during a seam rebuild), our own vendor premake script replacing the 2.4 fork, pinned to a v3 release tag.
 
 - **One world per Level, owned by the Level.** Physics is world state; a process singleton means one Level maximum and dangling worlds on Level churn (RAD-27). Play-in-editor requires two live Levels.
 - **Fixed timestep.** `Step(variable_dt)` makes simulation framerate-dependent and non-deterministic — unacceptable for gameplay consistency and a hard blocker for any future networking. The Phase 2 loop steps physics at a fixed rate from an accumulator, with render interpolation (RAD-25).

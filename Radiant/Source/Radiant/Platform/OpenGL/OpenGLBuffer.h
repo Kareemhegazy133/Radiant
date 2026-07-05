@@ -4,6 +4,12 @@
 
 namespace Radiant {
 
+	/**
+	 * GL vertex buffer. The size-only constructor allocates GL_DYNAMIC_DRAW
+	 * storage for per-frame streaming; the data constructor uploads immutable
+	 * GL_STATIC_DRAW data. Owns the GL buffer handle (deleted in the
+	 * destructor).
+	 */
 	class OpenGLVertexBuffer : public VertexBuffer
 	{
 	public:
@@ -24,6 +30,7 @@ namespace Radiant {
 		BufferLayout m_Layout;
 	};
 
+	/** GL index buffer (GL_ELEMENT_ARRAY_BUFFER, 32-bit indices). Owns the GL buffer handle. */
 	class OpenGLIndexBuffer : public IndexBuffer
 	{
 	public:

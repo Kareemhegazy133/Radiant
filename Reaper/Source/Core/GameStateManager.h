@@ -9,12 +9,20 @@ using namespace Radiant;
 #include "GameStates/GamePausedState.h"
 #include "GameStates/GameplayState.h"
 
+/**
+ * Stack-based finite state machine driving Reaper's flow. Push overlays a state
+ * on the current one (e.g. GamePaused on top of Gameplay); ChangeState unwinds
+ * the whole stack and starts fresh. UILayer renders whichever state type is on
+ * top. Fixed-capacity stack (3 states — asserts on overflow). Process singleton
+ * created (and owned) by ReaperContext; starts in MainMenuState.
+ */
 class GameStateManager
 {
 public:
 	GameStateManager();
 	~GameStateManager();
 
+	/** Constructs T, pushes it, and fires its OnEnter. Asserts when the stack is full. */
 	template<typename T>
 	void PushState()
 	{
@@ -28,6 +36,7 @@ public:
 		newState->OnEnter();
 	}
 
+	/** Pops every live state (each gets OnExit, top-down), then pushes T. */
 	template<typename T>
 	void ChangeState()
 	{
@@ -40,8 +49,11 @@ public:
 		PushState<T>();
 	}
 
+	/** Fires OnExit on the top state and releases it; no-op on an empty stack. */
 	void PopState();
 
+	// Precondition: at least one state on the stack — an empty stack underflows
+	// the index (size_t wraps) with no assert guarding it
 	static GameStateType GetCurrentStateType() { return Get()->m_StateStack[Get()->m_StateStackSize - 1]->GetStateType(); }
 
 	static GameStateManager* Get() { return s_Instance; }

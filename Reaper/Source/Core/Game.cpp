@@ -7,6 +7,11 @@ using namespace Radiant;
 #include "ReaperContext.h"
 #include "Layers/UILayer.h"
 
+/**
+ * The application: wires the game context and the persistent UILayer overlay.
+ * Ownership of the pushed layer transfers to the engine LayerStack, which
+ * deletes layers when they are popped or the stack is cleared.
+ */
 class Reaper : public Radiant::GameApplication
 {
 public:

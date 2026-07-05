@@ -1,5 +1,7 @@
 #pragma once
 
+// Precompiled header for the engine project only — game projects do not use it
+
 #include "Radiant/Core/PlatformDetection.h"
 
 #ifdef RADIANT_PLATFORM_WINDOWS

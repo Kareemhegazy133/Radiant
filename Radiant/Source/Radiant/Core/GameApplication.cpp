@@ -103,6 +103,7 @@ namespace Radiant {
 		dispatcher.Dispatch<WindowCloseEvent>(RADIANT_BIND_EVENT_FN(GameApplication::OnWindowClose));
 		dispatcher.Dispatch<WindowResizeEvent>(RADIANT_BIND_EVENT_FN(GameApplication::OnWindowResize));
 
+		// Events propagate top→bottom so overlays (UI) consume input before the world
 		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
 		{
 			if (e.Handled)
@@ -124,6 +125,9 @@ namespace Radiant {
 		{
 			RADIANT_PROFILE_SCOPE("RunLoop");
 
+			// Variable timestep — simulation is framerate-dependent until the
+			// fixed-step rework (RAD-25). m_LastFrameTime starts at 0, so the first
+			// frame receives the full time since GLFW init; dies in the same rework.
 			float time = (float)glfwGetTime();
 			Timestep timestep = time - m_LastFrameTime;
 			m_LastFrameTime = time;
@@ -147,8 +151,13 @@ namespace Radiant {
 				m_ImGuiLayer->End();
 			}
 
+			// glfwPollEvents runs in here: all event handlers (OnEvent) execute now,
+			// at end of frame, inside the OS callbacks (queued dispatch lands in RAD-26)
 			m_Window->OnUpdate();
 
+			// Applied only between frames: updates and event handlers are the very
+			// code that queues pushes/pops, and mutating the stack while it is being
+			// walked would invalidate the iteration
 			m_LayerStack.ProcessPendingLayers();
 		}
 	}
@@ -170,6 +179,7 @@ namespace Radiant {
 		}
 		m_Minimized = false;
 		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
+		// Deliberately not consumed — layers may also need to react to the resize
 		return false;
 	}
 }

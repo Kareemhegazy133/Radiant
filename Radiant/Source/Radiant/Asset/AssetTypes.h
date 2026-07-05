@@ -4,6 +4,13 @@
 
 namespace Radiant {
 
+	/**
+	 * Discriminates every loadable asset kind. Persisted by NAME (see
+	 * Utils::AssetTypeToString) in .rdar registry files, so renaming an entry is
+	 * a data-format change. Adding a type also requires an AssetSerializerAPI
+	 * registration in AssetSerializer::Init and an extension mapping in
+	 * AssetExtensions.h.
+	 */
 	enum class AssetType : uint8_t
 	{
 		None = 0,
@@ -13,6 +20,7 @@ namespace Radiant {
 
 	namespace Utils {
 
+		/** Returns AssetType::None for unrecognized names — callers treat None as "skip this entry". */
 		inline AssetType AssetTypeFromString(std::string_view assetType)
 		{
 			if (assetType == "None")                return AssetType::None;
@@ -22,6 +30,7 @@ namespace Radiant {
 			return AssetType::None;
 		}
 
+		/** Asserts on values missing from the switch — extend it when adding an AssetType. */
 		inline const char* AssetTypeToString(AssetType assetType)
 		{
 			switch (assetType)
