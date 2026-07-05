@@ -68,42 +68,8 @@ namespace Radiant {
 
 	bool CollisionListener2D::ShouldCollide(b2Fixture* fixtureA, b2Fixture* fixtureB)
 	{
-		b2Body* bodyA = fixtureA->GetBody();
-		b2Body* bodyB = fixtureB->GetBody();
-
-		Entity entityA = m_Level->GetEntityByUUID(static_cast<UUID>(bodyA->GetUserData().pointer));
-		Entity entityB = m_Level->GetEntityByUUID(static_cast<UUID>(bodyB->GetUserData().pointer));
-
-		//RADIANT_TRACE("Entity A: {0}, Entity B: {1}", entityA.GetComponent<MetadataComponent>().Tag, entityB.GetComponent<MetadataComponent>().Tag);
-
-		/*if (entityA.GetComponent<MetadataComponent>().Type == typeid(Ability))
-		{
-			auto& entityANSC = entityA.GetComponent<NativeScriptComponent>();
-			if (entityANSC.Instance)
-			{
-				Ability* ability = static_cast<Ability*>(entityANSC.Instance);
-
-				if (ability && ability->Caster && *(ability->Caster) == entityB)
-				{
-					return false;
-				}
-			}
-		}
-
-		if (entityB.GetComponent<MetadataComponent>().Type == typeid(Ability))
-		{
-			auto& entityBNSC = entityB.GetComponent<NativeScriptComponent>();
-			if (entityBNSC.Instance)
-			{
-				Ability* ability = static_cast<Ability*>(entityBNSC.Instance);
-
-				if (ability && ability->Caster && *(ability->Caster) == entityA)
-				{
-					return false;
-				}
-			}
-		}*/
-
+		// No collision filtering yet — filtering arrives with the Phase 2 collision
+		// event rework (RAD-29)
 		return true;
 	}
 }

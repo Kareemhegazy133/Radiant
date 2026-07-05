@@ -45,4 +45,6 @@
 
 #include "Radiant/Renderer/SceneCamera.h"
 
-using namespace Radiant;
+// Note: this header deliberately does NOT inject `using namespace Radiant` —
+// an engine header must never force namespace pollution on its consumers.
+// Game code may opt in with its own using-directive.

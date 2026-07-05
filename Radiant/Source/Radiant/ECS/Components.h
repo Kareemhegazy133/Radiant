@@ -1,6 +1,5 @@
 #pragma once
 
-#include <typeindex>
 #include <string>
 
 #include <glm/glm.hpp>
@@ -27,9 +26,6 @@ namespace Radiant {
 		UUID ID;
 		std::string Tag;
 		bool IsActive = true;
-
-		// Initialize with 'void' as a default type
-		std::type_index Type = typeid(void);
 
 		MetadataComponent() = default;
 		MetadataComponent(const MetadataComponent&) = default;
@@ -97,13 +93,6 @@ namespace Radiant {
 		void Bind()
 		{
 			InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
-			DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
-		}
-
-		template<typename T>
-		void Bind(ScriptableEntity* abilityOwner)
-		{
-			InstantiateScript = [abilityOwner]() { return static_cast<ScriptableEntity*>(new T(abilityOwner)); };
 			DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
 		}
 	};

@@ -21,7 +21,7 @@ namespace Radiant {
 
 		int year = localTime->tm_year + 1900;
 		int month = localTime->tm_mon + 1;
-		int day = localTime->tm_mday + 1;
+		int day = localTime->tm_mday;   // tm_mday is already 1-based (unlike tm_mon)
 		int hour = localTime->tm_hour;
 		int minute = localTime->tm_min;
 

@@ -1,4 +1,7 @@
 #include <Radiant/Radiant.h>
+
+// Reaper opts into the engine namespace (game-local choice; the engine no longer injects it)
+using namespace Radiant;
 #include <Radiant/Core/EntryPoint.h>
 
 #include "ReaperContext.h"

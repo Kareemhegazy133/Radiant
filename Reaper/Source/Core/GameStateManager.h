@@ -2,6 +2,9 @@
 
 #include <Radiant/Radiant.h>
 
+// Reaper opts into the engine namespace (game-local choice; the engine no longer injects it)
+using namespace Radiant;
+
 #include "GameStates/MainMenuState.h"
 #include "GameStates/GamePausedState.h"
 #include "GameStates/GameplayState.h"

@@ -62,7 +62,6 @@ namespace Radiant {
 		entity.AddComponent<TransformComponent>();
 		auto& metadata = entity.AddComponent<MetadataComponent>();
 		metadata.ID = uuid;
-		metadata.Type = typeid(Entity);
 		metadata.Tag = name.empty() ? "Entity" : name;
 
 		m_EntityMap[uuid] = entity;
