@@ -44,12 +44,13 @@ namespace Radiant
 		Ref<VertexBuffer> LineVertexBuffer;
 		Ref<Shader> LineShader;
 
+		// Base owns the CPU-side batch allocation; Ptr is a non-owning bump cursor into it
 		uint32_t QuadIndexCount = 0;
-		QuadVertex* QuadVertexBufferBase = nullptr;
+		Scope<QuadVertex[]> QuadVertexBufferBase;
 		QuadVertex* QuadVertexBufferPtr = nullptr;
 
 		uint32_t LineVertexCount = 0;
-		LineVertex* LineVertexBufferBase = nullptr;
+		Scope<LineVertex[]> LineVertexBufferBase;
 		LineVertex* LineVertexBufferPtr = nullptr;
 
 		float LineWidth = 2.0f;
@@ -86,7 +87,7 @@ namespace Radiant
 		});
 
 		s_Data.QuadVertexArray->AddVertexBuffer(s_Data.QuadVertexBuffer);
-		s_Data.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
+		s_Data.QuadVertexBufferBase = CreateScope<QuadVertex[]>(s_Data.MaxVertices);
 		uint32_t* quadIndices = new uint32_t[s_Data.MaxIndices];
 		uint32_t offset = 0;
 		for (uint32_t i = 0; i < s_Data.MaxIndices; i += 6)
@@ -113,7 +114,7 @@ namespace Radiant
 			{ ShaderDataType::Float4, "a_Color"    }
 		});
 		s_Data.LineVertexArray->AddVertexBuffer(s_Data.LineVertexBuffer);
-		s_Data.LineVertexBufferBase = new LineVertex[s_Data.MaxVertices];
+		s_Data.LineVertexBufferBase = CreateScope<LineVertex[]>(s_Data.MaxVertices);
 
 		s_Data.WhiteTexture = Texture2D::Create(TextureSpecification());
 		uint32_t whiteTextureData = 0xffffffff;
@@ -140,16 +141,10 @@ namespace Radiant
 	{
 		RADIANT_PROFILE_FUNCTION();
 
-		delete[] s_Data.QuadVertexBufferBase;
-		s_Data.QuadVertexBufferBase = nullptr;
-
-		delete[] s_Data.QuadVertexBufferPtr;
+		s_Data.QuadVertexBufferBase.reset();
 		s_Data.QuadVertexBufferPtr = nullptr;
 
-		delete[] s_Data.LineVertexBufferBase;
-		s_Data.LineVertexBufferBase = nullptr;
-
-		delete[] s_Data.LineVertexBufferPtr;
+		s_Data.LineVertexBufferBase.reset();
 		s_Data.LineVertexBufferPtr = nullptr;
 	}
 
@@ -173,10 +168,10 @@ namespace Radiant
 	void Renderer2D::StartBatch()
 	{
 		s_Data.QuadIndexCount = 0;
-		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
+		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase.get();
 
 		s_Data.LineVertexCount = 0;
-		s_Data.LineVertexBufferPtr = s_Data.LineVertexBufferBase;
+		s_Data.LineVertexBufferPtr = s_Data.LineVertexBufferBase.get();
 
 		s_Data.TextureSlotIndex = 1;
 
@@ -187,8 +182,8 @@ namespace Radiant
 		// Bind textures
 		if (s_Data.QuadIndexCount)
 		{
-			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.QuadVertexBufferPtr - (uint8_t*)s_Data.QuadVertexBufferBase);
-			s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase, dataSize);
+			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.QuadVertexBufferPtr - (uint8_t*)s_Data.QuadVertexBufferBase.get());
+			s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase.get(), dataSize);
 
 			// Bind textures
 			for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
@@ -200,8 +195,8 @@ namespace Radiant
 
 		if (s_Data.LineVertexCount)
 		{
-			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.LineVertexBufferPtr - (uint8_t*)s_Data.LineVertexBufferBase);
-			s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase, dataSize);
+			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.LineVertexBufferPtr - (uint8_t*)s_Data.LineVertexBufferBase.get());
+			s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase.get(), dataSize);
 
 			s_Data.LineShader->Bind();
 			RenderCommand::SetLineWidth(s_Data.LineWidth);
