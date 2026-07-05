@@ -1,6 +1,6 @@
 # Layer System
 
-**Status:** Stable — ownership fixes planned (Phase 1: RAD-19).
+**Status:** Stable (ownership + detach ordering fixed in RAD-19, 2026-07-05).
 
 ## The Problem This Solves
 
@@ -41,6 +41,6 @@ Usage in practice: Reaper pushes `UILayer` as an overlay at boot and pushes/pops
 
 ## Known Issues & Evolution
 
-- **Ownership split (RAD-19):** `LayerStack` stores raw `Layer*` but its destructor deletes nothing — `GameApplication`'s destructor does the deleting. Fix: the stack owns and deletes its layers, full stop.
-- **Detach-ordering bug (RAD-19):** `GameApplication::PopLayer` calls `OnDetach()` immediately while removal is deferred — a detached layer keeps receiving `OnUpdate`/`OnEvent` until the frame ends. Fix: `OnDetach` fires at actual removal inside `ProcessPendingLayers()`.
 - **Input routing** is currently just the top→bottom `Handled` walk; ImGui does not gate input (the fork dropped Hazel's `BlockEvents`). A real focus/routing model arrives with the editor (Phase 5, RAD-53) on top of the Phase 2 event queue.
+
+Resolved 2026-07-05 (RAD-19): the stack **owns** its layers (`Clear()` detaches + deletes, called by the destructor and explicitly by `GameApplication` for shutdown ordering), and `OnDetach` fires at actual removal inside `ProcessPendingLayers()` — a popped layer stays attached (and updating) until end of frame, by design. Consequence for consumers: a layer's `OnDetach` runs *deferred*, so it must not clear global state the next frame already depends on (asset scope belongs to Reaper's state machine, not layers).

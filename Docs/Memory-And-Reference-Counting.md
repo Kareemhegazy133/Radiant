@@ -1,6 +1,6 @@
 # Memory & Reference Counting
 
-**Status:** Stable — release-race fix and Debug-only tracking landed 2026-07-05 (RAD-7); ownership fixes (RAD-19) pending.
+**Status:** Stable — release-race fix and Debug-only tracking (RAD-7), ownership fixes (RAD-19) landed 2026-07-05.
 
 ## The Problem This Solves
 
@@ -65,5 +65,4 @@ The cost is that only `RefCounted` types participate — enforced by `static_ass
 
 ## Known Issues & Evolution
 
-- **Ownership inconsistencies (RAD-19):** `GraphicsContext` inherits `RefCounted` but is owned by a `Scope`; `LayerStack` stores raw `Layer*` but `GameApplication` deletes them. Both get one owner each in Phase 1.
 - **Over-release detection compiles out of Dist:** the underflow debug-break is active in Debug and Release (RAD-9), out of Dist — a Dist over-release corrupts silently. Acceptable: all iteration happens in checked configs; Dist is the player build.

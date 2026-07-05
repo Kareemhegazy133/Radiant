@@ -19,3 +19,6 @@ Makefile
 !Tools/Binaries
 # Runtime-generated UI state
 imgui.ini
+
+# Derived data (rebuildable caches)
+**/Assets/Cache/

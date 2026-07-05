@@ -1,21 +1,32 @@
+# ignore = untracked: premake generates project files inside submodule working
+# trees; without this, every generated .vcxproj shows as "?" noise in git status.
+# Fork policy: forks exist solely to add premake build scripts (see
+# Docs/Build-System.md for the dependency table and pin policy).
 [submodule "Radiant/Vendor/spdlog"]
 	path = Radiant/Vendor/spdlog
 	url = https://github.com/gabime/spdlog
+	ignore = untracked
 [submodule "Radiant/Vendor/glm"]
 	path = Radiant/Vendor/glm
 	url = https://github.com/g-truc/glm
+	ignore = untracked
 [submodule "Radiant/Vendor/glfw"]
 	path = Radiant/Vendor/glfw
 	url = https://github.com/Kareemhegazy133/glfw
+	ignore = untracked
 [submodule "Radiant/Vendor/box2d"]
 	path = Radiant/Vendor/box2d
 	url = https://github.com/TheCherno/box2d
+	ignore = untracked
 [submodule "Radiant/Vendor/yaml-cpp"]
 	path = Radiant/Vendor/yaml-cpp
 	url = https://github.com/TheCherno/yaml-cpp
+	ignore = untracked
 [submodule "Radiant/Vendor/msdf-atlas-gen"]
 	path = Radiant/Vendor/msdf-atlas-gen
 	url = https://github.com/TheCherno/msdf-atlas-gen
+	ignore = untracked
 [submodule "Radiant/Vendor/imgui"]
 	path = Radiant/Vendor/imgui
 	url = https://github.com/Kareemhegazy133/imgui.git
+	ignore = untracked

@@ -73,7 +73,7 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 **Boundaries:**
 - Graphics-API types and headers appear only under `Platform/<API>/`. No GL/Vulkan types in public engine headers.
 - Engine code never includes game code. Games never reach into `Platform/`.
-- No `using namespace` at global scope in headers.
+- No `using namespace` at global scope in **engine** headers — the engine never forces namespace pollution on consumers. Game code may opt in inside its own files.
 
 **Serialization:** fixed-width types on the wire (`uint64_t`, never `size_t`); honest error propagation (no unconditional `return true`); format is declared little-endian.
 
