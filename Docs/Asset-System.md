@@ -2,6 +2,12 @@
 
 **Status:** Working for loose-file loading — lifecycle redesign is Phase 4 (RAD-43…RAD-48).
 
+## The Problem This Solves
+
+Content lives on disk as files (PNGs, level files, fonts); gameplay wants live objects in memory. The naive bridge — "load whatever's at this file path" — breaks the moment real content exists: move or rename a file and every reference to it dies; two systems loading the same path get two copies; nothing knows when memory can be freed; and a shipped game shouldn't be reading loose files at all.
+
+The asset system is a **library**. At import, every asset is issued a permanent card number — a 64-bit handle — and game data stores *only numbers, never shelf locations*. The catalog (the registry) maps numbers to current locations; the librarian (the `AssetManager`) fetches a book the first time it's requested and hands everyone the same copy thereafter. Move a file? Update one catalog entry — every reference in every level keeps working, because nothing but the catalog ever knew where the file lived.
+
 ## Architecture
 
 ### Identity: handles, not paths

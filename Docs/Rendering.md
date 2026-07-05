@@ -2,6 +2,13 @@
 
 **Status:** Working on OpenGL 4.5 — full RHI redesign + Vulkan backend is Phase 3 (RAD-31…RAD-42). This document describes the current system and the redesign's shape; the Architecture section will be rewritten as RHI v2 lands.
 
+## The Problem This Solves
+
+The GPU is effectively a second computer with its own memory and its own timeline; "drawing" means the CPU preparing descriptions of work and shipping them across. Two problems shape every renderer ever written:
+
+1. **Shipments are expensive.** Each draw call carries fixed overhead regardless of size — telling the GPU about sprites one at a time collapses at a few thousand of them. The answer is **batching**: gather thousands of quads into one big vertex buffer on the CPU, ship it once, draw it once. It's the difference between one weekly grocery run and a separate trip per item — `Renderer2D` exists to make draw-call count independent of sprite count.
+2. **The GPU's language varies.** OpenGL, Vulkan, and DirectX are different APIs for the same hardware, and game code shouldn't care which one is underneath. The **RHI** (Render Hardware Interface) is the engine-facing vocabulary — buffers, textures, shaders, draws — with a per-API backend translating it. How well that vocabulary is chosen decides whether swapping APIs is a backend job or a rewrite; Radiant's current one is GL-shaped, which is exactly Phase 3's problem to fix.
+
 ## Architecture (current)
 
 ### Layering

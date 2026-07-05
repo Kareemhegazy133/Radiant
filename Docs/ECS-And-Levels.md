@@ -2,6 +2,14 @@
 
 **Status:** Working — component-hygiene and physics-sync rework planned (Phase 2: RAD-28…RAD-30).
 
+## The Problem This Solves
+
+How do you represent "things in the world"? The instinctive answer — a class hierarchy (`GameObject` → `MovingObject` → `Character` → `Enemy`…) — rots fast: every new *combination* of abilities (a moving light? a camera attached to physics?) fights the tree, and features end up welded into base classes everything inherits.
+
+ECS (Entity Component System) decomposes the idea into three parts. An **entity** is just an ID — a bare name with nothing attached. **Components** are plain data you attach to that ID: a transform, a sprite, a rigidbody. **Systems** are loops that say "for every entity that has components X and Y, do Z." Behavior emerges from *composition*: an entity is what it **has**, not what it inherits. Give an entity a `RigidBody2D` and it falls; add a `Sprite` and it's visible; there is no `FallingVisibleThing` class anywhere.
+
+The picture to keep: a **spreadsheet**. Entities are rows, component types are columns, and systems walk "every row with values in these two columns." That layout is also why it's fast — same-typed components sit contiguously in memory, which CPUs read at full speed (arranging that storage is entt's whole job). A `Level` is one such spreadsheet: one world of entities plus the loops that update and render it.
+
 ## Architecture
 
 ### Level and Entity

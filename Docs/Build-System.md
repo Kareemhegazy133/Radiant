@@ -2,6 +2,12 @@
 
 **Status:** Working — restructure planned (Phase 1: RAD-20, RAD-21, RAD-22, RAD-24).
 
+## The Problem This Solves
+
+Radiant is ~150 engine source files, three executables, seven third-party libraries, and three build configurations. *Something* has to answer "compile what, in what order, with which flags, linking against what" — and answer it identically on any machine, today and after a year away.
+
+Hand-maintained Visual Studio project files rot instantly (every new file, flag, or dependency is a manual click-through), so Radiant treats them as **build artifacts, not source**: `Build.lua` is the recipe (checked in, human-edited), premake is the cook (vendored in the repo, zero install), and the `.sln`/`.vcxproj` files are the dish — regenerated on demand, gitignored, never edited by hand. Change the recipe and re-run the cook; editing the dish directly is always a mistake, because the next regeneration throws your edit away.
+
 ## Architecture
 
 ### Generation

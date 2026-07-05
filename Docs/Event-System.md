@@ -2,6 +2,12 @@
 
 **Status:** Stable — queue rework planned (Phase 2: RAD-26).
 
+## The Problem This Solves
+
+The operating system reports things — a key went down, the mouse moved, the window resized — whenever it wants, in raw OS-specific form, by calling *your* code at moments you don't choose. Game code wants the opposite: those facts as typed, self-describing objects it can inspect and react to, delivered in an order and at a moment the engine controls.
+
+The event system is that translation-and-routing layer. Think of events as **letters**: the OS drops them at the door (GLFW callbacks), each is put in a typed envelope (`KeyPressedEvent`, `WindowResizeEvent`), and the dispatcher carries them down the layer stack, where each layer opens only the envelope types it cares about. A layer that fully handles a letter marks it `Handled`, and it stops being passed on — that's how the pause menu eats the Escape key before the game sees it.
+
 ## Architecture
 
 ### Event types

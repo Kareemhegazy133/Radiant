@@ -2,6 +2,12 @@
 
 **Status:** Stable — ownership fixes planned (Phase 1: RAD-19).
 
+## The Problem This Solves
+
+An app is more than the game world. There's the world itself, UI drawn over it, and someday an editor wrapped around both — several coarse parts that each want a slice of every frame. Two orderings matter, and they're **opposite**: drawing wants world-first, UI-last (paint the background before the foreground), while input wants UI-first, world-last (clicking a menu button must not also fire the player's weapon underneath it).
+
+Layers solve both with one structure: a stack of transparent sheets. Updating and drawing walk the stack bottom→top; input walks it top→bottom, and any sheet can say *"that was mine"* (`Handled`) to stop an event falling through to the sheets below. A layer is a coarse slice of the *application* — Reaper runs exactly two (the game view, and the UI overlay on top) — not a home for individual game systems; those live inside the Level.
+
 ## Architecture
 
 Layers are the engine's **application-level composition mechanism**: coarse slices of the app (game view, UI overlay, future editor shell) with a defined update order and event priority. A `Layer` (`Core/Layer.h`) has five hooks:

@@ -2,6 +2,12 @@
 
 **Status:** Stable — loop rework planned (Phase 2: RAD-25, RAD-26).
 
+## The Problem This Solves
+
+Every program needs an answer to three questions: what starts first (and in what order), what happens repeatedly while running, and what shuts down last. In a game engine the ordering is unforgiving — the renderer cannot exist before the window that owns the graphics context, the window cannot come before logging (or you'll never see why it failed), and teardown must run in reverse or you destroy things others still depend on. `GameApplication` is the engine's **spine**: the one object that owns boot order, the frame heartbeat, and teardown, so no other system ever has to guess whether its dependencies exist yet.
+
+The "frame heartbeat" is the second idea. A game is not a program that runs once — it's a loop that repeats ~60+ times per second: measure how much time passed, let every part of the app update by that much, draw everything, show the finished image, and collect whatever the OS reported (keys, clicks, resizes). Everything the player ever experiences happens inside one beat of this loop; the entire engine exists to make each beat fast and predictable.
+
 ## Architecture
 
 ### GameApplication

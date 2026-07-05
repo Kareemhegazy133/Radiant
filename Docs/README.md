@@ -20,7 +20,8 @@ Per-system architecture documentation for the Radiant engine. Written for an eng
 
 ## Conventions
 
-- **Structure:** every document has three sections — *Architecture* (what exists and how it works), *Design Rationale* (why it is built that way, what was traded off), and *Known Issues & Evolution* (defects and planned rework, referencing Jira `RAD-*` cards).
+- **Structure:** every document has four sections — *The Problem This Solves* (a ground-up explanation for a reader with **no** engine experience: the problem in plain language, the core idea, an analogy where it genuinely clarifies — written the way you'd teach it at a whiteboard, before any implementation detail), *Architecture* (what exists and how it works), *Design Rationale* (why it is built that way, what was traded off), and *Known Issues & Evolution* (defects and planned rework, referencing Jira `RAD-*` cards).
+- **Teach, don't just describe:** a reader should leave a document able to *explain* the system, not just navigate it. Prefer plain language, concrete examples, and one strong analogy over exhaustive enumeration.
 - **Status line:** each document opens with a status: `Stable`, `Stable — hardening planned`, or `Rework planned (Phase N)`, so a reader immediately knows how much to trust the design as final.
 - **References:** docs cite files and symbols (`GameApplication::Run`, `Renderer2D.cpp`), not line numbers — line numbers rot.
 - **Honesty rule:** docs describe the system as it *is*, including known defects. Aspirational design lives clearly marked under *Evolution*, never silently blended into *Architecture*.

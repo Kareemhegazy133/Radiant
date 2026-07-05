@@ -2,6 +2,23 @@
 
 **Status:** Stable — release-race fix and Debug-only tracking landed 2026-07-05 (RAD-7); ownership fixes (RAD-19) pending.
 
+## The Problem This Solves
+
+C++ has no garbage collector: every object created with `new` must be deleted by someone, exactly once. With a single owner that's easy. But engine resources are **shared** — one texture might be in use by five sprites, the asset manager's cache, and a level mid-load, and those users come and go in any order. Delete too early and every remaining user holds a pointer to freed memory (a crash); never delete and memory leaks until the app dies. The question is always: *who deletes, and when?*
+
+Reference counting answers it with a **sign-in sheet attached to each shared object**. Anyone who starts using the object signs in (+1); anyone who stops signs out (−1). Whoever signs out and finds the sheet empty is, by definition, the last user — *they* turn off the lights and delete the object. No coordination is needed; the count **is** the coordination.
+
+What makes it automatic is C++'s most reliable feature: constructors and destructors run deterministically. `Ref<T>`'s constructor signs in; its destructor signs out. You never call inc/dec yourself — you cannot forget:
+
+```cpp
+{
+    Ref<Texture2D> a = Texture2D::Create("player.png");  // count: 1
+    Ref<Texture2D> b = a;                                 // copy → count: 2
+}   // b destructs (count: 1), a destructs (count: 0) → texture deleted here
+```
+
+(Copying signs in a new user; *moving* just hands over an existing signature — which is why a move doesn't touch the count.)
+
 ## Architecture
 
 Radiant has a four-word ownership vocabulary. Every type commits to exactly one:

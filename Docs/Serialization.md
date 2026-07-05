@@ -2,6 +2,12 @@
 
 **Status:** Working for YAML paths; binary stream layer needs hardening before the Phase 4 pack work (RAD-45).
 
+## The Problem This Solves
+
+An object in memory is pointers and compiler-chosen layout — meaningful only inside the running process that created it. Files and networks carry nothing but bytes. **Serialization** is the act of flattening an object graph into a byte sequence — and rebuilding it later — such that the result survives crossing into a different process, machine, or engine version.
+
+Radiant needs it for two audiences with opposite priorities. **Humans** author and version content: levels and registries should be diffable in git and readable in a text editor — that's the YAML family. **Machines** load shipped games: packed content should be compact and fast to parse — that's the binary family, with a cook step bridging the two. And rule one of any binary format: every field's size and byte order is pinned down *explicitly*. "Whatever the compiler happened to do" is not a file format — it changes between architectures and even compiler settings, which is why the wire rules below ban `size_t` and uninitialized padding.
+
 ## Architecture
 
 Radiant has two serialization families with different jobs:

@@ -2,6 +2,12 @@
 
 **Status:** Rework planned (Phase 2: RAD-25, RAD-27, RAD-28, RAD-29). This is the engine's weakest subsystem; this document describes both the current behavior and the target design so the rework has a written contract.
 
+## The Problem This Solves
+
+Making things fall, slide, bounce, and never sink through the floor is a numerical-simulation problem — genuinely hard, thoroughly solved, and not this project's learning goal — so Radiant delegates the math to **Box2D** and keeps its own learning budget for architecture.
+
+What *is* our problem: the engine now holds **two descriptions of the same world**. The ECS has a transform per entity ("draw the crate here"); Box2D has a body per physical object ("physics says the crate is here"). The physics subsystem is really the discipline of keeping those two truths in sync without them fighting — deciding who owns an entity's position (physics, for anything dynamic), when each side reads the other, and how "these two things touched" gets reported back to gameplay. Nearly every defect in this subsystem, current or historical, is a two-sources-of-truth failure: pushing stale transforms into the simulation, reading results back in the wrong place, or telling the simulation to rebuild things it was still using.
+
 ## Architecture (current)
 
 Radiant integrates **Box2D 2.4.0** (submodule) behind `Physics/Physics2D.{h,cpp}` — a fully **static** class holding one process-wide data block: the `b2World` (gravity hardcoded to `{0, -9.8}`), a `Level*` back-pointer, and the `CollisionListener2D`.
