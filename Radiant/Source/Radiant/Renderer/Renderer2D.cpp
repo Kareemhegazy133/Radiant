@@ -415,8 +415,11 @@ namespace Radiant
 		DrawQuad(transform, subtexture, tintColor);
 	}
 
-	void Renderer2D::DrawLine(const glm::vec3& p0, glm::vec3& p1, const glm::vec4& color)
+	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color)
 	{
+		if (s_Data.LineVertexCount + 2 > Renderer2DData::MaxVertices)
+			NextBatch();
+
 		s_Data.LineVertexBufferPtr->Position = p0;
 		s_Data.LineVertexBufferPtr->Color = color;
 		s_Data.LineVertexBufferPtr++;
