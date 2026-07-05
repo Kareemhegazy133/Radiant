@@ -112,61 +112,6 @@ project "Radiant"
 		runtime "Release"
 		optimize "on"
 
-project "Sandbox"
-	location "Sandbox"
-	kind "ConsoleApp"
-	language "C++"
-	cppdialect "C++20"
-	staticruntime "off"
-
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
-
-	files
-	{
-		"%{prj.name}/Source/**.h",
-		"%{prj.name}/Source/**.hpp",
-		"%{prj.name}/Source/**.cpp"
-	}
-
-	includedirs
-	{
-		"%{prj.name}/Source",
-
-		-- Include Radiant
-		"Radiant/Source",
-		"Radiant/Vendor",
-		"%{IncludeDir.spdlog}",
-		"%{IncludeDir.glm}",
-		"%{IncludeDir.entt}",
-		"%{IncludeDir.box2d}",
-		"%{IncludeDir.yaml_cpp}"
-	}
-	
-	links
-	{
-		"Radiant"
-	}
-
-	filter "system:windows"
-		systemversion "latest"
-		defines { "WINDOWS" }
-
-	filter "configurations:Debug"
-		defines { "RD_DEBUG" }
-		runtime "Debug"
-		symbols "on"
-
-	filter "configurations:Release"
-		defines { "RD_RELEASE" }
-		runtime "Release"
-		optimize "on"
-
-	filter "configurations:Dist"
-		defines { "RD_DIST" }
-		runtime "Release"
-		optimize "on"
-		
 project "Reaper"
 	location "Reaper"
 	kind "ConsoleApp"

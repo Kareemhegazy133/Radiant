@@ -49,7 +49,6 @@ Full audit (2026-07-04) is filed as Jira issues RAD-7…RAD-59 with `file:line` 
 | `Radiant/Source/Radiant/Asset/` | Handle-based asset manager + YAML registry (`.rdar`) | Working; lifecycle redesign in Phase 4 |
 | `Radiant/Source/Radiant/Serialization/` | Stream I/O + binary AssetPack | AssetPack is dead code, parked for Phase 4 |
 | `Reaper/` | The game: state machine (MainMenu/Gameplay/Paused), GameLayer (Level driver), UILayer (ImGui) | Working shell |
-| `Sandbox/` | Stale scratch project | Reference only |
 
 Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rdap` (binary asset pack — future), `.rdfa` (cached font atlas).
 

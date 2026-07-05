@@ -2,7 +2,7 @@
 
 **Status:** Living document — updated as phases land.
 
-Radiant is a 2D game engine in C++20, born as a fork of TheCherno's Hazel and being incrementally re-architected to principal-engineering standards. It ships as a static library consumed by game executables; **Reaper** is the proving-ground game and must run at every milestone. **Sandbox** is a legacy scratch project kept for reference.
+Radiant is a 2D game engine in C++20, born as a fork of TheCherno's Hazel and being incrementally re-architected to principal-engineering standards. It ships as a static library consumed by game executables; **Reaper** is the proving-ground game and must run at every milestone. (A legacy scratch project, Sandbox, was retired 2026-07-05 — it lives in git history.)
 
 ## Module Map
 

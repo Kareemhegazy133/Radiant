@@ -47,4 +47,4 @@ Reaper scopes assets per game state with **one registry file per state** (`MainM
 - **Editor/runtime split (RAD-43):** `AssetManager` becomes an interface — editor implementation (loose files, YAML registry, explicit import) and runtime implementation (immutable registry, binary pack).
 - **Binary pack + cook step (RAD-46):** all asset types serialize binary; Dist Reaper ships as exe + `.rdap`, no loose files.
 - **Fonts unmanaged (RAD-47):** `.ttf` registry entries are silently dropped (`Font` type unwired); fonts revive with the MSDF pipeline.
-- **Engine-owned resources (RAD-48):** engine shaders currently live duplicated in game asset folders and have already diverged; they move engine-side with build staging.
+- **Engine-owned resources (RAD-48):** engine shaders currently live inside Reaper's asset folder — the engine's own runtime resources are game-owned; they move engine-side with build staging.

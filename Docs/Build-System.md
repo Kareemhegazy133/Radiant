@@ -24,9 +24,8 @@ Generated solution/project files are build artifacts and are gitignored (a few l
 
 | Project | Kind | Notes |
 |---------|------|-------|
-| `Radiant` | StaticLib | the engine; PCH `rdpch.h`; C++20 |
+| `Radiant` | StaticLib | the engine; PCH `Radiant/rdpch.h`; C++20 |
 | `Reaper` | ConsoleApp | the game; links `Radiant`; **startproject** |
-| `Sandbox` | ConsoleApp | legacy scratch app |
 | `Dependencies` group | — | glfw, glad, box2d, yaml-cpp, imgui (each with its own vendor premake script) |
 
 | Config | Defines | Meaning |
