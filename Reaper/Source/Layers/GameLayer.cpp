@@ -40,8 +40,9 @@ void GameLayer::OnAttach()
 
 void GameLayer::OnDetach()
 {
-	AssetManager::SaveLevel(m_Level, ReaperContext::GetLevelAssetPath());
-	AssetManager::SaveAssetRegistry(ReaperContext::GetGameplayAssetRegistryPath());
+	// Deliberately no SaveLevel/SaveAssetRegistry here: running the game must never
+	// mutate authored content — saving is an explicit editor/tool action (RAD-17).
+	// Persisting on exit was writing physics drift into the committed level file.
 	AssetManager::ClearAssets();
 
 	m_Framebuffer.Reset();
