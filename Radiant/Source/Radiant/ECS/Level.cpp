@@ -74,7 +74,15 @@ namespace Radiant {
 	{
 		if (auto* nsc = entity.TryGetComponent<NativeScriptComponent>())
 		{
-			nsc->Instance->OnDestroy();
+			// Instance is created lazily on first update — it may not exist yet
+			if (nsc->Instance)
+			{
+				nsc->Instance->OnDestroy();
+				if (nsc->DestroyScript)
+					nsc->DestroyScript(nsc);
+				else
+					delete nsc->Instance;
+			}
 		}
 
 		UUID id = entity.GetUUID();
@@ -82,7 +90,6 @@ namespace Radiant {
 		// Remove components for which there exist on_destroy handlers
 		// This ensures that if the handlers rely on other entity components (in particular
 		// the MetadataComponent and the TransformComponent), they can still access them.
-		auto name = entity.Name();
 		entity.RemoveComponentIfExists<RigidBody2DComponent>();
 
 		m_Registry.destroy(entity.m_EntityHandle);
