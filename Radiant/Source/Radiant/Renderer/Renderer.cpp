@@ -16,6 +16,9 @@ namespace Radiant {
 
 	void Renderer::Shutdown()
 	{
+		// Must run while the graphics context is still alive — GameApplication's
+		// destructor calls this before the window (and its context) are destroyed
+		Renderer2D::Shutdown();
 	}
 
 	void Renderer::OnWindowResize(uint32_t width, uint32_t height)

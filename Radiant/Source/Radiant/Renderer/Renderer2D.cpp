@@ -120,6 +120,8 @@ namespace Radiant
 		uint32_t whiteTextureData = 0xffffffff;
 		s_Data.WhiteTexture->SetData(Buffer(&whiteTextureData, sizeof(uint32_t)));
 
+		// Dead since the 450-core shaders: u_Textures uses layout(binding = 0),
+		// so this sampler array is never uploaded anywhere
 		int32_t samplers[s_Data.MaxTextureSlots];
 		for (uint32_t i = 0; i < s_Data.MaxTextureSlots; i++)
 			samplers[i] = i;
@@ -140,6 +142,21 @@ namespace Radiant
 	void Renderer2D::Shutdown()
 	{
 		RADIANT_PROFILE_FUNCTION();
+
+		// Release the GPU resources explicitly while the graphics context is
+		// still alive — s_Data has static storage duration, so leaving these to
+		// static destruction would run GL deletes after the context is gone
+		s_Data.QuadVertexArray = nullptr;
+		s_Data.QuadVertexBuffer = nullptr;
+		s_Data.QuadShader = nullptr;
+		s_Data.WhiteTexture = nullptr;
+
+		s_Data.LineVertexArray = nullptr;
+		s_Data.LineVertexBuffer = nullptr;
+		s_Data.LineShader = nullptr;
+
+		s_Data.TextureSlots.fill(nullptr);
+		s_Data.CameraUniformBuffer = nullptr;
 
 		s_Data.QuadVertexBufferBase.reset();
 		s_Data.QuadVertexBufferPtr = nullptr;
@@ -173,15 +190,20 @@ namespace Radiant
 		s_Data.LineVertexCount = 0;
 		s_Data.LineVertexBufferPtr = s_Data.LineVertexBufferBase.get();
 
+		// Only the cursor resets — stale slot Refs keep their textures alive
+		// until overwritten by a later batch
 		s_Data.TextureSlotIndex = 1;
 
 	}
 
 	void Renderer2D::Flush()
 	{
-		// Bind textures
+		// The single batch VBO is re-uploaded in place every flush with no
+		// orphaning/ring — a known implicit-sync stall hazard, fixed structurally
+		// by frames-in-flight buffer rings in Phase 3.
 		if (s_Data.QuadIndexCount)
 		{
+			// Upload only the byte range the bump cursor actually advanced over
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.QuadVertexBufferPtr - (uint8_t*)s_Data.QuadVertexBufferBase.get());
 			s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase.get(), dataSize);
 
@@ -291,6 +313,8 @@ namespace Radiant
 		if (s_Data.QuadIndexCount >= Renderer2DData::MaxIndices)
 			NextBatch();
 
+		// 0.0f doubles as the "not found" sentinel — slot 0 is reserved for the
+		// white texture, which user textures can never occupy
 		float textureIndex = 0.0f;
 		for (uint32_t i = 1; i < s_Data.TextureSlotIndex; i++)
 		{
@@ -303,6 +327,8 @@ namespace Radiant
 
 		if (textureIndex == 0.0f)
 		{
+			// All 32 slots taken — flush and let this texture claim slot 1 of
+			// the fresh batch
 			if (s_Data.TextureSlotIndex >= Renderer2DData::MaxTextureSlots)
 				NextBatch();
 

@@ -1,8 +1,8 @@
 #include "Radiant/rdpch.h"
-#include "Framebuffer.h"
+#include "FrameBuffer.h"
 
 #include "Radiant/Renderer/Renderer.h"
-#include "Radiant/Platform/OpenGL/OpenGLFramebuffer.h"
+#include "Radiant/Platform/OpenGL/OpenGLFrameBuffer.h"
 
 namespace Radiant {
 

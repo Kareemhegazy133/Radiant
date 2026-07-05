@@ -1,5 +1,5 @@
 #include "Radiant/rdpch.h"
-#include "Radiant/Platform/OpenGL/OpenGLFramebuffer.h"
+#include "Radiant/Platform/OpenGL/OpenGLFrameBuffer.h"
 
 #include <glad/glad.h>
 
@@ -207,6 +207,8 @@ namespace Radiant {
 		RADIANT_ASSERT(attachmentIndex < m_ColorAttachments.size());
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+		// Read format is hardwired to integer — only valid against RED_INTEGER
+		// attachments (entity-ID picking); also requires this FBO to be bound
 		int pixelData;
 		glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
 		return pixelData;

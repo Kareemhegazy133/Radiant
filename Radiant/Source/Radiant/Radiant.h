@@ -1,6 +1,7 @@
 #pragma once
 
-// For use by Game applications
+// Umbrella header for game applications — the single include a game needs.
+// Engine code never includes this; it uses targeted includes and the PCH.
 
 #include "Radiant/Core/Base.h"
 
@@ -38,7 +39,7 @@
 
 #include "Radiant/Renderer/Buffer.h"
 #include "Radiant/Renderer/Shader.h"
-#include "Radiant/Renderer/Framebuffer.h"
+#include "Radiant/Renderer/FrameBuffer.h"
 #include "Radiant/Renderer/Texture.h"
 #include "Radiant/Renderer/SubTexture2D.h"
 #include "Radiant/Renderer/VertexArray.h"

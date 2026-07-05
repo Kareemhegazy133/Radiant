@@ -1,9 +1,14 @@
 #pragma once
 
-#include "Radiant/Renderer/Framebuffer.h"
+#include "Radiant/Renderer/FrameBuffer.h"
 
 namespace Radiant {
 
+	/**
+	 * GL FBO implementation. Owns the framebuffer object and all attachment
+	 * texture handles. Invalidate() destroys and recreates the FBO and its
+	 * attachments — it runs on construction and on every Resize.
+	 */
 	class OpenGLFramebuffer : public Framebuffer
 	{
 	public:
