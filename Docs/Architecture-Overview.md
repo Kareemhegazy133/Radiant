@@ -7,7 +7,7 @@ Radiant is a 2D game engine in C++20, born as a fork of TheCherno's Hazel and be
 ## Module Map
 
 ```text
-Radiant/Source/
+Radiant/Source/Radiant/    (engine includes are namespaced: #include "Radiant/Core/...")
 ├── Core/          Application lifecycle, window, layers, Ref/Scope, log, assert, input
 ├── Events/        Event types + dispatcher (used by Core and layers)
 ├── Renderer/      API-agnostic rendering: Renderer2D batching, resource abstractions

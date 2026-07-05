@@ -42,8 +42,8 @@ project "Radiant"
 	cppdialect "C++20"
 	staticruntime "off"
 
-	pchheader "rdpch.h"
-	pchsource "%{prj.name}/Source/rdpch.cpp"
+	pchheader "Radiant/rdpch.h"
+	pchsource "%{prj.name}/Source/Radiant/rdpch.cpp"
 	
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")

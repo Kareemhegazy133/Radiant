@@ -10,7 +10,7 @@
 | Language | C++20, MSVC (VS2022), Windows-only for now |
 | Namespace | `Radiant` |
 | Macro Prefix | `RADIANT_` (engine macros), `RD_` (config defines: `RD_DEBUG`/`RD_RELEASE`/`RD_DIST`) |
-| PCH | `rdpch.h` (engine project only) |
+| PCH | `Radiant/rdpch.h` (engine project only) |
 | Build System | Premake 5 — root `Build.lua`, generated via `Scripts/Setup-Windows.bat` |
 | Renderer | OpenGL 4.5 (legacy) → Vulkan (Phase 3 target) |
 | Jira | Project **RAD** @ `hndredgames.atlassian.net` |
@@ -39,15 +39,15 @@ Full audit (2026-07-04) is filed as Jira issues RAD-7…RAD-59 with `file:line` 
 
 | Path | Responsibility | State |
 |------|----------------|-------|
-| `Radiant/Source/Core/` | App lifecycle (`GameApplication`), window, layers, events entry, `Ref`/`Scope`, logging, asserts, input | Working; Hazel-derived |
-| `Radiant/Source/Events/` | Event types + dispatcher (blocking dispatch — queue arrives in Phase 2) | Working |
-| `Radiant/Source/Renderer/` | API-agnostic renderer + batched Renderer2D | Working on GL; RHI v2 replaces the abstraction in Phase 3 |
-| `Radiant/Source/Platform/OpenGL/` | GL backend (deleted at end of Phase 3) | Legacy |
-| `Radiant/Source/Platform/Windows/` | Window/input/filesystem impl | Working |
-| `Radiant/Source/ECS/` | `Level` (wraps private `entt::registry`), `Entity` handle, components, YAML LevelSerializer, native scripts | Working; component hygiene rework in Phase 2 |
-| `Radiant/Source/Physics/` | Box2D integration | Weakest subsystem; rebuilt in Phase 2 |
-| `Radiant/Source/Asset/` | Handle-based asset manager + YAML registry (`.rdar`) | Working; lifecycle redesign in Phase 4 |
-| `Radiant/Source/Serialization/` | Stream I/O + binary AssetPack | AssetPack is dead code, parked for Phase 4 |
+| `Radiant/Source/Radiant/Core/` | App lifecycle (`GameApplication`), window, layers, events entry, `Ref`/`Scope`, logging, asserts, input | Working; Hazel-derived |
+| `Radiant/Source/Radiant/Events/` | Event types + dispatcher (blocking dispatch — queue arrives in Phase 2) | Working |
+| `Radiant/Source/Radiant/Renderer/` | API-agnostic renderer + batched Renderer2D | Working on GL; RHI v2 replaces the abstraction in Phase 3 |
+| `Radiant/Source/Radiant/Platform/OpenGL/` | GL backend (deleted at end of Phase 3) | Legacy |
+| `Radiant/Source/Radiant/Platform/Windows/` | Window/input/filesystem impl | Working |
+| `Radiant/Source/Radiant/ECS/` | `Level` (wraps private `entt::registry`), `Entity` handle, components, YAML LevelSerializer, native scripts | Working; component hygiene rework in Phase 2 |
+| `Radiant/Source/Radiant/Physics/` | Box2D integration | Weakest subsystem; rebuilt in Phase 2 |
+| `Radiant/Source/Radiant/Asset/` | Handle-based asset manager + YAML registry (`.rdar`) | Working; lifecycle redesign in Phase 4 |
+| `Radiant/Source/Radiant/Serialization/` | Stream I/O + binary AssetPack | AssetPack is dead code, parked for Phase 4 |
 | `Reaper/` | The game: state machine (MainMenu/Gameplay/Paused), GameLayer (Level driver), UILayer (ImGui) | Working shell |
 | `Sandbox/` | Stale scratch project | Reference only |
 

@@ -1,5 +1,5 @@
-#include <Radiant.h>
-#include <Core/EntryPoint.h>
+#include <Radiant/Radiant.h>
+#include <Radiant/Core/EntryPoint.h>
 
 #include "Layers/SandboxLayer.h"
 

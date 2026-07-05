@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Radiant.h>
+#include <Radiant/Radiant.h>
 
 #include "GameStates/MainMenuState.h"
 #include "GameStates/GamePausedState.h"
