@@ -95,6 +95,7 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 
 # Workflow
 
+- **Sessions are disposable; artifacts are not.** Start a fresh conversation per story/task (`/plan-feature RAD-XX` is the usual opener). All durable context lives outside the chat: this file + `Docs/` + the playbook + Jira + `.claude/plans/` + Claude's persistent memory. If something decided in a session isn't recorded in one of those homes before the session ends, record it — a conversation whose loss would hurt means the record-keeping failed.
 - **Tracking:** everything lives in Jira project RAD. Phase epics: RAD-1 (Triage), RAD-2 (Simulation), RAD-3 (RHI/Vulkan), RAD-4 (Assets), RAD-5 (Editor), RAD-6 (Icebox). Every non-epic issue is parented to a phase epic. Labels: `mentorship` (user implements, Claude guides) / `chore` (Claude implements) / `audit-finding` / `milestone` / `design` / `icebox`.
 - **Creating/updating issues:** use the `/jira` skill — never ad-hoc `createJiraIssue` calls.
 - **Planning a story:** `/plan-feature RAD-XX` — plan file in `.claude/plans/`, posted to the issue on approval, then guided piece-by-piece implementation.
