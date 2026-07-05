@@ -1,6 +1,6 @@
 # Memory & Reference Counting
 
-**Status:** Stable design — implementation hardening in progress (RAD-7, RAD-19).
+**Status:** Stable — release-race fix and Debug-only tracking landed 2026-07-05 (RAD-7); ownership fixes (RAD-19) pending.
 
 ## Architecture
 
@@ -11,17 +11,23 @@ Radiant has a four-word ownership vocabulary. Every type commits to exactly one:
 | Shared | `Ref<T>` | Renderer resources (buffers, shaders, textures, framebuffers), assets, levels, game states |
 | Unique | `Scope<T>` (= `std::unique_ptr`) | Window, graphics context, subsystem data blocks |
 | Value | plain member / component | ECS components, math types, specs |
-| Observer | raw pointer / `WeakRef<T>` | Non-owning back-references (`Entity::m_Level`) |
+| Observer | raw pointer | Non-owning back-references (`Entity::m_Level`); weak references are deliberately absent (see below) |
 
 ### RefCounted + Ref<T> (`Core/Ref.h`)
 
-`Ref<T>` is an **intrusive** reference-counted smart pointer: the count lives inside the object as `std::atomic<uint32_t> RefCounted::m_RefCount`, and `Ref<T>` statically requires `T : RefCounted`. Construction/copy call `IncRef()`; destruction/reassignment call `DecRef()`, which deletes the instance when the count reaches zero.
+`Ref<T>` is an **intrusive** reference-counted smart pointer: the count lives inside the object as `std::atomic<uint32_t> RefCounted::m_RefCount`, and `Ref<T>` statically requires `T : RefCounted`. Construction/copy call `IncRef()`; destruction/reassignment call `DecRef()`.
+
+**The release contract:** the decision "did I release the last reference?" comes from the decrement itself. `RefCounted::DecRefCount()` performs `fetch_sub(1, std::memory_order_acq_rel)` and returns `true` only to the caller whose decrement took the count from 1 to 0 — that caller (and no other) deletes. This is the same idiom as UE's `TTransactionalAtomicRefCount::ImmediatelyRelease`. `GetRefCount()` exists for diagnostics only — never build release logic on an observed count, because it can change between the load and any decision made from it. An underflow (releasing a dead object) triggers `RADIANT_DEBUGBREAK` in Debug.
 
 Key API: `Ref<T>::Create(args...)` (preferred construction), `.As<T2>()` (static-cast conversion), `.Raw()` (non-owning access), copy/move/nullptr semantics as expected.
 
-### Live-reference tracking + WeakRef
+### Live-reference tracking (Debug only)
 
-Every `IncRef` registers the instance pointer in a global mutex-guarded set (`Ref.cpp`); final release removes it. `WeakRef<T>` holds a raw pointer and implements `IsValid()` by asking that set (`RefUtils::IsLive`). This is a **debug facility** — leak detection and dangling-weak-checks — but it is currently compiled into all builds and taxes every `Ref` construction with a mutex acquisition.
+Behind `RADIANT_TRACK_REFERENCES` (`Base.h` — on under `RD_DEBUG`, flippable to 1 manually for leak-hunting optimized builds): every `IncRef` registers the instance pointer in a global mutex-guarded set (`Ref.cpp`); the final release removes it **before** the delete, so a destroyed object is never still reported as tracked. In Release/Dist the tracking compiles out entirely and `IncRef`/`DecRef` are bare atomic operations.
+
+**Weak references are deliberately absent.** The fork's unused `WeakRef<T>` was removed 2026-07-05 (its validity check depended on tracking that no longer exists outside Debug — a lying API in Release). When a real consumer appears, a weak reference gets designed properly (control block or generation counters) as its own piece of work.
+
+**Include-order note:** `Base.h` and `Ref.h` form a deliberate cycle — `Base.h` defines `RADIANT_DEBUGBREAK`/`RADIANT_TRACK_REFERENCES` *before* including `Ref.h` at its bottom, so `Ref.h` can use those macros from any include entry point. Don't move `#include "Core/Ref.h"` above the macro definitions.
 
 ## Design Rationale
 
@@ -42,7 +48,5 @@ The cost is that only `RefCounted` types participate — enforced by `static_ass
 
 ## Known Issues & Evolution
 
-- **Release race (RAD-7, in progress):** `DecRef` decrements atomically, then does a *separate* zero-check before `delete`. Two threads releasing the last two references can both observe zero → double free. The fix is the canonical `fetch_sub(1, memory_order_acq_rel) == 1` idiom. Latent today (single-threaded engine); must be fixed before Phase 3 async work and the job system.
-- **Tracking overhead in all builds (RAD-7):** the live-reference set (global mutex + hash set per Ref construction) will be compiled down to Debug builds only; `RefUtils::IsLive` also reads the set without the lock — a data race.
-- **`Ref::CopyWithoutIncrement` is broken and unused** — dereferences a null `Ref`; deleted in the Phase 1 dead-code sweep (RAD-23) together with the unused `WeakRef` (nothing in the engine currently holds one).
 - **Ownership inconsistencies (RAD-19):** `GraphicsContext` inherits `RefCounted` but is owned by a `Scope`; `LayerStack` stores raw `Layer*` but `GameApplication` deletes them. Both get one owner each in Phase 1.
+- **Over-release detection is Debug-only:** the underflow debug-break compiles out of Release/Dist; RAD-9 (asserts in Release) extends the window in which programmer errors fail fast.

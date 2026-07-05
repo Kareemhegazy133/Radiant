@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "Ref.h"
-
 #include "Core/PlatformDetection.h"
 
 #ifdef RD_DEBUG
@@ -17,7 +15,15 @@
 	#endif
 	#define RADIANT_ENABLE_ASSERTS
 #else
-	#define RADIANT_DEBUGBREAK()
+	#define RADIANT_DEBUGBREAK() ((void)0)
+#endif
+
+// Tracks live RefCounted instances for leak diagnostics. On in Debug builds;
+// flip to 1 manually to hunt leaks in optimized builds.
+#ifdef RD_DEBUG
+	#define RADIANT_TRACK_REFERENCES 1
+#else
+	#define RADIANT_TRACK_REFERENCES 0
 #endif
 
 #define RADIANT_EXPAND_MACRO(x) x
@@ -44,6 +50,10 @@ namespace Radiant {
 
 	using byte = uint8_t;
 }
+
+// Included after the macros above: Ref.h depends on RADIANT_DEBUGBREAK and
+// RADIANT_TRACK_REFERENCES being defined first (Ref.h ↔ Base.h include cycle).
+#include "Core/Ref.h"
 
 #include "Core/Log.h"
 #include "Core/Assert.h"

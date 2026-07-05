@@ -1,5 +1,10 @@
 #include "rdpch.h"
 
+#include "Core/Ref.h"
+
+#if RADIANT_TRACK_REFERENCES
+
+#include <mutex>
 #include <unordered_set>
 
 namespace Radiant {
@@ -23,13 +28,8 @@ namespace Radiant {
 			RADIANT_ASSERT(s_LiveReferences.find(instance) != s_LiveReferences.end());
 			s_LiveReferences.erase(instance);
 		}
-
-		bool IsLive(void* instance)
-		{
-			RADIANT_ASSERT(instance);
-			return s_LiveReferences.find(instance) != s_LiveReferences.end();
-		}
 	}
 
-
 }
+
+#endif

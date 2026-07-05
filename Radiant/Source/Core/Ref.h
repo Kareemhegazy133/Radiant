@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Memory.h>
+#include "Core/Base.h"
 
 #include <atomic>
 #include <cstddef>
@@ -17,21 +17,36 @@ namespace Radiant {
 		{
 			++m_RefCount;
 		}
-		void DecRefCount() const
+
+		// Decrements the refcount and returns true if this call released the last
+		// reference. The release decision must come from the decrement itself:
+		// fetch_sub returns the previous value atomically, so exactly one caller
+		// can observe 1. A separate GetRefCount() check after decrementing is a
+		// race (two threads can both see 0 and double-delete).
+		bool DecRefCount() const
 		{
-			--m_RefCount;
+			uint32_t previous = m_RefCount.fetch_sub(1, std::memory_order_acq_rel);
+
+			// previous == 0 means the object was released more times than it was referenced
+			if (previous == 0)
+				RADIANT_DEBUGBREAK();
+
+			return previous == 1;
 		}
 
+		// Diagnostics only — never build release logic on an observed count; it can
+		// change between the load and any decision made from it.
 		uint32_t GetRefCount() const { return m_RefCount.load(); }
 	private:
 		mutable std::atomic<uint32_t> m_RefCount = 0;
 	};
 
+#if RADIANT_TRACK_REFERENCES
 	namespace RefUtils {
 		void AddToLiveReferences(void* instance);
 		void RemoveFromLiveReferences(void* instance);
-		bool IsLive(void* instance);
 	}
+#endif
 
 	template<typename T>
 	class Ref
@@ -67,13 +82,6 @@ namespace Radiant {
 		{
 			m_Instance = (T*)other.m_Instance;
 			other.m_Instance = nullptr;
-		}
-
-		static Ref<T> CopyWithoutIncrement(const Ref<T>& other)
-		{
-			Ref<T> result = nullptr;
-			result->m_Instance = other.m_Instance;
-			return result;
 		}
 
 		~Ref()
@@ -179,7 +187,9 @@ namespace Radiant {
 			if (m_Instance)
 			{
 				m_Instance->IncRefCount();
+#if RADIANT_TRACK_REFERENCES
 				RefUtils::AddToLiveReferences((void*)m_Instance);
+#endif
 			}
 		}
 
@@ -187,12 +197,13 @@ namespace Radiant {
 		{
 			if (m_Instance)
 			{
-				m_Instance->DecRefCount();
-
-				if (m_Instance->GetRefCount() == 0)
+				if (m_Instance->DecRefCount())
 				{
-					delete m_Instance;
+					// bookkeeping first: a destroyed object must never still be tracked as live
+#if RADIANT_TRACK_REFERENCES
 					RefUtils::RemoveFromLiveReferences((void*)m_Instance);
+#endif
+					delete m_Instance;
 					m_Instance = nullptr;
 				}
 			}
@@ -201,40 +212,6 @@ namespace Radiant {
 		template<class T2>
 		friend class Ref;
 		mutable T* m_Instance;
-	};
-
-	template<typename T>
-	class WeakRef
-	{
-	public:
-		WeakRef() = default;
-
-		WeakRef(Ref<T> ref)
-		{
-			m_Instance = ref.Raw();
-		}
-
-		WeakRef(T* instance)
-		{
-			m_Instance = instance;
-		}
-
-		T* operator->() { return m_Instance; }
-		const T* operator->() const { return m_Instance; }
-
-		T& operator*() { return *m_Instance; }
-		const T& operator*() const { return *m_Instance; }
-
-		bool IsValid() const { return m_Instance ? RefUtils::IsLive(m_Instance) : false; }
-		operator bool() const { return IsValid(); }
-
-		template<typename T2>
-		WeakRef<T2> As() const
-		{
-			return WeakRef<T2>(dynamic_cast<T2*>(m_Instance));
-		}
-	private:
-		T* m_Instance = nullptr;
 	};
 
 }
