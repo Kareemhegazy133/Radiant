@@ -98,11 +98,11 @@ namespace Radiant {
 
 		Utils::ValidateSpecification(m_Specification);
 		auto size = (uint32_t)Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
-		data = Buffer::Copy(data.Data, size);
 
-		// Ensure data size matches the expected texture size
+		// Ensure the caller's data covers the entire texture (the upload reads exactly this much)
 		RADIANT_ASSERT(data.Size == size, "Data must match the entire texture size!");
-		// Upload texture data
+		// Upload directly from the caller's buffer — glTextureSubImage2D consumes it synchronously,
+		// so no copy is needed (the previous Buffer::Copy here leaked its allocation on every call)
 		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, m_DataFormat == GL_RGBA32F ? GL_FLOAT : GL_UNSIGNED_BYTE, data.Data);
 	}
 
