@@ -53,3 +53,6 @@ project "Reaper"
 		defines { "RD_DIST" }
 		runtime "Release"
 		optimize "on"
+		-- Shipping shape: no console window (WinMain via EntryPoint.h), whole-program optimization
+		kind "WindowedApp"
+		flags { "LinkTimeOptimization" }

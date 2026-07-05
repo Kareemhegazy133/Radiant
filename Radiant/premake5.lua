@@ -73,3 +73,4 @@ project "Radiant"
 		defines { "RD_DIST" }
 		runtime "Release"
 		optimize "on"
+		flags { "LinkTimeOptimization" }

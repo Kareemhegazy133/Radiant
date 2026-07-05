@@ -28,6 +28,11 @@ group "Dependencies"
 	include "Radiant/Vendor/box2d"
 	include "Radiant/Vendor/yaml-cpp"
 	include "Radiant/Vendor/imgui"
+
+	-- ImGui's own script pins C++17; re-open the project to align it with the
+	-- workspace standard without modifying the submodule
+	project "ImGui"
+		cppdialect "C++20"
 group ""
 
 include "Radiant"

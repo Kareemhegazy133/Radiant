@@ -24,4 +24,14 @@ int main(int argc, char** argv)
 	RADIANT_PROFILE_END_SESSION();
 }
 
+#ifdef RD_DIST
+// Dist builds link as WindowedApp (no console window), whose entry point is
+// WinMain. Forward to main() so there is exactly one real entry path.
+#include <Windows.h>
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	return main(__argc, __argv);
+}
+#endif
+
 #endif
