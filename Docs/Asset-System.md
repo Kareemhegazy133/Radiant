@@ -39,11 +39,11 @@ Reaper scopes assets per game state with **one registry file per state** (`MainM
 
 - **Handle indirection** is the load-bearing decision and it is correct: content can be reorganized, renamed, and later cooked into packs without touching a single component. Everything else in the system is replaceable plumbing around it.
 - **Per-type serializer registry** keeps asset-type addition O(1) in code sites — the pattern survives Phase 4 intact.
-- **What's missing by design** (Phase 4 scope): an editor/runtime split — `LoadAsset`'s mint-on-load behavior is an *import* operation fused into a runtime API, which is how Reaper's level acquired a dangling font handle re-minted every run (RAD-17); refcount-driven unload (assets are already `Ref`s — the count is unused); and placeholder assets on failed loads instead of nulls.
+- **What's missing by design** (Phase 4 scope): an editor/runtime split — `LoadAsset`'s mint-on-load behavior is an *import* operation fused into a runtime API, which is how Reaper's level acquired a dangling font handle re-minted every run (the save-on-exit vector was removed in RAD-17; the fusion itself remains until Phase 4); refcount-driven unload (assets are already `Ref`s — the count is unused); and placeholder assets on failed loads instead of nulls.
 
 ## Known Issues & Evolution
 
-- **Failure paths crash or poison (RAD-13):** a failed `LoadAsset` null-derefs; a failed `GetAsset` caches the null so retries can never succeed. Interim guards in Phase 1; real fix is placeholders (RAD-44).
+- **Failure paths return null (interim):** failed loads now log and return `nullptr` without poisoning the cache (RAD-13); the real fix — placeholder assets — is Phase 4 (RAD-44). Callers must still null-check until then.
 - **Editor/runtime split (RAD-43):** `AssetManager` becomes an interface — editor implementation (loose files, YAML registry, explicit import) and runtime implementation (immutable registry, binary pack).
 - **Binary pack + cook step (RAD-46):** all asset types serialize binary; Dist Reaper ships as exe + `.rdap`, no loose files.
 - **Fonts unmanaged (RAD-47):** `.ttf` registry entries are silently dropped (`Font` type unwired); fonts revive with the MSDF pipeline.

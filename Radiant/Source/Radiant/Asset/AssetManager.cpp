@@ -43,7 +43,9 @@ namespace Radiant {
 		bool result = AssetSerializer::LoadAsset(metadata, asset);
 		if (!result || !asset)
 		{
+			// Never register or cache a failed load — a poisoned cache makes retries impossible
 			RADIANT_ERROR("AssetManager: Failed to import asset at {0}", filepath.string());
+			return nullptr;
 		}
 
 		asset->Handle = metadata.Handle;
@@ -84,7 +86,10 @@ namespace Radiant {
 			bool result = AssetSerializer::LoadAsset(metadata, asset);
 			if (!result || !asset)
 			{
-				RADIANT_ERROR("AssetManager: Failed to load asset");
+				// Never cache a failed load — a cached null poisons every retry
+				RADIANT_ERROR("AssetManager: Failed to load asset with handle {0} from {1}",
+					(uint64_t)assetHandle, metadata.FilePath.string());
+				return nullptr;
 			}
 			s_AssetManagerData->m_LoadedAssets[assetHandle] = asset;
 		}
