@@ -103,7 +103,8 @@ Evaluate every changed line against these categories. Only report actual violati
 ### 10. Documentation
 - New public engine APIs have doc comments stating ownership, lifetime, and threading assumptions
 - Comments explain intent/constraints, not what the next line does
-- If the diff changes a subsystem's behavior, check CLAUDE.md's Architecture Map row and the playbook for staleness — flag outdated statements as WARNING
+- **Docs update contract (Docs/README.md):** if the diff alters a system's behavior or architecture, the corresponding `Docs/<System>.md` must be updated in the same change — a stale system doc is an ERROR. When a phase rework lands, the doc's *Architecture* section is rewritten and the resolved *Known Issues* entries removed.
+- If the diff changes a subsystem's behavior, also check CLAUDE.md's Architecture Map row and the playbook for staleness — flag outdated statements as WARNING
 
 ---
 

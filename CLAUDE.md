@@ -99,3 +99,4 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 - **Planning a story:** `/plan-feature RAD-XX` — plan file in `.claude/plans/`, posted to the issue on approval, then guided piece-by-piece implementation.
 - **Reviewing:** `/review` before committing engine changes.
 - **Playbook:** `.claude/references/radiant-playbook.md` holds established patterns and hard-won rules; cite it by section, keep it current via `/audit-standards`.
+- **System docs:** `Docs/` holds per-system architecture documentation (index: `Docs/README.md`). **The update contract: any change that alters a system's behavior or architecture updates that system's doc in the same change** — `/review` flags stale docs as an ERROR. `/sync-docs` pushes `Docs/` to Confluence.
