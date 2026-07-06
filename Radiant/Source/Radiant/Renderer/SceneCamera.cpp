@@ -30,7 +30,14 @@ namespace Radiant {
 
 	void SceneCamera::SetViewportSize(uint32_t width, uint32_t height)
 	{
-		RADIANT_ASSERT(width > 0 && height > 0);
+		// A zero-area viewport is a runtime condition (minimized window), not a
+		// programmer error: keep the last valid projection instead of dividing by 0
+		if (width == 0 || height == 0)
+		{
+			RADIANT_WARN("SceneCamera: ignoring zero-area viewport {}x{}", width, height);
+			return;
+		}
+
 		m_AspectRatio = (float)width / (float)height;
 		RecalculateProjection();
 	}

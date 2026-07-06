@@ -13,10 +13,23 @@ namespace Radiant {
 	{
 		std::vector<spdlog::sink_ptr> logSinks;
 		logSinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-		logSinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("Radiant.log", true));
+		// [%L] carries the level even where color doesn't (colorblind readers,
+		// CI captures, piped output); the file pattern spells it out fully
+		logSinks[0]->set_pattern("%^[%T] [%L] %n: %v%$");
 
-		logSinks[0]->set_pattern("%^[%T] %n: %v%$");
-		logSinks[1]->set_pattern("[%T] [%l] %n: %v");
+		// A locked or unwritable Radiant.log must not kill the process before
+		// logging exists — recover to console-only and report it below
+		std::string fileSinkError;
+		try
+		{
+			auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Radiant.log", true);
+			fileSink->set_pattern("[%T] [%l] %n: %v");
+			logSinks.emplace_back(fileSink);
+		}
+		catch (const spdlog::spdlog_ex& ex)
+		{
+			fileSinkError = ex.what();
+		}
 
 		// flush_on(trace): flush every message so a crash never swallows the log
 		// tail — throughput traded for diagnosability, fine for iteration configs
@@ -29,6 +42,9 @@ namespace Radiant {
 		spdlog::register_logger(s_GameLogger);
 		s_GameLogger->set_level(spdlog::level::trace);
 		s_GameLogger->flush_on(spdlog::level::trace);
+
+		if (!fileSinkError.empty())
+			RADIANT_WARN("Log: could not open Radiant.log ({}) - continuing console-only", fileSinkError);
 	}
 
 }

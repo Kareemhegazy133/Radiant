@@ -35,12 +35,19 @@ namespace Radiant {
 			metadata.Handle = AssetHandle();
 			metadata.FilePath = filepath;
 			metadata.Type = GetAssetTypeFromFileExtension(filepath.extension());
-			RADIANT_ASSERT(metadata.Type != AssetType::None);
+			// Unsupported extension is a content mistake (the extension helper
+			// already warned) — recover with null, don't assert
+			if (metadata.Type == AssetType::None)
+			{
+				RADIANT_WARN("AssetManager: cannot import '{0}' - unsupported asset type", filepath.string());
+				return nullptr;
+			}
 		}
 
 		if (IsAssetLoaded(metadata.Handle))
 		{
-			RADIANT_WARN("AssetManager: Asset with handle: {0} is already loaded. Returning loaded asset.", (uint64_t)metadata.Handle);
+			// Normal cache hit on the import path — not a warning
+			RADIANT_TRACE("AssetManager: asset {0} already loaded, returning cached", (uint64_t)metadata.Handle);
 			return s_AssetManagerData->m_LoadedAssets.at(metadata.Handle);
 		}
 
@@ -66,7 +73,11 @@ namespace Radiant {
 		metadata.Handle = level->Handle;
 		metadata.FilePath = filepath;
 		metadata.Type = GetAssetTypeFromFileExtension(filepath.extension());
-		RADIANT_ASSERT(metadata.Type != AssetType::None);
+		if (metadata.Type == AssetType::None)
+		{
+			RADIANT_WARN("AssetManager: cannot save level to '{0}' - unsupported extension", filepath.string());
+			return;
+		}
 
 		AssetSerializer::SaveAsset(metadata, level);
 		s_AssetManagerData->m_AssetRegistry.Set(metadata.Handle, metadata);
@@ -192,12 +203,27 @@ namespace Radiant {
 			return false;
 		}
 
+		// An unreadable/locked registry is a content/config failure — the function
+		// contract is "return false when malformed", so recover, don't assert
 		std::ifstream stream(assetRegistryPath);
-		RADIANT_ASSERT(stream);
+		if (!stream)
+		{
+			RADIANT_WARN("AssetManager: AssetRegistry at {0} could not be opened", assetRegistryPath.string());
+			return false;
+		}
 		std::stringstream strStream;
 		strStream << stream.rdbuf();
 
-		YAML::Node data = YAML::Load(strStream.str());
+		YAML::Node data;
+		try
+		{
+			data = YAML::Load(strStream.str());
+		}
+		catch (const YAML::Exception& ex)
+		{
+			RADIANT_ERROR("AssetManager: failed to parse AssetRegistry {0}: {1}", assetRegistryPath.string(), ex.what());
+			return false;
+		}
 
 		auto rootNode = data["AssetRegistry"];
 		if (!rootNode)
@@ -208,20 +234,27 @@ namespace Radiant {
 
 		for (const auto& node : rootNode)
 		{
-			std::string filepath = node["FilePath"].as<std::string>();
-
 			AssetMetadata metadata;
-			metadata.Handle = node["Handle"].as<uint64_t>();
-			metadata.FilePath = filepath;
-			metadata.Type = Utils::AssetTypeFromString(node["Type"].as<std::string>());
+			try
+			{
+				metadata.Handle = node["Handle"].as<uint64_t>();
+				metadata.FilePath = node["FilePath"].as<std::string>();
+				metadata.Type = Utils::AssetTypeFromString(node["Type"].as<std::string>());
+			}
+			catch (const YAML::Exception& ex)
+			{
+				// One malformed entry must not discard the rest of the registry
+				RADIANT_WARN("AssetManager: skipping malformed AssetRegistry entry: {0}", ex.what());
+				continue;
+			}
 
 			if (metadata.Type == AssetType::None)
 				continue;
 
-			if (metadata.Type != GetAssetTypeFromPath(filepath))
+			if (metadata.Type != GetAssetTypeFromPath(metadata.FilePath))
 			{
 				RADIANT_WARN("AssetManager: Mismatch between stored AssetType and extension type when reading asset registry!");
-				metadata.Type = GetAssetTypeFromPath(filepath);
+				metadata.Type = GetAssetTypeFromPath(metadata.FilePath);
 			}
 
 			if (metadata.Handle == 0)
@@ -260,6 +293,11 @@ namespace Radiant {
 		}
 
 		std::ofstream fout(assetRegistryPath);
+		if (!fout)
+		{
+			RADIANT_WARN("AssetManager: failed to open {0} for writing - registry not saved", assetRegistryPath.string());
+			return;
+		}
 		fout << out.c_str();
 
 		RADIANT_INFO("AssetManager: AssetRegistry file saved at {0}", assetRegistryPath.string());

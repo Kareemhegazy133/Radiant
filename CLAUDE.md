@@ -66,6 +66,8 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 
 **Logging:** `RADIANT_*` macros = engine, `GAME_*` macros = game code. Warn loudly on misconfiguration instead of failing silently.
 
+**Naming (principal standard):** concise and precise — a name states exactly what the thing is and nothing more (`ConsumeStep`, not `ProcessAccumulatedTimeStep`). Follow the codebase's conventions: `PascalCase` types/functions, `m_`/`s_` member/static prefixes, `Get`/`Set` accessors, verb-first functions, no abbreviations that force a lookup. Consistency with the surrounding code wins over personal taste — including Claude's.
+
 **Comments & API docs (three altitudes, no overlap):** `Docs/` explains systems; header doc comments state contracts; inline comments state constraints. Public engine API gets a Doxygen-compatible `/** */` block — full sentences, tag-light (`@param`/`@return` only when they add information beyond the signature) — always stating ownership, lifetime, threading, units, and failure semantics where applicable. Inline `//` comments exist only for why/constraints/invariants — never to restate what code does. No file-header boilerplate. A stale comment is worse than none: comments update with the code they describe (review-enforced).
 
 **Performance-first:** no per-frame heap allocations or GPU resource creation/destruction in hot paths; `reserve()` known sizes; no O(n) scans per frame where a map exists. Flag perf implications alongside correctness in every review.
@@ -91,6 +93,19 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 - Configs: **Debug** (symbols, asserts) / **Release** (optimized, asserts) / **Dist** (shipping, no asserts).
 - Verify any engine change by **building all configs and running Reaper** (startproject). Assets load relative to the project working directory — run from the project dir (VS default).
 
+**CLI build (how Claude self-verifies; verified 2026-07-05):**
+
+```powershell
+# Locate MSBuild (stable across VS updates); on this machine it resolves to
+# C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe
+& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
+
+& $msbuild Radiant.sln -p:Configuration=Debug -p:Platform=x64 -m -v:m -nologo   # repeat for Release, Dist
+```
+
+- Output: `bin/<Config>-windows-x86_64/Reaper/Reaper.exe`; run it with working directory `Reaper/` (assets are working-dir-relative).
+- **Chore Definition of Done:** Claude builds **all three configs** via this CLI clean before handing off any chore — "please build and check" is not a handoff.
+
 ---
 
 # Workflow
@@ -99,6 +114,7 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 - **Tracking:** everything lives in Jira project RAD. Phase epics: RAD-1 (Triage), RAD-2 (Simulation), RAD-3 (RHI/Vulkan), RAD-4 (Assets), RAD-5 (Editor), RAD-6 (Icebox). Every non-epic issue is parented to a phase epic. Labels: `mentorship` (user implements, Claude guides) / `chore` (Claude implements) / `audit-finding` / `milestone` / `design` / `icebox`.
 - **Creating/updating issues:** use the `/jira` skill — never ad-hoc `createJiraIssue` calls.
 - **Planning a story:** `/plan-feature RAD-XX` — plan file in `.claude/plans/`, posted to the issue on approval, then guided piece-by-piece implementation.
+- **Story cadence (every story, in order):** `/plan-feature RAD-XX` → guided implementation (Kareem writes core, Claude does chores/guards/logging/docs) → Kareem runs `/review` → Claude writes the **Story Implementation Report** (format in the plan-feature skill: associate-level explanation of what/why with code snippets, posted to the Jira story) → transition per Definition of Done.
 - **Reviewing:** `/review` before committing engine changes.
 - **Playbook:** `.claude/references/radiant-playbook.md` holds established patterns and hard-won rules; cite it by section, keep it current via `/audit-standards`.
 - **System docs:** `Docs/` holds per-system architecture documentation (index: `Docs/README.md`). **The update contract: any change that alters a system's behavior or architecture updates that system's doc in the same change** — `/review` flags stale docs as an ERROR. `/sync-docs` pushes `Docs/` to Confluence.

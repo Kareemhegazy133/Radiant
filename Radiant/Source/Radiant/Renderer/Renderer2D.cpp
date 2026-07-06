@@ -128,6 +128,11 @@ namespace Radiant
 
 		s_Data.QuadShader = Shader::Create("Assets/Shaders/Renderer2D_Quad.glsl");
 		s_Data.LineShader = Shader::Create("Assets/Shaders/Renderer2D_Line.glsl");
+		// Engine-owned shaders: a null Ref means the factory itself failed — a
+		// packaging/build error. NOTE: GL compile/link failures do NOT surface
+		// here (OpenGLShader logs them and zeroes its program id internally);
+		// shader failure becomes a build-time error with RHI v2's SPIR-V pipeline.
+		RADIANT_ASSERT(s_Data.QuadShader && s_Data.LineShader, "Built-in Renderer2D shaders failed to load");
 
 		s_Data.TextureSlots[0] = s_Data.WhiteTexture;
 

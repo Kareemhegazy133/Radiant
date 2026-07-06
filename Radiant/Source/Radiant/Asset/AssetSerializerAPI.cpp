@@ -17,7 +17,7 @@ namespace Radiant {
 
 	void TextureSerializerAPI::Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const
 	{
-		RADIANT_ASSERT(false); // Not needed
+		RADIANT_ASSERT(false, "Serialization path not supported for this asset type"); // Not needed
 	}
 
 	bool TextureSerializerAPI::Deserialize(const AssetMetadata& metadata, Ref<Asset>& asset) const
@@ -109,7 +109,7 @@ namespace Radiant {
 
 	Ref<Asset> LevelAssetSerializerAPI::DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::AssetInfo& assetInfo) const
 	{
-		RADIANT_ASSERT(false); // Not needed
+		RADIANT_ASSERT(false, "Serialization path not supported for this asset type"); // Not needed
 		return nullptr;
 	}
 

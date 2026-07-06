@@ -3,22 +3,26 @@
 // This ignores all warnings raised inside External headers
 #pragma warning(push, 0)
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
 #pragma warning(pop)
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/string_cast.hpp>
-
 #include "Base.h"
+
+// fmt::formatter specializations for engine/vendor types (UUID, path, glm) —
+// included here so every log call site can format them
+#include "LogCustomFormatters.h"
 
 namespace Radiant {
 
 	/**
 	 * Logging bootstrap over spdlog: one engine logger ("RADIANT") and one game
-	 * logger ("GAME"), both writing to stdout and Radiant.log. Init() must run
-	 * once before any log macro — the engine-owned main() calls it first;
-	 * logging before Init dereferences a null logger. Use the RADIANT_* /
-	 * GAME_* macros below rather than the loggers directly.
+	 * logger ("GAME"), both writing to stdout and Radiant.log (working-dir
+	 * relative; falls back to console-only with a WARN if the file cannot be
+	 * opened). Init() must run once before any log macro — the engine-owned
+	 * main() calls it first; logging before Init dereferences a null logger.
+	 * Use the RADIANT_* / GAME_* macros below rather than the loggers directly:
+	 * TRACE/INFO compile out of Dist builds entirely (arguments unevaluated,
+	 * format strings absent from the shipping binary); WARN and above survive
+	 * in every config.
 	 */
 	class Log
 	{
@@ -34,35 +38,26 @@ namespace Radiant {
 
 }
 
-// Lets glm types appear directly in log macros via spdlog's ostream fallback
-template<typename OStream, glm::length_t L, typename T, glm::qualifier Q>
-inline OStream& operator<<(OStream& os, const glm::vec<L, T, Q>& vector)
-{
-	return os << glm::to_string(vector);
-}
+// TRACE/INFO are development chatter: stripped from Dist at compile time so
+// shipping builds neither evaluate their arguments nor carry their strings.
+// WARN/ERROR/CRITICAL remain in all configs — a player's log of what went
+// wrong is often the only diagnostic a shipped build produces.
+#ifndef RD_DIST
+	#define RADIANT_TRACE(...)    ::Radiant::Log::GetRadiantLogger()->trace(__VA_ARGS__)
+	#define RADIANT_INFO(...)     ::Radiant::Log::GetRadiantLogger()->info(__VA_ARGS__)
+	#define GAME_TRACE(...)       ::Radiant::Log::GetGameLogger()->trace(__VA_ARGS__)
+	#define GAME_INFO(...)        ::Radiant::Log::GetGameLogger()->info(__VA_ARGS__)
+#else
+	#define RADIANT_TRACE(...)    ((void)0)
+	#define RADIANT_INFO(...)     ((void)0)
+	#define GAME_TRACE(...)       ((void)0)
+	#define GAME_INFO(...)        ((void)0)
+#endif
 
-template<typename OStream, glm::length_t C, glm::length_t R, typename T, glm::qualifier Q>
-inline OStream& operator<<(OStream& os, const glm::mat<C, R, T, Q>& matrix)
-{
-	return os << glm::to_string(matrix);
-}
-
-template<typename OStream, typename T, glm::qualifier Q>
-inline OStream& operator<<(OStream& os, glm::qua<T, Q> quaternion)
-{
-	return os << glm::to_string(quaternion);
-}
-
-// Core log macros
-#define RADIANT_TRACE(...)    ::Radiant::Log::GetRadiantLogger()->trace(__VA_ARGS__)
-#define RADIANT_INFO(...)     ::Radiant::Log::GetRadiantLogger()->info(__VA_ARGS__)
 #define RADIANT_WARN(...)     ::Radiant::Log::GetRadiantLogger()->warn(__VA_ARGS__)
 #define RADIANT_ERROR(...)    ::Radiant::Log::GetRadiantLogger()->error(__VA_ARGS__)
 #define RADIANT_CRITICAL(...) ::Radiant::Log::GetRadiantLogger()->critical(__VA_ARGS__)
 
-// Game log macros
-#define GAME_TRACE(...)         ::Radiant::Log::GetGameLogger()->trace(__VA_ARGS__)
-#define GAME_INFO(...)          ::Radiant::Log::GetGameLogger()->info(__VA_ARGS__)
-#define GAME_WARN(...)          ::Radiant::Log::GetGameLogger()->warn(__VA_ARGS__)
-#define GAME_ERROR(...)         ::Radiant::Log::GetGameLogger()->error(__VA_ARGS__)
-#define GAME_CRITICAL(...)      ::Radiant::Log::GetGameLogger()->critical(__VA_ARGS__)
+#define GAME_WARN(...)        ::Radiant::Log::GetGameLogger()->warn(__VA_ARGS__)
+#define GAME_ERROR(...)       ::Radiant::Log::GetGameLogger()->error(__VA_ARGS__)
+#define GAME_CRITICAL(...)    ::Radiant::Log::GetGameLogger()->critical(__VA_ARGS__)

@@ -34,7 +34,9 @@ namespace Radiant {
 		if (bodyTypeString == "Dynamic")   return RigidBody2DComponent::BodyType::Dynamic;
 		if (bodyTypeString == "Kinematic") return RigidBody2DComponent::BodyType::Kinematic;
 
-		RADIANT_ASSERT(false, "Unknown body type");
+		// A malformed BodyType in a .rdlvl is a content mistake — warn and
+		// recover to Static rather than assert (which is silent in Dist anyway)
+		RADIANT_WARN("LevelSerializer: unknown RigidBody2D body type '{}', defaulting to Static", bodyTypeString);
 		return RigidBody2DComponent::BodyType::Static;
 	}
 
@@ -49,7 +51,14 @@ namespace Radiant {
 		SerializeToYAML(out);
 
 		std::ofstream fout(filepath);
+		if (!fout)
+		{
+			RADIANT_WARN("LevelSerializer: failed to open '{}' for writing", filepath.string());
+			return;
+		}
 		fout << out.c_str();
+		if (!fout.good())
+			RADIANT_WARN("LevelSerializer: write to '{}' failed - level file may be truncated", filepath.string());
 	}
 
 	void LevelSerializer::SerializeToYAML(YAML::Emitter& out)
@@ -257,6 +266,13 @@ namespace Radiant {
 			{
 				auto lhsEntity = m_Level->m_EntityMap.find(lhs.ID);
 				auto rhsEntity = m_Level->m_EntityMap.find(rhs.ID);
+				// Same end()-deref hazard as Level::SortEntities — map and
+				// registry out of sync is a programmer error
+				RADIANT_ASSERT(lhsEntity != m_Level->m_EntityMap.end() && rhsEntity != m_Level->m_EntityMap.end(), "Deserialize sort: metadata ID missing from entity map");
+				// Unmapped sorts last; two unmapped entries must compare equivalent
+				// (false both ways) or the comparator breaks strict weak ordering — UB
+				if (lhsEntity == m_Level->m_EntityMap.end() || rhsEntity == m_Level->m_EntityMap.end())
+					return lhsEntity != m_Level->m_EntityMap.end() && rhsEntity == m_Level->m_EntityMap.end();
 				return static_cast<uint32_t>(lhsEntity->second) < static_cast<uint32_t>(rhsEntity->second);
 			});
 
@@ -385,9 +401,18 @@ namespace Radiant {
 				component.TextString = textComponent["TextString"].as<std::string>();
 				AssetHandle fontHandle = textComponent["FontHandle"].as<uint64_t>();
 				if (AssetManager::IsAssetHandleValid(fontHandle))
+				{
 					component.FontHandle = fontHandle;
+				}
+				else if (Ref<Font> defaultFont = Font::GetDefaultFont())
+				{
+					component.FontHandle = defaultFont->Handle;
+				}
 				else
-					component.FontHandle = Font::GetDefaultFont()->Handle;
+				{
+					// No default font either — leave handle 0 rather than deref null
+					RADIANT_WARN("LevelSerializer: font {} missing and no default font available", (uint64_t)fontHandle);
+				}
 				component.Color = textComponent["Color"].as<glm::vec4>();
 				component.TextSize = textComponent["TextSize"].as<float>();
 				component.LineSpacing = textComponent["LineSpacing"].as<float>();

@@ -164,6 +164,10 @@ namespace Radiant {
 			for (auto id : glShaderIDs)
 				glDeleteShader(id);
 
+			// m_RendererID was already assigned above — leaving it pointing at the
+			// deleted program would hand Bind()/the destructor a dangling GL id
+			m_RendererID = 0;
+
 			RADIANT_ERROR("{0}", infoLog.data());
 			RADIANT_ASSERT(false, "Shader link failure!");
 			return;

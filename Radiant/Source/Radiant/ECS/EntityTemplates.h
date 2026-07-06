@@ -34,28 +34,28 @@ namespace Radiant {
 	template<typename T>
 	T* Entity::TryGetComponent()
 	{
-		RADIANT_ASSERT(IsValid());
+		RADIANT_ASSERT(IsValid(), "Component access on an invalid entity handle");
 		return m_Level->m_Registry.try_get<T>(m_EntityHandle);
 	}
 
 	template<typename T>
 	const T* Entity::TryGetComponent() const
 	{
-		RADIANT_ASSERT(IsValid());
+		RADIANT_ASSERT(IsValid(), "Component access on an invalid entity handle");
 		return m_Level->m_Registry.try_get<T>(m_EntityHandle);
 	}
 
 	template<typename... T>
 	bool Entity::HasComponent()
 	{
-		RADIANT_ASSERT(IsValid());
+		RADIANT_ASSERT(IsValid(), "Component access on an invalid entity handle");
 		return m_Level->m_Registry.all_of<T...>(m_EntityHandle);
 	}
 
 	template<typename... T>
 	bool Entity::HasComponent() const
 	{
-		RADIANT_ASSERT(IsValid());
+		RADIANT_ASSERT(IsValid(), "Component access on an invalid entity handle");
 		return m_Level->m_Registry.all_of<T...>(m_EntityHandle);
 	}
 
@@ -69,7 +69,7 @@ namespace Radiant {
 	template<typename T>
 	void Entity::RemoveComponentIfExists()
 	{
-		RADIANT_ASSERT(IsValid());
+		RADIANT_ASSERT(IsValid(), "Component access on an invalid entity handle");
 		if(HasComponent<T>())
 			RemoveComponent<T>();
 	}

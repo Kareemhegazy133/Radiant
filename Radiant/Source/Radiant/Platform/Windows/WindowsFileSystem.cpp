@@ -25,13 +25,23 @@ namespace Radiant {
 		// Buffer has no destructor
 		Buffer buffer;
 
+		// A missing/locked file is a content mistake, not a programmer error:
+		// warn and return an empty (Data == nullptr) Buffer instead of asserting
 		std::ifstream stream(filepath, std::ios::binary | std::ios::ate);
-		RADIANT_ASSERT(stream);
+		if (!stream)
+		{
+			RADIANT_WARN("FileSystem: failed to open '{}' for reading", filepath.string());
+			return buffer;
+		}
 
 		auto end = stream.tellg();
 		stream.seekg(0, std::ios::beg);
 		auto size = end - stream.tellg();
-		RADIANT_ASSERT(size != 0);
+		if (size <= 0)
+		{
+			RADIANT_WARN("FileSystem: '{}' is empty", filepath.string());
+			return buffer;
+		}
 
 		buffer.Allocate((uint32_t)size);
 		stream.read((char*)buffer.Data, buffer.Size);

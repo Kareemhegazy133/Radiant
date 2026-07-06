@@ -20,6 +20,11 @@ namespace Radiant {
 		// std::localtime returns a pointer to shared static storage — not
 		// thread-safe; acceptable while callers stay on the main thread
 		std::tm* localTime = std::localtime(&currentTime);
+		if (!localTime)
+		{
+			RADIANT_WARN("Platform: localtime failed - timestamp falls back to zeros");
+			return "000000000000";   // same YYYYMMDDHHMM shape, stays stoull-parseable
+		}
 
 		int year = localTime->tm_year + 1900;
 		int month = localTime->tm_mon + 1;

@@ -65,12 +65,25 @@ namespace Radiant {
 		bodyDef.userData.pointer = static_cast<uintptr_t>(entity.GetUUID());
 
 		b2Body* body = s_Physics2DData->B2DWorld->CreateBody(&bodyDef);
+		if (!body)
+		{
+			// Box2D returns null when the world is locked (mutation mid-Step) —
+			// ERROR survives Dist so the later null-RuntimeBody crash has a cause on record
+			RADIANT_ERROR("Physics2D: CreateBody failed for entity {} - world locked (created during Step)?", entity.GetUUID());
+			RADIANT_ASSERT(false, "CreateBody failed - world locked?");
+			return;
+		}
 		body->SetFixedRotation(component.FixedRotation);
 		component.RuntimeBody = body;
 	}
 
 	void Physics2D::DestroyPhysicsBody(Entity& entity, RigidBody2DComponent& component)
 	{
+		// Never-created or already-destroyed body: destroying nothing is a no-op,
+		// not a crash (Box2D derefs the pointer unchecked)
+		if (!component.RuntimeBody)
+			return;
+
 		b2Body* body = static_cast<b2Body*>(component.RuntimeBody);
 		s_Physics2DData->B2DWorld->DestroyBody(body);
 		component.RuntimeBody = nullptr;
@@ -120,7 +133,11 @@ namespace Radiant {
 		auto& transform = entity.GetComponent<TransformComponent>();
 		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
 
+		// A null body means CreateBody failed (already ERROR-logged there): skip,
+		// so that failure stays survivable instead of becoming a deref here
 		RADIANT_ASSERT(rb2d.RuntimeBody, "Entity must have a RigidBody RuntimeBody to Submit Transform for physics.");
+		if (!rb2d.RuntimeBody)
+			return;
 
 		b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
 		body->SetTransform(b2Vec2(transform.Translation.x, transform.Translation.y), transform.Rotation.z);
@@ -146,7 +163,8 @@ namespace Radiant {
 			// persistence, sleeping, and warm-starting, and allocates every frame.
 			// DestroyFixture(GetFixtureList()) also removes only the HEAD fixture —
 			// safe only while bodies carry a single fixture.
-			body->DestroyFixture(body->GetFixtureList());
+			if (b2Fixture* fixture = body->GetFixtureList())
+				body->DestroyFixture(fixture);
 			body->CreateFixture(&fixtureDef);
 		}
 	}
@@ -162,6 +180,10 @@ namespace Radiant {
 			RADIANT_WARN("Physics2D: Cannot Update Entity: {0}'s Transform does not have a RigidBody", entity.GetComponent<MetadataComponent>().Tag);
 			return;
 		}
+
+		// Same survivable-CreateBody-failure skip as SubmitEntitiesTransforms
+		if (!rb2d->RuntimeBody)
+			return;
 
 		b2Body* body = static_cast<b2Body*>(rb2d->RuntimeBody);
 

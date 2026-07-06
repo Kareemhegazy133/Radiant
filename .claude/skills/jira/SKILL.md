@@ -120,6 +120,19 @@ When an existing item's design has been overtaken by an architecture decision, *
 
 ---
 
+## Plan-Approved AC Write-Back (from /plan-feature)
+
+When invoked after a `/plan-feature` plan is approved and posted, sync the story's Acceptance Criteria to the plan:
+
+1. The approved plan's **§11 Verification table** is the source of truth: each row's criterion column becomes one `- [ ]` AC line, phrased as the criterion (not the verification step).
+2. If the story has no `## Acceptance Criteria` section, add one (standard format above, including the stock Definition-of-Done lines). If it has one, reconcile: keep still-valid lines, correct superseded ones in place, and append a dated note `_AC locked from the approved implementation plan (YYYY-MM-DD)_`.
+3. Preserve the story's existing What/Why/Context/Technical Notes — this operation only touches AC (and Test Plan, if the plan's verification steps improve on it).
+4. Update via `editJiraIssue`; never lose author history — this is an edit of the description's AC section, not a rewrite of the issue.
+
+The invariant: **a story is never less precise than its approved plan.**
+
+---
+
 ## Workflow (every invocation)
 
 1. **Gather context.** Use the user's description; if vague, ask. Suggest considerations they may have missed (perf implications, ownership, phase fit, whether the editor/Vulkan work will invalidate it).

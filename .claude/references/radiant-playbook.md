@@ -49,6 +49,7 @@ Frame order: **pump event queue → fixed-step simulation (accumulator) → vari
 - Workspace root aggregates; each project has its own premake file declaring its own dependencies.
 - Generated files (`.sln`, `.vcxproj`) are never committed. Submodules pin to deliberate tags/commits; each fork's reason is documented.
 - Configs: Debug (asserts, symbols), Release (optimized + asserts), Dist (shipping: WindowedApp, LTO, no asserts). Code must compile in **all three** — beware Dist-only breaks from code that exists only inside assert/log macros.
+- **Upgrades (toolchain + vendors) happen at phase boundaries with a stated reason** — never mid-story, one library per commit, verified by all three configs + a Reaper run (+ ASan once available). "Newest" is not a reason; unowned drift is how the spdlog-1.14/fmt formatter breakage happened (2026-07-05). Planned: C++23 at Phase 4 start (`std::expected` for asset/serialization errors); Box2D v3 evaluated at RAD-27 planning; ImGui refreshed before Phase 5.
 
 ## §8 — Known Bug Patterns (watch for these in review)
 
@@ -60,3 +61,10 @@ Frame order: **pump event queue → fixed-step simulation (accumulator) → vari
 6. **Working-directory-relative paths** — break the moment the exe runs outside VS.
 7. **Copyable types holding raw resource handles** — shallow copy → double free (rule-of-5, §2).
 8. **entt view invalidation** — destroying entities or sorting the iterated pool mid-iteration.
+
+## §9 — Containers & Custom Data Structures (decided 2026-07-05)
+
+- Default to the C++20 standard library. **No wholesale UE-style container clones** (TArray/TMap/TSet): UE's containers exist for 1998-era portability plus GC/reflection integration — forcing functions Radiant doesn't have. Revisit only if reflection (RAD-72) ever demands container introspection, and even then prefer traits/adapters over replacements.
+- Build **specialized** structures only where std has no answer and the win is concrete: generation-handle pools (TimerManager), sparse sets (entt provides ours), per-frame ring buffers (Phase 3 frames-in-flight).
+- When allocation strategy matters, reach for `std::pmr` / custom allocators on std containers before writing containers.
+- **Gated learning containers (decided 2026-07-05):** targeted structures may be built where std is genuinely weak. The catalog, each with a named customer: `InlineArray<T,N>` (small-buffer array — std::vector has no SBO; check C++26 `std::inplace_vector` first), an open-addressing hash map (`std::unordered_map` is standard-mandated pointer-chasing; replace in *measured* hot paths only), `SlotMap<T>` (generalize TimerManager's pool at the rule-of-three moment — RAD-30 side tables, Phase 3 GPU resource pools), `RingBuffer<T>` (frames-in-flight §5, event queue — likely built inside those stories), `StringID` (FName-alike; Phase 4 asset names, GAS tags). Hard gates: only after RAD-67 (doctest) + RAD-83 (ASan) are Done; DoD includes benchmarks on Radiant's own workloads; adoption is per-call-site by measurement; never blocks phase work. API sugar (Contains/AddUnique-style helpers over std) is a separate cheap utilities chore, not a container.

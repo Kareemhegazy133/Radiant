@@ -17,6 +17,7 @@ int main(int argc, char** argv)
 
 	RADIANT_PROFILE_BEGIN_SESSION("Startup", "RadiantProfile-Startup.json");
 	auto gameApp = Radiant::CreateGameApplication();
+	RADIANT_ASSERT(gameApp, "CreateGameApplication() returned null");
 	RADIANT_PROFILE_END_SESSION();
 
 	RADIANT_PROFILE_BEGIN_SESSION("Runtime", "RadiantProfile-Runtime.json");

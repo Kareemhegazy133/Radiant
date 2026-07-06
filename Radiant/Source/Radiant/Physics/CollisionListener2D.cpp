@@ -29,12 +29,17 @@ namespace Radiant {
 		Entity entityA = m_Level->GetEntityByUUID(static_cast<UUID>(bodyA->GetUserData().pointer));
 		Entity entityB = m_Level->GetEntityByUUID(static_cast<UUID>(bodyB->GetUserData().pointer));
 
-		// No validity checks yet: GetEntityByUUID returns an invalid entity for a
-		// mid-destruction body, and GetComponent on it asserts (RAD-29)
-		auto& entityARB2D = entityA.GetComponent<RigidBody2DComponent>();
+		// Interim guards: GetEntityByUUID returns an invalid entity for a
+		// mid-destruction body — skip the pair rather than touch a dead entity.
+		// The real fix (record during step, dispatch after, with validity checks)
+		// is RAD-29's queued collision events.
+		if (!entityA.IsValid() || !entityB.IsValid()
+			|| !entityA.HasComponent<RigidBody2DComponent>() || !entityB.HasComponent<RigidBody2DComponent>())
+			return;
 
 		//RADIANT_TRACE("Entity: {} collided with Entity {}.", entityA.GetComponent<MetadataComponent>().Tag, entityB.GetComponent<MetadataComponent>().Tag);
 
+		auto& entityARB2D = entityA.GetComponent<RigidBody2DComponent>();
 		if (entityARB2D.OnCollisionBegin)
 		{
 			entityARB2D.OnCollisionBegin(entityB);
@@ -54,6 +59,11 @@ namespace Radiant {
 
 		Entity entityA = m_Level->GetEntityByUUID(static_cast<UUID>(bodyA->GetUserData().pointer));
 		Entity entityB = m_Level->GetEntityByUUID(static_cast<UUID>(bodyB->GetUserData().pointer));
+
+		// Same interim validity guard as BeginContact (see RAD-29)
+		if (!entityA.IsValid() || !entityB.IsValid()
+			|| !entityA.HasComponent<RigidBody2DComponent>() || !entityB.HasComponent<RigidBody2DComponent>())
+			return;
 
 		auto& entityARB2D = entityA.GetComponent<RigidBody2DComponent>();
 		if (entityARB2D.OnCollisionEnd)
