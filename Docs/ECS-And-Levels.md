@@ -18,6 +18,16 @@ A `Level` (`ECS/Level.h`) is the world: it privately owns an `entt::registry` (e
 
 `Entity` (`ECS/Entity.h`) is a 16-byte value handle `{entt::entity, Level*}` with templated component access (`AddComponent`, `GetComponent`, `HasComponent`, …) forwarding to the registry. Entities are identified persistently by `UUID` (random 64-bit) via a `Level`-owned map `UUID → Entity`; `entt` handles are transient and never serialized.
 
+Composition in practice — this is Reaper spawning a physical object, and the whole point of ECS in five lines:
+
+```cpp
+auto square = m_Level->CreateEntity("Green Square");
+square.AddComponent<SpriteComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
+square.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
+square.AddComponent<BoxCollider2DComponent>();
+// no FallingGreenSquare class exists anywhere — the entity IS this list of components
+```
+
 Every entity carries `MetadataComponent` (UUID, tag string, `IsActive`) and `TransformComponent` (translation / Euler-radians rotation / scale, TRS matrix on demand), added at creation.
 
 ### Components (`ECS/Components.h`)
@@ -40,6 +50,19 @@ Adding a component is a three-site contract: declare in `Components.h`, add to `
 Entity creation/destruction is **immediate** (no command buffer). Physics bodies are managed reactively through entt signals: `on_construct<RigidBody2DComponent>` creates the Box2D body, `on_destroy` destroys it — component presence *is* the physics binding.
 
 `Level::OnFixedUpdate(ts)` advances one FIXED simulation step: snapshots movable entities' transforms (for render interpolation), runs scripts (lazy-instantiating on first update), pushes transforms to physics, steps the physics world, and reads stepped body transforms back into the ECS as a dedicated post-step pass. `Level::OnRender(alpha)` finds the first `Primary` camera and draws sprite entities, blending movable entities between the last two simulation states by `alpha` — draw-only, it never mutates simulation state. Reaper's `GameLayer` drives the former from `Layer::OnFixedUpdate` and the latter from `Layer::OnUpdate` (see [Time-And-Simulation](Time-And-Simulation.md)).
+
+"Systems" in Radiant are these loops inside `Level` — the spreadsheet walk ("every row with values in BOTH columns") as real code, from `OnRender`:
+
+```cpp
+auto view = m_Registry.view<TransformComponent, CameraComponent>();
+for (auto entity : view)
+{
+    auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
+    if (camera.Primary) { /* found the view camera */ }
+}
+```
+
+Game code never writes these — the registry is private to `Level`, so views exist only behind `Level`'s own update/render passes.
 
 ### Native scripts
 

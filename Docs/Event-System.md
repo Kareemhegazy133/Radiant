@@ -28,7 +28,21 @@ OS → GLFW callback (WindowsWindow) ── constructs stack event
            └─ layers top→bottom: layer->OnEvent(e); stop when e.Handled
 ```
 
-`EventDispatcher` (`Event.h`) wraps an event and offers `Dispatch<T>(handler)`: if the wrapped event's runtime type matches `T::GetStaticType()`, the handler runs and its `bool` return is OR-ed into `Handled`. Handlers are member functions bound with the `RADIANT_BIND_EVENT_FN` macro.
+`EventDispatcher` (`Event.h`) wraps an event and offers `Dispatch<T>(handler)`: if the wrapped event's runtime type matches `T::GetStaticType()`, the handler runs and its `bool` return is OR-ed into `Handled`. Handlers are member functions bound with the `RADIANT_BIND_EVENT_FN` macro. The idiom every layer repeats (from Reaper's `UILayer`):
+
+```cpp
+void UILayer::OnEvent(Event& e)
+{
+    EventDispatcher dispatcher(e);   // opens only the envelope types it cares about
+    dispatcher.Dispatch<KeyPressedEvent>(RADIANT_BIND_EVENT_FN(UILayer::OnKeyPressed));
+}
+
+bool UILayer::OnKeyPressed(KeyPressedEvent& e)
+{
+    if (e.GetKeyCode() == Key::Escape) { /* ... */ return true; }   // true → Handled: stops here
+    return false;                                                    // false → falls through
+}
+```
 
 Propagation is **top→bottom** through the layer stack (overlays first — UI consumes input before the world), stopping at the first layer that sets `Handled`.
 

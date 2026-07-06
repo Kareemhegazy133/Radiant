@@ -34,6 +34,17 @@ All 2D drawing funnels through one CPU-side batcher (`Renderer2D.cpp`, file-stat
 - **Flow:** `BeginScene(camera, transform)` computes the view-projection and uploads it to a UBO at binding 0 → `DrawQuad`/`DrawLine`/`DrawSprite` append vertices via bump pointer, resolving each texture to a slot (linear search; new texture → next slot; slots full → flush and start a new batch) → `EndScene`/`Flush` uploads the used byte range with `glBufferSubData`, binds the textures and shader, and issues one draw per primitive family.
 - Shaders are GLSL 450 with a `std140, binding = 0` camera UBO; the quad fragment shader indexes a `sampler2D[32]` array.
 
+What a frame of world drawing looks like from the caller's side (`Level::OnRender`) — open the batch, append, close:
+
+```cpp
+Renderer2D::BeginScene(*mainCamera, cameraTransform);   // computes + uploads view-projection
+Renderer2D::DrawSprite(worldTransform, sprite.Color);   // appends 4 vertices — NO GPU call yet
+/* ...hundreds more DrawSprite/DrawLine calls... */
+Renderer2D::EndScene();                                 // one upload + one draw per primitive family
+```
+
+The grocery-run analogy in code: every `Draw*` call adds an item to the cart; only `EndScene` drives to the store.
+
 Reaper renders the Level into an **offscreen framebuffer** (RGBA8 color + RED_INTEGER entity-ID attachment + depth) and displays it as an ImGui image — the entity-ID attachment is pre-built plumbing for editor click-picking (RAD-54).
 
 ## Design Rationale

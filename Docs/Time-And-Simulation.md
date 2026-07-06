@@ -38,6 +38,26 @@ While minimized, polling and presenting continue but nothing is deposited — th
 
 `Core/FrameClock.{h,cpp}` is a plain value type owned by `GameApplication`; every number is seconds stored as `double` (float accumulators visibly drift within hours). Per frame, `BeginFrame(realDelta)` deposits `realDelta × timeScale` and clamps the accumulator to 0.25 s — the **spiral-of-death valve**. Without it, a long hitch would demand many catch-up steps, which take time, which demands more steps, locking the game up; with it, the excess is dropped (throttled `RADIANT_WARN`) and the simulation briefly runs slower than real time instead. `ConsumeStep()` withdraws one fixed delta per call and drives the `while` drain. `GetAlpha()` returns the leftover fraction in [0, 1) — forced to 1.0 while paused so rendering draws the settled current state rather than a frozen mid-blend pose.
 
+The whole mechanism is a dozen lines (`FrameClock.cpp`, condensed):
+
+```cpp
+void FrameClock::BeginFrame(double realFrameDelta)
+{
+    m_RealTime += realFrameDelta;
+    m_Accumulator += realFrameDelta * m_TimeScale;   // dilation scales the DEPOSIT...
+    if (m_Accumulator > m_MaxAccumulation) { /* clamp + throttled WARN */ }
+}
+
+bool FrameClock::ConsumeStep()
+{
+    if (m_Accumulator < m_FixedDeltaTime)
+        return false;
+    m_Accumulator -= m_FixedDeltaTime;               // ...never the size of the coin
+    m_SimulationTime += m_FixedDeltaTime;
+    return true;
+}
+```
+
 The clock also keeps two odometers: **simulation time** (exactly steps-consumed × fixed delta — freezes under pause, halves under 0.5 dilation) and **real time** (unscaled deposits). Logging one against the other is the quickest way to *see* dilation working.
 
 ### The two hooks (`Layer`)
@@ -62,6 +82,17 @@ The snapshot is a **runtime-only POD component**: the serializer never writes it
 ### TimerManager — callbacks in simulation time
 
 `Core/TimerManager.{h,cpp}` (reached via `GameApplication::GetTimerManager()`) schedules callbacks N **simulation** seconds out, one-shot or looping. It is ticked once per fixed step — before layer `OnFixedUpdate`, mirroring UE's tick placement — so timers dilate and pause with the world with no special casing: a 2-second timer under 0.5× dilation fires after 4 real seconds, and never fires while paused.
+
+Using it is two calls — schedule with a delay in simulation seconds, clear when the owner tears down:
+
+```cpp
+TimerHandle handle = GameApplication::GetTimerManager().SetTimer(2.0f, []()
+{
+    GAME_INFO("sim {:.2f}s / real {:.2f}s", Time::GetSimulationTime(), Time::GetRealTime());
+}, /*looping*/ true);
+
+GameApplication::GetTimerManager().ClearTimer(handle);   // safe even if already fired
+```
 
 Internals mirror UE's `FTimerManager`: slot storage with a free list and **generation counters**, plus a min-heap of (expiry, handle) with lazy invalidation. `SetTimer` returns a `TimerHandle` (index + generation); a stale handle is always safe — `ClearTimer` on it is a no-op, `IsActive` returns false. Looping timers re-arm at `expiry += period`, so lateness never compounds. Callbacks may re-entrantly set or clear timers during `Tick`. The one real hazard is documented on `SetTimer`: the manager owns the callback by value, so a lambda capturing an `Entity` or `Level*` outlives its target unless the owner clears the handle in its teardown path.
 

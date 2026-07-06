@@ -36,6 +36,22 @@ The "frame heartbeat" is the second idea. A game is not a program that runs once
 4. `Window::Present()` — swap buffers at frame end (runs even while minimized; only simulation and render are gated).
 5. `LayerStack::ProcessPendingLayers()` — deferred layer pushes/pops are applied between frames.
 
+The heart of it, condensed from `Run()` to the load-bearing lines:
+
+```cpp
+m_Window->PollEvents();                        // frame START — simulation sees this frame's input
+m_Clock.BeginFrame(frameDelta);                // deposit real time (scaled by the time scale)
+while (m_Clock.ConsumeStep())                  // 0..N whole fixed steps banked this frame
+{
+    m_TimerManager.Tick(m_Clock.GetFixedDeltaTime());
+    for (Layer* layer : m_LayerStack)
+        layer->OnFixedUpdate(fixedTimestep);   // simulation, always the same delta
+}
+for (Layer* layer : m_LayerStack)
+    layer->OnUpdate(timestep);                 // render-rate, exactly once
+m_Window->Present();                           // swap at frame end
+```
+
 The time accounting behind step 3 — accumulator, dilation/pause, interpolation alpha, timers — is owned by `FrameClock`/`TimerManager` and documented in [Time-And-Simulation](Time-And-Simulation.md).
 
 Shutdown: `Close()` merely sets `m_Running = false`; the destructor detaches and deletes every layer, then shuts down fonts and the renderer.

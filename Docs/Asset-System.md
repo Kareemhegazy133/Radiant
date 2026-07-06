@@ -14,6 +14,15 @@ The asset system is a **library**. At import, every asset is issued a permanent 
 
 Every asset is identified by an `AssetHandle` — a random 64-bit `UUID`. Handle `0` is the invalid sentinel. Runtime code (components, levels) stores and serializes **handles only**; paths exist solely in registry and import code. This means files can move without breaking references — the same philosophy as UE's asset registry, scaled down (64-bit random vs UE's GUIDs; collision odds are acceptable at this project's asset counts).
 
+The idiom in code — the component holds the card number, the librarian resolves it on demand (from `SpriteComponent` and `Level::OnRender`, condensed):
+
+```cpp
+struct SpriteComponent { AssetHandle TextureHandle = 0; /* color, tiling */ };   // a number, never a path
+
+if (Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.TextureHandle))
+    Renderer2D::DrawSprite(worldTransform, texture, sprite.TilingFactor, sprite.Color);
+```
+
 ### Registry & metadata
 
 `AssetMetadata` = `{Handle, AssetType, FilePath}`. The registry (`AssetRegistry`) is an in-memory `unordered_map<AssetHandle, AssetMetadata>`, persisted as YAML with the `.rdar` extension (handle / path / type triples, forward-slash paths). Asset types today: `Level` (`.rdlvl`) and `Texture2D` (`.png/.jpg/.jpeg`). There is no `Font` value in the `AssetType` enum — only an unregistered, definition-less `FontSerializerAPI` and `Font`'s commented-out asset hooks exist; the type gets wired in the MSDF revival (RAD-47).

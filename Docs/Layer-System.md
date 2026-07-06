@@ -22,6 +22,20 @@ Layers are the engine's **application-level composition mechanism**: coarse slic
 
 The `OnFixedUpdate`/`OnUpdate` split is the Unity `FixedUpdate`/`Update` contract: a layer opts into framerate-independent simulation just by overriding the fixed hook, and anything living only in `OnUpdate`/`OnImGuiRender` (UI) is pause-immune for free — the time scale never touches it. Reaper's `GameLayer` simulates in `OnFixedUpdate` and renders in `OnUpdate`; `UILayer` overrides neither. See [Time-And-Simulation](Time-And-Simulation.md) for the loop that drives both.
 
+In practice a layer is a plain subclass that overrides only the hooks it needs — Reaper's game view, condensed:
+
+```cpp
+class GameLayer : public Layer
+{
+    void OnAttach() override               { /* load the Level, create the framebuffer */ }
+    void OnFixedUpdate(Timestep ts) override { m_Level->OnFixedUpdate(ts); }          // simulation
+    void OnUpdate(Timestep ts) override    { m_Level->OnRender(Time::GetAlpha()); }   // draw only
+    void OnEvent(Event& e) override        { /* claim input by setting e.Handled */ }
+};
+
+GameApplication::Get().PushLayer(new GameLayer());   // the stack owns and deletes it
+```
+
 `LayerStack` (`Core/LayerStack.h`) is a single vector partitioned by an insert index: **layers** occupy the front half (world content), **overlays** the back half (UI, ImGui) — so overlays always update last (draw on top) and receive events first (consume input before the world).
 
 ```text

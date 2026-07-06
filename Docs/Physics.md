@@ -20,6 +20,14 @@ Driven by entt signals (see [ECS-And-Levels](ECS-And-Levels.md)):
 - `on_construct<BoxCollider2DComponent>` → creates the box fixture (half-extents scaled by transform, density/friction/restitution from the component).
 - `on_destroy<RigidBody2DComponent>` → destroys the body.
 
+The wiring is three lines in the `Level` constructor — entt calls the handler whenever the component appears or disappears, so there is no separate "register with physics" step to forget:
+
+```cpp
+m_Registry.on_construct<RigidBody2DComponent>().connect<&Level::OnRigidBody2DComponentConstruct>(this);
+m_Registry.on_destroy<RigidBody2DComponent>().connect<&Level::OnRigidBody2DComponentDestroy>(this);
+m_Registry.on_construct<BoxCollider2DComponent>().connect<&Level::OnBoxCollider2DComponentConstruct>(this);
+```
+
 ### Per-step flow (current)
 
 Physics advances once per FIXED simulation step (`Level::OnFixedUpdate`, driven by the accumulator loop — see [Time-And-Simulation](Time-And-Simulation.md)), never per rendered frame:

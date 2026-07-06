@@ -34,7 +34,17 @@ Radiant has a four-word ownership vocabulary. Every type commits to exactly one:
 
 `Ref<T>` is an **intrusive** reference-counted smart pointer: the count lives inside the object as `std::atomic<uint32_t> RefCounted::m_RefCount`, and `Ref<T>` statically requires `T : RefCounted`. Construction/copy call `IncRef()`; destruction/reassignment call `DecRef()`.
 
-**The release contract:** the decision "did I release the last reference?" comes from the decrement itself. `RefCounted::DecRefCount()` performs `fetch_sub(1, std::memory_order_acq_rel)` and returns `true` only to the caller whose decrement took the count from 1 to 0 — that caller (and no other) deletes. This is the same idiom as UE's `TTransactionalAtomicRefCount::ImmediatelyRelease`. `GetRefCount()` exists for diagnostics only — never build release logic on an observed count, because it can change between the load and any decision made from it. An underflow (releasing a dead object) triggers `RADIANT_DEBUGBREAK` in Debug.
+**The release contract:** the decision "did I release the last reference?" comes from the decrement itself. `RefCounted::DecRefCount()` performs `fetch_sub(1, std::memory_order_acq_rel)` and returns `true` only to the caller whose decrement took the count from 1 to 0 — that caller (and no other) deletes. This is the same idiom as UE's `TTransactionalAtomicRefCount::ImmediatelyRelease`. The shape (`Ref.h`, condensed — the real function also debug-breaks on underflow):
+
+```cpp
+bool DecRefCount() const
+{
+    uint32_t previous = m_RefCount.fetch_sub(1, std::memory_order_acq_rel);
+    return previous == 1;   // fetch_sub returns the PRIOR value atomically —
+}                           // exactly one caller in existence can observe 1
+```
+
+Why not `fetch_sub` then check `GetRefCount() == 0`? Because two threads can both decrement (2→1→0) and then both *read* 0 — both believe they were last, both delete. The atomic's return value is the only answer that can't race: that is the RAD-7 bug class. `GetRefCount()` exists for diagnostics only — never build release logic on an observed count, because it can change between the load and any decision made from it. An underflow (releasing a dead object) triggers `RADIANT_DEBUGBREAK` in Debug.
 
 Key API: `Ref<T>::Create(args...)` (preferred construction), `.As<T2>()` (static-cast conversion), `.Raw()` (non-owning access), copy/move/nullptr semantics as expected.
 
