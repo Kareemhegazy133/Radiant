@@ -17,14 +17,23 @@ UILayer::~UILayer()
 
 void UILayer::OnAttach()
 {
+#ifndef RD_DIST
+	// RAD-25 debug scaffolding: fires every 2 SIMULATION seconds, so the sim/real
+	// gap in the log makes dilation visible — 4 real seconds apart at scale 0.5,
+	// silent while paused. Captures nothing; cleared in OnDetach regardless
+	// (the TimerManager lifetime contract: owners clear their handles at teardown).
+	m_DemoTimer = GameApplication::GetTimerManager().SetTimer(2.0f, []()
+	{
+		GAME_INFO("Demo timer: sim {:.2f}s / real {:.2f}s", Time::GetSimulationTime(), Time::GetRealTime());
+	}, /*looping*/ true);
+#endif
 }
 
 void UILayer::OnDetach()
 {
-}
-
-void UILayer::OnUpdate(Timestep ts)
-{
+#ifndef RD_DIST
+	GameApplication::GetTimerManager().ClearTimer(m_DemoTimer);
+#endif
 }
 
 void UILayer::OnImGuiRender()
@@ -142,6 +151,23 @@ bool UILayer::OnKeyPressed(KeyPressedEvent& e)
 		GameStateManager::Get()->PopState();	// Top-most state should be the GamePausedState
 		return true;
 	}
+
+#ifndef RD_DIST
+	// RAD-25 debug scaffolding: time-scale keys (initial press only — the OS
+	// key-repeat stream would spam SetTimeScale and the log). F3 doubles as the
+	// proof that UI stays fully interactive while the simulation is frozen —
+	// ImGui runs at render rate, untouched by the time scale.
+	if (!e.IsRepeat())
+	{
+		switch (e.GetKeyCode())
+		{
+			case Key::F1: Time::SetTimeScale(1.0f); GAME_INFO("Debug: time scale -> 1.0");          return true;
+			case Key::F2: Time::SetTimeScale(0.5f); GAME_INFO("Debug: time scale -> 0.5");          return true;
+			case Key::F3: Time::SetTimeScale(0.0f); GAME_INFO("Debug: time scale -> 0.0 (paused)"); return true;
+		}
+	}
+#endif
+
 	return false;
 }
 

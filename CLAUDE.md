@@ -39,7 +39,7 @@ Full audit (2026-07-04) is filed as Jira issues RAD-7…RAD-59 with `file:line` 
 
 | Path | Responsibility | State |
 |------|----------------|-------|
-| `Radiant/Source/Radiant/Core/` | App lifecycle (`GameApplication`), window, layers, events entry, `Ref`/`Scope`, logging, asserts, input | Working; Hazel-derived |
+| `Radiant/Source/Radiant/Core/` | App lifecycle (`GameApplication`), fixed-timestep loop + time services (`FrameClock`/`TimerManager`/`Time`), window, layers, events entry, `Ref`/`Scope`, logging, asserts, input | Working; Hazel-derived |
 | `Radiant/Source/Radiant/Events/` | Event types + dispatcher (blocking dispatch — queue arrives in Phase 2) | Working |
 | `Radiant/Source/Radiant/Renderer/` | API-agnostic renderer + batched Renderer2D | Working on GL; RHI v2 replaces the abstraction in Phase 3 |
 | `Radiant/Source/Radiant/Platform/OpenGL/` | GL backend (deleted at end of Phase 3) | Legacy |

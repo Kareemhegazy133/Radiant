@@ -7,11 +7,12 @@ using namespace Radiant;
 
 /**
  * Drives the gameplay Level: loads it (or debug-creates one when no registry
- * exists) on attach, re-binds the CameraController script (bindings are
- * code-only and don't survive level load), then each frame runs
- * Level::OnUpdate + OnRender into an offscreen framebuffer that OnImGuiRender
- * presents as a fullscreen ImGui image. Owns the Level and Framebuffer via
- * Ref. Escape pushes GamePausedState. Constructed by GameplayState::OnEnter;
+ * exists) on attach and re-binds the CameraController script (bindings are
+ * code-only and don't survive level load). Simulation runs in OnFixedUpdate
+ * (Level::OnFixedUpdate at the engine's fixed rate); OnUpdate only renders —
+ * Level::OnRender into an offscreen framebuffer that OnImGuiRender presents
+ * as a fullscreen ImGui image. Owns the Level and Framebuffer via Ref.
+ * Escape pushes GamePausedState. Constructed by GameplayState::OnEnter;
  * deleted by the engine LayerStack after the deferred pop.
  */
 class GameLayer : public Layer
@@ -23,6 +24,7 @@ public:
 	virtual void OnAttach() override;
 	virtual void OnDetach() override;
 
+	void OnFixedUpdate(Timestep ts) override;
 	void OnUpdate(Timestep ts) override;
 	virtual void OnImGuiRender() override;
 

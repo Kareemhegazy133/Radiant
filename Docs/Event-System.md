@@ -32,13 +32,13 @@ OS → GLFW callback (WindowsWindow) ── constructs stack event
 
 Propagation is **top→bottom** through the layer stack (overlays first — UI consumes input before the world), stopping at the first layer that sets `Handled`.
 
-**Timing:** dispatch is currently *blocking* — handlers execute synchronously inside the GLFW C callback, which itself runs inside `glfwPollEvents()` at the **end** of the frame (`Window::OnUpdate`). The header itself documents this as interim ("a better strategy might be to buffer events in an event bus").
+**Timing:** dispatch is currently *blocking* — handlers execute synchronously inside the GLFW C callback, which runs inside `glfwPollEvents()` during `Window::PollEvents()` at the **start** of the frame (moved there by the RAD-25 loop rework, so simulation sees the current frame's input). Only the *when* has moved; the *how* — handlers inside OS callbacks — remains interim until the RAD-26 queue.
 
 ## Design Rationale
 
 - **Static/virtual type-pair dispatch** is the right-sized alternative to RTTI or string comparison: zero allocation, one virtual call, and the dispatcher template reads naturally at call sites. Keep it — the Phase 2 rework changes *when* events are delivered, not *how* they're typed or dispatched.
 - **`Handled` + top→bottom order** is a simple, predictable consumption model. It is *not* an input-focus system — that arrives with the editor (RAD-53) as a drain-time routing policy.
-- **Why blocking dispatch must go:** handlers running inside an OS callback means arbitrary game logic executes re-entrantly mid-`glfwPollEvents` — Reaper already pushes game states from key handlers, and the deferred layer stack exists precisely to paper over one instance of this hazard. Events also arrive a frame late (polled after update/render).
+- **Why blocking dispatch must go:** handlers running inside an OS callback means arbitrary game logic executes re-entrantly mid-`glfwPollEvents` — Reaper already pushes game states from key handlers, and the deferred layer stack exists precisely to paper over one instance of this hazard. (The other half of the old problem — events arriving a frame late because polling ran after update/render — was fixed by the RAD-25 frame-start move.)
 
 ## Known Issues & Evolution
 

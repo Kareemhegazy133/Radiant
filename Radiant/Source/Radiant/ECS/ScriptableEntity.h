@@ -11,11 +11,12 @@ namespace Radiant {
 	 * code-only and must be re-bound after level load).
 	 *
 	 * Lifecycle contract: the instance is heap-allocated lazily by the Level on
-	 * the first Level::OnUpdate after binding. m_Entity is wired AFTER
+	 * the first Level::OnFixedUpdate after binding. m_Entity is wired AFTER
 	 * construction, so constructors must not touch components — do first-time
 	 * setup in OnCreate, which runs immediately after the entity is wired.
-	 * OnUpdate then runs every frame while the entity's MetadataComponent is
-	 * active (OnCreate and OnDestroy run regardless of the active flag).
+	 * OnUpdate then runs every FIXED simulation step (with the fixed delta, not
+	 * a frame delta) while the entity's MetadataComponent is active (OnCreate
+	 * and OnDestroy run regardless of the active flag).
 	 * OnDestroy runs when the entity is destroyed; the instance is deleted by its
 	 * owning NativeScriptComponent (side-table rework tracked as RAD-30).
 	 */

@@ -30,12 +30,20 @@ namespace Radiant {
 		virtual ~Window() {}
 
 		/**
-		 * Polls OS events, then presents the frame (buffer swap). The OS event
-		 * callbacks — and therefore all engine event handlers — execute
-		 * synchronously inside this call. Invoked once per frame by
-		 * GameApplication, at end of frame.
+		 * Pumps OS events. The OS event callbacks — and therefore all engine
+		 * event handlers — execute synchronously inside this call (a queued
+		 * dispatch replaces that in RAD-26). Invoked once per frame by
+		 * GameApplication at frame START, so the simulation steps see this
+		 * frame's input.
 		 */
-		virtual void OnUpdate() = 0;
+		virtual void PollEvents() = 0;
+
+		/**
+		 * Presents the rendered frame (buffer swap). Invoked once per frame by
+		 * GameApplication at frame end — including while minimized, which the
+		 * platform layer must tolerate.
+		 */
+		virtual void Present() = 0;
 
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
@@ -44,7 +52,7 @@ namespace Radiant {
 		/**
 		 * Sets the sink that receives translated OS events (bound to
 		 * GameApplication::OnEvent). Invoked synchronously from inside OS
-		 * callbacks during OnUpdate(); must remain valid for the lifetime of
+		 * callbacks during PollEvents(); must remain valid for the lifetime of
 		 * the window.
 		 */
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;

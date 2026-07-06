@@ -19,10 +19,13 @@ namespace Radiant {
 	 * Level. Heap-allocate and push into GameApplication; the layer stack owns
 	 * the layer and deletes it at pop or shutdown. Hook contract: OnAttach
 	 * fires at push, OnDetach at actual removal (end of the frame the pop was
-	 * requested); OnUpdate runs every frame bottom→top with the frame delta in
-	 * seconds; OnEvent runs top→bottom — set event.Handled to stop propagation.
-	 * Event hooks currently execute inside OS callbacks at end of frame (see
-	 * Events/Event.h).
+	 * requested). OnFixedUpdate runs 0..N times per frame bottom→top with the
+	 * FIXED simulation delta — all simulation mutations belong here.
+	 * OnUpdate runs exactly once per frame bottom→top with the real frame
+	 * delta — render-rate work only; it must never mutate simulation state
+	 * (playbook §1). OnEvent runs top→bottom — set event.Handled to stop
+	 * propagation; event hooks currently execute inside OS callbacks at frame
+	 * start (see Events/Event.h).
 	 */
 	class Layer
 	{
@@ -32,6 +35,7 @@ namespace Radiant {
 
 		virtual void OnAttach() {}
 		virtual void OnDetach() {}
+		virtual void OnFixedUpdate(Timestep ts) {}
 		virtual void OnUpdate(Timestep ts) {}
 		virtual void OnImGuiRender() {}
 		virtual void OnEvent(Event& event) {}

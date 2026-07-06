@@ -33,6 +33,9 @@ struct UIConfig
  * game state (main menu / gameplay HUD / pause menu). Pushed once by the
  * Reaper application and lives for its whole run — state changes swap what it
  * renders, not the layer itself. Also handles Escape-to-resume while paused.
+ * Pure render-rate: no OnFixedUpdate/OnUpdate — ImGui work is pause-immune by
+ * construction. Non-Dist builds add time-scale debug keys (F1/F2/F3) and a
+ * looping demo timer that logs simulation vs real time.
  */
 class UILayer : public Layer
 {
@@ -43,7 +46,6 @@ public:
 	virtual void OnAttach() override;
 	virtual void OnDetach() override;
 
-	void OnUpdate(Timestep ts) override;
 	virtual void OnImGuiRender() override;
 
 	void OnEvent(Event& e) override;
@@ -63,4 +65,9 @@ private:
 
 private:
 	static inline UIConfig UISettings;
+
+#ifndef RD_DIST
+	// RAD-25 debug scaffolding: looping timer proving timers tick in simulation time
+	TimerHandle m_DemoTimer;
+#endif
 };

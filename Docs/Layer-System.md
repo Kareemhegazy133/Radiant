@@ -10,14 +10,17 @@ Layers solve both with one structure: a stack of transparent sheets. Updating an
 
 ## Architecture
 
-Layers are the engine's **application-level composition mechanism**: coarse slices of the app (game view, UI overlay, future editor shell) with a defined update order and event priority. A `Layer` (`Core/Layer.h`) has five hooks:
+Layers are the engine's **application-level composition mechanism**: coarse slices of the app (game view, UI overlay, future editor shell) with a defined update order and event priority. A `Layer` (`Core/Layer.h`) has six hooks:
 
 | Hook | Called | Purpose |
 |------|--------|---------|
 | `OnAttach` / `OnDetach` | on add/remove from the stack | acquire/release resources |
-| `OnUpdate(Timestep)` | every frame, bottom→top | logic + rendering |
+| `OnFixedUpdate(Timestep)` | 0..N times per frame at the fixed simulation rate, bottom→top | all simulation mutations (receives the FIXED delta) |
+| `OnUpdate(Timestep)` | exactly once per frame, bottom→top | render-rate work (real frame delta); must never mutate simulation state (playbook §1) |
 | `OnImGuiRender` | every frame inside the ImGui pass | debug/tool/UI widgets |
 | `OnEvent(Event&)` | on each event, **top→bottom** | input handling; set `Handled` to consume |
+
+The `OnFixedUpdate`/`OnUpdate` split is the Unity `FixedUpdate`/`Update` contract: a layer opts into framerate-independent simulation just by overriding the fixed hook, and anything living only in `OnUpdate`/`OnImGuiRender` (UI) is pause-immune for free — the time scale never touches it. Reaper's `GameLayer` simulates in `OnFixedUpdate` and renders in `OnUpdate`; `UILayer` overrides neither. See [Time-And-Simulation](Time-And-Simulation.md) for the loop that drives both.
 
 `LayerStack` (`Core/LayerStack.h`) is a single vector partitioned by an insert index: **layers** occupy the front half (world content), **overlays** the back half (UI, ImGui) — so overlays always update last (draw on top) and receive events first (consume input before the world).
 

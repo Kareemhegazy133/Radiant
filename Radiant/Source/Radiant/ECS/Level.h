@@ -22,7 +22,8 @@ namespace Radiant {
 	 * constructor: adding a RigidBody2DComponent creates the Box2D body, removing it
 	 * destroys the body — component presence IS the physics binding.
 	 *
-	 * The owner (Reaper's GameLayer) drives OnUpdate then OnRender each frame.
+	 * The owner (Reaper's GameLayer) drives OnFixedUpdate at the engine's fixed
+	 * simulation rate and OnRender once per rendered frame.
 	 * Physics currently binds to the process-wide Physics2D singleton, so only one
 	 * fully-initialized Level may exist at a time (RAD-27).
 	 */
@@ -65,22 +66,26 @@ namespace Radiant {
 		void DestroyEntity(UUID entityID);
 
 		/**
-		 * Advances the simulation one frame: runs native scripts (lazily instantiating
-		 * unconstructed instances — see ScriptableEntity), pushes active rigidbody
-		 * entities' ECS transforms into Box2D, then steps the physics world with the
-		 * variable frame timestep (fixed timestep arrives with RAD-25).
+		 * Advances the simulation one FIXED step: runs native scripts (lazily
+		 * instantiating unconstructed instances — see ScriptableEntity), pushes
+		 * active rigidbody entities' ECS transforms into Box2D, steps the physics
+		 * world, then reads stepped body transforms back into the ECS as a
+		 * dedicated post-step pass. Call with the engine's fixed delta (from
+		 * Layer::OnFixedUpdate) — never a variable frame delta.
 		 */
-		void OnUpdate(Timestep ts);
+		void OnFixedUpdate(Timestep ts);
 
 		/**
 		 * Renders sprite entities through Renderer2D using the first CameraComponent
 		 * found with Primary set (iteration order — with several Primary cameras the
-		 * pick is effectively arbitrary; with none, nothing renders). Box2D-to-ECS
-		 * transform readback currently happens inside this sprite loop — a known
-		 * defect: bodies without sprites, or all bodies when no Primary camera
-		 * exists, never receive physics results (RAD-28).
+		 * pick is effectively arbitrary; with none, nothing renders). alpha in [0,1]
+		 * (Time::GetAlpha()) blends movable entities between the last two simulation
+		 * states: entities with a TransformSnapshotComponent draw
+		 * lerp(snapshot, current, alpha); everything else draws current. Read-only
+		 * with respect to simulation state (playbook §1): physics readback happens
+		 * in OnFixedUpdate's post-step pass, not here.
 		 */
-		void OnRender();
+		void OnRender(float alpha);
 
 		/**
 		 * Propagates the new viewport size to every camera that is not

@@ -5,10 +5,10 @@
 namespace Radiant {
 
 	// Events are currently BLOCKING: handlers execute synchronously inside the
-	// GLFW callbacks, which fire during end-of-frame event polling
-	// (Window::OnUpdate). Handlers therefore run inside OS callbacks — do not
+	// GLFW callbacks, which fire during frame-start event polling
+	// (Window::PollEvents). Handlers therefore run inside OS callbacks — do not
 	// assume mid-frame safety or re-entrancy safety. Phase 2 (RAD-26) replaces
-	// this with a queue drained at a defined point at frame start; the type
+	// this with a queue drained from that same frame-start point; the type
 	// system and dispatcher below survive that change unchanged.
 
 	enum class EventType

@@ -10,6 +10,7 @@
 #include "Radiant/Core/Log.h"
 
 #include "Radiant/Core/Timestep.h"
+#include "Radiant/Core/Time.h"
 
 #include "Radiant/Core/Input.h"
 #include "Radiant/Core/MouseCodes.h"

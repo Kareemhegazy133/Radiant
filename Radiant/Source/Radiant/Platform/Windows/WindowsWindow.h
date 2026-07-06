@@ -15,7 +15,7 @@ namespace Radiant {
 	 *
 	 * GLFW callbacks translate OS events into Radiant events and dispatch them
 	 * synchronously (blocking) through the callback set via SetEventCallback —
-	 * they fire from inside OnUpdate()'s glfwPollEvents, i.e. at end of frame.
+	 * they fire from inside PollEvents()'s glfwPollEvents, i.e. at frame start.
 	 * The initial VSync state comes from the WindowSpecification; SetVSync maps
 	 * it onto the GL swap interval, so it requires the context to be
 	 * initialized. Main-thread only, like GLFW itself.
@@ -26,7 +26,8 @@ namespace Radiant {
 		WindowsWindow(const WindowSpecification& specification);
 		virtual ~WindowsWindow();
 
-		void OnUpdate() override;
+		void PollEvents() override;
+		void Present() override;
 
 		inline unsigned int GetWidth() const override { return m_Data.Width; }
 		inline unsigned int GetHeight() const override { return m_Data.Height; }

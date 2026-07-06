@@ -72,6 +72,27 @@ namespace Radiant {
 	};
 
 	/**
+	 * RUNTIME-ONLY (never serialized — deliberately absent from LevelSerializer):
+	 * the entity's transform as of the START of the last fixed simulation step,
+	 * written by Level::OnFixedUpdate for entities that can move in simulation.
+	 * Level::OnRender draws lerp(snapshot, current, alpha) so fixed-rate motion
+	 * looks smooth at any display rate. No scale — nothing simulates scale.
+	 * Trivially copyable POD, so Level::Copy (Phase 5) shallow-copies it safely.
+	 * Until RAD-28's explicit-teleport path resets it, a teleport smears across
+	 * one rendered frame.
+	 */
+	struct TransformSnapshotComponent
+	{
+		glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f };
+
+		TransformSnapshotComponent() = default;
+		TransformSnapshotComponent(const TransformSnapshotComponent&) = default;
+		TransformSnapshotComponent(const glm::vec3& translation, const glm::vec3& rotation)
+			: Translation(translation), Rotation(rotation) {}
+	};
+
+	/**
 	 * Renders the entity as a 2D quad. TextureHandle 0 means flat color;
 	 * otherwise the texture is resolved through the AssetManager each frame and
 	 * tinted by Color. Assets are referenced by handle, never by path.

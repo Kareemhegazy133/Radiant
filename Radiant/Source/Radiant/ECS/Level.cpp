@@ -66,6 +66,11 @@ namespace Radiant {
 		metadata.ID = uuid;
 		metadata.Tag = name.empty() ? "Entity" : name;
 
+		// A colliding UUID (corrupt/hand-edited level data) silently orphans the
+		// previous entity's map entry — say so instead of swallowing it
+		if (m_EntityMap.find(uuid) != m_EntityMap.end())
+			RADIANT_WARN("Level: duplicate entity UUID {} on create - previous map entry replaced", uuid);
+
 		m_EntityMap[uuid] = entity;
 
 		return entity;
@@ -73,6 +78,14 @@ namespace Radiant {
 
 	void Level::DestroyEntity(Entity entity)
 	{
+		// Stale/null handles reach here from gameplay code (e.g. double-destroy);
+		// a config-level mistake, not grounds for UB in Dist
+		if (!entity.IsValid())
+		{
+			RADIANT_WARN("Level: DestroyEntity called with an invalid entity handle");
+			return;
+		}
+
 		if (auto* nsc = entity.TryGetComponent<NativeScriptComponent>())
 		{
 			// Instance is created lazily on first update — it may not exist yet
@@ -108,12 +121,53 @@ namespace Radiant {
 		DestroyEntity(it->second);
 	}
 
-	void Level::OnUpdate(Timestep ts)
+	void Level::OnFixedUpdate(Timestep ts)
 	{
+		// Snapshot movable entities BEFORE anything moves: rendering interpolates
+		// between this (where the entity was) and the post-step transform (where
+		// it is). "Movable" today = has physics, a camera, or a script — iterated
+		// as three mover views (small sets) rather than an all-entity scan; an
+		// explicit marker replaces this heuristic when other movers appear
+		// (revisited with RAD-30; see plan §9).
+		{
+			auto snapshot = [this](entt::entity entityHandle)
+			{
+				const auto& transform = m_Registry.get<TransformComponent>(entityHandle);
+				m_Registry.emplace_or_replace<TransformSnapshotComponent>(entityHandle, transform.Translation, transform.Rotation);
+			};
+			// Entities matching several mover views are written twice — idempotent
+			for (auto entityHandle : m_Registry.view<RigidBody2DComponent, TransformComponent>())
+				snapshot(entityHandle);
+			for (auto entityHandle : m_Registry.view<CameraComponent, TransformComponent>())
+				snapshot(entityHandle);
+			for (auto entityHandle : m_Registry.view<NativeScriptComponent, TransformComponent>())
+				snapshot(entityHandle);
+
+			// An entity that STOPPED being movable must lose its snapshot, or
+			// OnRender lerps it against that stale pose forever. Collect-then-
+			// remove: removing the iterated component mid-iteration is against
+			// the rules (Level.h); the vector only allocates on the rare frame
+			// a mover component was actually removed.
+			std::vector<entt::entity> staleSnapshots;
+			for (auto entityHandle : m_Registry.view<TransformSnapshotComponent>())
+			{
+				if (!m_Registry.any_of<RigidBody2DComponent, CameraComponent, NativeScriptComponent>(entityHandle))
+					staleSnapshots.push_back(entityHandle);
+			}
+			for (auto entityHandle : staleSnapshots)
+				m_Registry.remove<TransformSnapshotComponent>(entityHandle);
+		}
+
 		m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
 			{
 				if (!nsc.Instance)
 				{
+					// A component added without Bind<T>() leaves InstantiateScript
+					// empty; calling it throws std::bad_function_call
+					RADIANT_ASSERT(nsc.InstantiateScript, "NativeScriptComponent has no bound script - missing Bind<T>()?");
+					if (!nsc.InstantiateScript)
+						return;
+
 					nsc.Instance = nsc.InstantiateScript();
 					nsc.Instance->m_Entity = Entity{ entity, this };
 					nsc.Instance->OnCreate();
@@ -140,9 +194,39 @@ namespace Radiant {
 
 		// Apply Physics
 		Physics2D::OnUpdate(ts);
+
+		// Readback: copy stepped body transforms into the ECS as a dedicated
+		// post-step pass (playbook §4). Runs for every active body — unlike the
+		// old in-render readback, which skipped bodies without sprites and did
+		// nothing at all without a primary camera. Must happen inside the fixed
+		// step: the NEXT step's scripts read these transforms.
+		for (auto entityHandle : view)
+		{
+			auto [metadata, rb2d] = view.get<MetadataComponent, RigidBody2DComponent>(entityHandle);
+			if (!metadata.IsActive) continue;
+
+			Entity entity = { entityHandle, this };
+			Physics2D::UpdateEntitiesTransforms(entity);
+		}
 	}
 
-	void Level::OnRender()
+	// lerp(snapshot, current, alpha) for entities that have a snapshot; entities
+	// without one (static, or spawned mid-step) draw their current state — which
+	// makes spawns snap instead of smearing in from a stale position
+	static glm::mat4 InterpolatedTransform(const TransformComponent& current, const TransformSnapshotComponent* snapshot, float alpha)
+	{
+		if (!snapshot)
+			return current.GetTransform();
+
+		glm::vec3 translation = glm::mix(snapshot->Translation, current.Translation, alpha);
+		glm::vec3 rotation = glm::mix(snapshot->Rotation, current.Rotation, alpha);
+
+		return glm::translate(glm::mat4(1.0f), translation)
+			* glm::toMat4(glm::quat(rotation))
+			* glm::scale(glm::mat4(1.0f), current.Scale);   // scale is not simulated
+	}
+
+	void Level::OnRender(float alpha)
 	{
 		Camera* mainCamera = nullptr;
 		glm::mat4 cameraTransform;
@@ -155,7 +239,9 @@ namespace Radiant {
 				if (camera.Primary)
 				{
 					mainCamera = &camera.Camera;
-					cameraTransform = transform.GetTransform();
+					// The camera is script-driven (movable) — interpolate it too, or
+					// the world is smooth while the view judders
+					cameraTransform = InterpolatedTransform(transform, m_Registry.try_get<TransformSnapshotComponent>(entity), alpha);
 					break;
 				}
 			}
@@ -173,25 +259,23 @@ namespace Radiant {
 				// Skip inactive Entities
 				if (!metadata.IsActive) continue;
 
-				// Physics readback inside the render loop is a known defect (RAD-28):
-				// bodies without sprites — or all bodies when no Primary camera exists —
-				// never get their ECS transforms updated from the simulation
-				Entity entity = { entityHandle, this };
-				Physics2D::UpdateEntitiesTransforms(entity);
+				glm::mat4 worldTransform = InterpolatedTransform(transform, m_Registry.try_get<TransformSnapshotComponent>(entityHandle), alpha);
 
 				if (sprite.TextureHandle == 0)
 				{
-					Renderer2D::DrawSprite(transform.GetTransform(), sprite.Color);
+					Renderer2D::DrawSprite(worldTransform, sprite.Color);
 				}
 				else if (Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.TextureHandle))
 				{
-					Renderer2D::DrawSprite(transform.GetTransform(), texture, sprite.TilingFactor, sprite.Color);
+					Renderer2D::DrawSprite(worldTransform, texture, sprite.TilingFactor, sprite.Color);
 				}
 				
-				// For Debugging Purposes
+				// Debug colliders deliberately draw the UNINTERPOLATED simulation
+				// pose (sim truth): they may lead interpolated sprites by up to one
+				// step — that gap is real, not a bug
 				if (m_ShowPhysicsColliders)
 				{
-					Entity e = { entity, this };
+					Entity e = { entityHandle, this };
 					if(auto* bc2d = e.TryGetComponent<BoxCollider2DComponent>())
 						Physics2D::DebugDraw(transform, *bc2d);
 				}
@@ -285,7 +369,11 @@ namespace Radiant {
 			}
 		}
 
-		RADIANT_WARN("{} assets ({} missing)", assetList.size(), missingAssets.size());
+		// The count is normal lifecycle info; only actual misses warrant WARN —
+		// and each missing handle is named so the broken reference is findable
+		RADIANT_INFO("Level: {} assets referenced ({} missing)", assetList.size(), missingAssets.size());
+		for (AssetHandle missing : missingAssets)
+			RADIANT_WARN("Level: referenced asset {} is missing from the registry", missing);
 		return assetList;
 	}
 
@@ -316,6 +404,13 @@ namespace Radiant {
 			{
 				auto lhsEntity = m_EntityMap.find(lhs.ID);
 				auto rhsEntity = m_EntityMap.find(rhs.ID);
+				// A metadata ID absent from the map would deref end() below —
+				// programmer error (map and registry out of sync)
+				RADIANT_ASSERT(lhsEntity != m_EntityMap.end() && rhsEntity != m_EntityMap.end(), "SortEntities: metadata ID missing from entity map");
+				// Unmapped sorts last; two unmapped entries must compare equivalent
+				// (false both ways) or the comparator breaks strict weak ordering — UB
+				if (lhsEntity == m_EntityMap.end() || rhsEntity == m_EntityMap.end())
+					return lhsEntity != m_EntityMap.end() && rhsEntity == m_EntityMap.end();
 				return static_cast<uint32_t>(lhsEntity->second) < static_cast<uint32_t>(rhsEntity->second);
 			});
 	}

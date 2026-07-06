@@ -46,7 +46,13 @@ namespace Radiant {
         if (!s_GLFWInitialized)
         {
             int success = glfwInit();
-            RADIANT_ASSERT(success, "Could not intialize GLFW!");
+            if (!success)
+            {
+                // CRITICAL survives Dist (asserts don't): a shipped build that can't
+                // boot GLFW must say so in the log before the inevitable crash
+                RADIANT_CRITICAL("Could not initialize GLFW!");
+                RADIANT_ASSERT(false, "Could not initialize GLFW!");
+            }
             glfwSetErrorCallback(GLFWErrorCallback);
             s_GLFWInitialized = true;
         }
@@ -54,6 +60,12 @@ namespace Radiant {
         {
 			RADIANT_PROFILE_SCOPE("glfwCreateWindow");
 			m_Window = glfwCreateWindow((int)specification.Width, (int)specification.Height, m_Data.Title.c_str(), nullptr, nullptr);
+		}
+
+		if (!m_Window)
+		{
+			RADIANT_CRITICAL("Failed to create window '{}' ({}x{}) - no GL 4.5 capable context?", m_Data.Title, m_Data.Width, m_Data.Height);
+			RADIANT_ASSERT(false, "Window creation failed");
 		}
 
 		// Set icon
@@ -74,6 +86,8 @@ namespace Radiant {
 				}
 				else
 				{
+					// Specified-but-unloadable icon is a content mistake: say so
+					RADIANT_WARN("Failed to load window icon '{}'", iconPathStr);
 					useIcon = false;
 				}
 			}
@@ -181,13 +195,19 @@ namespace Radiant {
 		glfwTerminate();
     }
 
-    void WindowsWindow::OnUpdate()
+    void WindowsWindow::PollEvents()
 	{
 		RADIANT_PROFILE_FUNCTION();
 
         glfwPollEvents();
-		m_Context->SwapBuffers();
     }
+
+	void WindowsWindow::Present()
+	{
+		RADIANT_PROFILE_FUNCTION();
+
+		m_Context->SwapBuffers();
+	}
 
     void WindowsWindow::SetVSync(bool enabled)
 	{

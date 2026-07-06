@@ -46,14 +46,18 @@ The engine owns `main()`; a game provides `CreateGameApplication()` returning it
 
 ```text
 per frame (GameApplication::Run):
- 1. timestep = now - lastFrameTime          (variable delta)
- 2. for each layer (bottom→top): OnUpdate(ts)   — game logic, physics, rendering
- 3. ImGui Begin → each layer OnImGuiRender → End
- 4. Window::OnUpdate()                       — glfwPollEvents + SwapBuffers
- 5. LayerStack::ProcessPendingLayers()       — deferred layer push/pop applied
+ 1. frameDelta = now - lastFrameTime         (variable frame delta, double)
+ 2. Window::PollEvents()                     — frame START; simulation sees this frame's input
+ 3. fixed-step drain (0..N steps):           — accumulator converts frame time to fixed steps
+      TimerManager::Tick(fixedDelta)
+      for each layer (bottom→top): OnFixedUpdate(fixedDelta)   — simulation
+ 4. for each layer (bottom→top): OnUpdate(frameDelta)          — render-rate, once
+ 5. ImGui Begin → each layer OnImGuiRender → End
+ 6. Window::Present()                        — swap buffers
+ 7. LayerStack::ProcessPendingLayers()       — deferred layer push/pop applied
 ```
 
-Two properties of this loop matter and both change in Phase 2 (RAD-25, RAD-26): the timestep is **variable** (simulation is framerate-dependent), and events fire at the **end** of the frame from inside `glfwPollEvents` via blocking callbacks. The target loop is: drain event queue → fixed-step simulation (accumulator) → interpolated render.
+Simulation is **framerate-independent** (fixed timestep + accumulator, with render interpolation — RAD-25, see [Time-And-Simulation](Time-And-Simulation.md)). One interim property remains for Phase 2: event handlers still execute inside the OS callbacks during polling; the queue that defers them to a single drain point is RAD-26.
 
 ## Locked Strategy
 
@@ -66,4 +70,4 @@ Decisions locked 2026-07-04 (full rationale in `CLAUDE.md → Mission & Locked S
 
 ## Reading Order
 
-For a new engineer: this page → [Core-Application](Core-Application.md) → [Memory-And-Reference-Counting](Memory-And-Reference-Counting.md) → [Layer-System](Layer-System.md) → [Event-System](Event-System.md) → [ECS-And-Levels](ECS-And-Levels.md) → [Rendering](Rendering.md); then the rest as needed.
+For a new engineer: this page → [Core-Application](Core-Application.md) → [Time-And-Simulation](Time-And-Simulation.md) → [Memory-And-Reference-Counting](Memory-And-Reference-Counting.md) → [Layer-System](Layer-System.md) → [Event-System](Event-System.md) → [ECS-And-Levels](ECS-And-Levels.md) → [Rendering](Rendering.md); then the rest as needed.

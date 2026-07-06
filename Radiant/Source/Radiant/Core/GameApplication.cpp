@@ -11,11 +11,12 @@ namespace Radiant {
 	GameApplication* GameApplication::s_Instance = nullptr;
 
 	GameApplication::GameApplication(const GameApplicationSpecification& specification)
-		: m_Specification(specification)
+		: m_Specification(specification), m_Clock(specification.SimulationRate)
 	{
 		RADIANT_PROFILE_FUNCTION();
 
 		RADIANT_TRACE("GameApplication Constructor");
+		RADIANT_TRACE("Simulation: {} Hz ({:.2f} ms fixed step)", specification.SimulationRate, m_Clock.GetFixedDeltaTime() * 1000.0);
 		RADIANT_ASSERT(!s_Instance, "GameApplication already exists!");
 		s_Instance = this;
 		
@@ -67,6 +68,7 @@ namespace Radiant {
 	{
 		RADIANT_PROFILE_FUNCTION();
 
+		RADIANT_ASSERT(layer, "PushLayer: null layer");
 		m_LayerStack.PushLayer(layer);
 		layer->OnAttach();
 	}
@@ -75,6 +77,7 @@ namespace Radiant {
 	{
 		RADIANT_PROFILE_FUNCTION();
 
+		RADIANT_ASSERT(layer, "PushOverlay: null layer");
 		m_LayerStack.PushOverlay(layer);
 		layer->OnAttach();
 	}
@@ -121,19 +124,45 @@ namespace Radiant {
 	{
 		RADIANT_PROFILE_FUNCTION();
 
+		// Priming here means frame one measures loop-start → frame-1 instead of
+		// GLFW-init → frame-1 (which delivered all of boot as one giant timestep)
+		m_LastFrameTime = glfwGetTime();
+
 		while (m_Running)
 		{
 			RADIANT_PROFILE_SCOPE("RunLoop");
 
-			// Variable timestep — simulation is framerate-dependent until the
-			// fixed-step rework (RAD-25). m_LastFrameTime starts at 0, so the first
-			// frame receives the full time since GLFW init; dies in the same rework.
-			float time = (float)glfwGetTime();
-			Timestep timestep = time - m_LastFrameTime;
+			// The variable frame delta feeds the clock (which converts it to fixed
+			// steps) and the render-rate OnUpdate hook — never simulation directly
+			double time = glfwGetTime();
+			double frameDelta = time - m_LastFrameTime;
 			m_LastFrameTime = time;
+			Timestep timestep = (float)frameDelta;
+
+			// Frame START: simulation must see this frame's input, not last
+			// frame's. Handlers still run inside the OS callbacks (queued
+			// dispatch is RAD-26 — only the *when* moved here).
+			m_Window->PollEvents();
 
 			if (!m_Minimized)
 			{
+				{
+					RADIANT_PROFILE_SCOPE("LayerStack OnFixedUpdate");
+
+					m_Clock.BeginFrame(frameDelta);
+					Timestep fixedTimestep = (float)m_Clock.GetFixedDeltaTime();
+
+					while (m_Clock.ConsumeStep())
+					{
+						// Timers fire first so layers observe a consistent
+						// post-timer world (mirrors UE's tick placement)
+						m_TimerManager.Tick(m_Clock.GetFixedDeltaTime());
+
+						for (Layer* layer : m_LayerStack)
+							layer->OnFixedUpdate(fixedTimestep);
+					}
+				}
+
 				{
 					RADIANT_PROFILE_SCOPE("LayerStack OnUpdate");
 
@@ -151,9 +180,9 @@ namespace Radiant {
 				m_ImGuiLayer->End();
 			}
 
-			// glfwPollEvents runs in here: all event handlers (OnEvent) execute now,
-			// at end of frame, inside the OS callbacks (queued dispatch lands in RAD-26)
-			m_Window->OnUpdate();
+			// Present runs even while minimized (GLFW tolerates it) — polling and
+			// presenting are unconditional; only simulation and render are gated
+			m_Window->Present();
 
 			// Applied only between frames: updates and event handlers are the very
 			// code that queues pushes/pops, and mutating the stack while it is being

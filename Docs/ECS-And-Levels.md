@@ -31,14 +31,15 @@ Every entity carries `MetadataComponent` (UUID, tag string, `IsActive`) and `Tra
 | `RigidBody2DComponent` / `BoxCollider2DComponent` | physics binding (see [Physics](Physics.md)) |
 | `NativeScriptComponent` | native script binding (below) |
 | `TextComponent` | world text — parked until the MSDF revival (RAD-47) |
+| `TransformSnapshotComponent` | previous-step transform for render interpolation — **runtime-only, never serialized** (see [Time-And-Simulation](Time-And-Simulation.md)) |
 
-Adding a component is a three-site contract: declare in `Components.h`, add to `LevelSerializer`, and (Phase 5) add to the editor inspector.
+Adding a component is a three-site contract: declare in `Components.h`, add to `LevelSerializer`, and (Phase 5) add to the editor inspector. (Runtime-only components like `TransformSnapshotComponent` are the deliberate exception: the serializer never writes them.)
 
 ### Lifecycle & loops
 
 Entity creation/destruction is **immediate** (no command buffer). Physics bodies are managed reactively through entt signals: `on_construct<RigidBody2DComponent>` creates the Box2D body, `on_destroy` destroys it — component presence *is* the physics binding.
 
-`Level::OnUpdate(ts)` runs scripts (lazy-instantiating on first update), pushes transforms to physics, and steps the physics world. `Level::OnRender()` finds the first `Primary` camera, begins the 2D scene, and draws sprite entities. Games drive both per frame (`GameLayer` in Reaper).
+`Level::OnFixedUpdate(ts)` advances one FIXED simulation step: snapshots movable entities' transforms (for render interpolation), runs scripts (lazy-instantiating on first update), pushes transforms to physics, steps the physics world, and reads stepped body transforms back into the ECS as a dedicated post-step pass. `Level::OnRender(alpha)` finds the first `Primary` camera and draws sprite entities, blending movable entities between the last two simulation states by `alpha` — draw-only, it never mutates simulation state. Reaper's `GameLayer` drives the former from `Layer::OnFixedUpdate` and the latter from `Layer::OnUpdate` (see [Time-And-Simulation](Time-And-Simulation.md)).
 
 ### Native scripts
 

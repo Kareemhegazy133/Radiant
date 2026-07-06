@@ -8,6 +8,7 @@ Per-system architecture documentation for the Radiant engine. Written for an eng
 |----------|--------|
 | [Architecture-Overview](Architecture-Overview.md) | The whole engine: module map, boot sequence, frame anatomy, strategy |
 | [Core-Application](Core-Application.md) | Application lifecycle, main loop, window, input |
+| [Time-And-Simulation](Time-And-Simulation.md) | Fixed-timestep loop: FrameClock, dilation/pause, render interpolation, timers |
 | [Memory-And-Reference-Counting](Memory-And-Reference-Counting.md) | Ownership model: `Ref`, `Scope`, `RefCounted` |
 | [Layer-System](Layer-System.md) | `Layer` / `LayerStack` composition and update ordering |
 | [Event-System](Event-System.md) | Event types, dispatcher, propagation |

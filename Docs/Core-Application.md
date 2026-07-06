@@ -1,12 +1,12 @@
 # Core: Application Lifecycle
 
-**Status:** Stable — loop rework planned (Phase 2: RAD-25, RAD-26).
+**Status:** Stable — event queue planned (Phase 2: RAD-26). Fixed-timestep loop landed 2026-07-05 (RAD-25; see [Time-And-Simulation](Time-And-Simulation.md)).
 
 ## The Problem This Solves
 
 Every program needs an answer to three questions: what starts first (and in what order), what happens repeatedly while running, and what shuts down last. In a game engine the ordering is unforgiving — the renderer cannot exist before the window that owns the graphics context, the window cannot come before logging (or you'll never see why it failed), and teardown must run in reverse or you destroy things others still depend on. `GameApplication` is the engine's **spine**: the one object that owns boot order, the frame heartbeat, and teardown, so no other system ever has to guess whether its dependencies exist yet.
 
-The "frame heartbeat" is the second idea. A game is not a program that runs once — it's a loop that repeats ~60+ times per second: measure how much time passed, let every part of the app update by that much, draw everything, show the finished image, and collect whatever the OS reported (keys, clicks, resizes). Everything the player ever experiences happens inside one beat of this loop; the entire engine exists to make each beat fast and predictable.
+The "frame heartbeat" is the second idea. A game is not a program that runs once — it's a loop that repeats ~60+ times per second: collect whatever the OS reported (keys, clicks, resizes), advance the simulation, draw everything, and show the finished image. Everything the player ever experiences happens inside one beat of this loop; the entire engine exists to make each beat fast and predictable.
 
 ## Architecture
 
@@ -19,19 +19,24 @@ The "frame heartbeat" is the second idea. A game is not a program that runs once
 - the **ImGui overlay** (`ImGuiLayer::Create()` factory → backend-specific layer, pushed as an overlay),
 - the **layer stack** (see [Layer-System](Layer-System.md)).
 
-`GameApplicationSpecification` carries name, window size, VSync, working directory, plus Radiant-specific extensions: `IconPath` (window icon) and `FontPath`/`FontSize` (default ImGui font). A game subclasses `GameApplication`, configures the spec, and pushes its layers (see `Reaper/Source/Core/Game.cpp`).
+`GameApplicationSpecification` carries name, window size, VSync, working directory, plus Radiant-specific extensions: `IconPath` (window icon), `FontPath`/`FontSize` (default ImGui font), and `SimulationRate` (fixed simulation step rate in Hz, default 60). A game subclasses `GameApplication`, configures the spec, and pushes its layers (see `Reaper/Source/Core/Game.cpp`).
 
 `main()` lives in the **engine** (`Core/EntryPoint.h`, compiled only on Windows): it initializes logging, calls the game-provided `CreateGameApplication()`, runs, and deletes. `Run()` is private; `main` is befriended — the loop cannot be invoked from game code.
 
 ### The Main Loop
 
-`GameApplication::Run()` per frame:
+`GameApplication::Run()` primes `m_LastFrameTime` immediately before the loop (so frame one measures loop-start → frame-1, not GLFW-init → frame-1), then per frame:
 
-1. Compute `Timestep` from `glfwGetTime()` minus the previous frame's time (variable delta).
-2. If not minimized: iterate layers bottom→top calling `OnUpdate(ts)` — all game logic, physics stepping, and rendering happen here.
-3. ImGui pass: `ImGuiLayer::Begin()` → every layer's `OnImGuiRender()` → `End()`.
-4. `Window::OnUpdate()` — `glfwPollEvents()` (event callbacks fire *here*, end of frame) then `SwapBuffers()`.
+1. Compute the frame delta from `glfwGetTime()` minus the previous frame's time (`double` precision).
+2. `Window::PollEvents()` — frame **start**, so simulation sees this frame's input. Event callbacks fire here (handlers still run inside the OS callbacks until the RAD-26 queue).
+3. If not minimized:
+   - **Fixed-step drain:** `FrameClock::BeginFrame(frameDelta)` deposits scaled time; `while (ConsumeStep())` runs `TimerManager::Tick` then every layer's `OnFixedUpdate(fixedDelta)` bottom→top — 0..N simulation steps per frame.
+   - **Render-rate update:** every layer's `OnUpdate(frameDelta)` bottom→top, exactly once.
+   - ImGui pass: `ImGuiLayer::Begin()` → every layer's `OnImGuiRender()` → `End()`.
+4. `Window::Present()` — swap buffers at frame end (runs even while minimized; only simulation and render are gated).
 5. `LayerStack::ProcessPendingLayers()` — deferred layer pushes/pops are applied between frames.
+
+The time accounting behind step 3 — accumulator, dilation/pause, interpolation alpha, timers — is owned by `FrameClock`/`TimerManager` and documented in [Time-And-Simulation](Time-And-Simulation.md).
 
 Shutdown: `Close()` merely sets `m_Running = false`; the destructor detaches and deletes every layer, then shuts down fonts and the renderer.
 
@@ -49,6 +54,5 @@ Shutdown: `Close()` merely sets `m_Running = false`; the destructor detaches and
 
 ## Known Issues & Evolution
 
-- **Variable timestep** — simulation is framerate-dependent. Phase 2 (RAD-25) restructures the loop into: drain event queue → fixed-step simulation with accumulator → interpolated render. The first-frame timestep bug (`m_LastFrameTime` starts at 0, so frame one receives the full time since GLFW init) dies in the same rework.
-- **Events fire at end-of-frame from inside OS callbacks** — replaced by a frame-start event queue (RAD-26).
+- **Event handlers still run inside OS callbacks** — polling moved to frame start with the RAD-25 loop, but dispatch remains blocking until the event queue lands (RAD-26).
 - **Windows-only** — `PlatformDetection.h` hard-errors on other platforms; the `Window`/`Input` seams exist, but no other implementations do. Not on any phase roadmap; deliberate.

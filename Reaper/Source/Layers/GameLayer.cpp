@@ -48,6 +48,11 @@ void GameLayer::OnDetach()
 	m_Level.Reset();
 }
 
+void GameLayer::OnFixedUpdate(Timestep ts)
+{
+	m_Level->OnFixedUpdate(ts);
+}
+
 void GameLayer::OnUpdate(Timestep ts)
 {
 	m_Framebuffer->Bind();
@@ -55,8 +60,7 @@ void GameLayer::OnUpdate(Timestep ts)
 	RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 	RenderCommand::Clear();
 
-	m_Level->OnUpdate(ts);
-	m_Level->OnRender();
+	m_Level->OnRender(Time::GetAlpha());
 
 	m_Framebuffer->Unbind();
 }
@@ -161,6 +165,18 @@ void GameLayer::CreateDEBUG()
 void GameLayer::LoadDEBUG()
 {
 	m_Level = AssetManager::LoadAsset<Level>(ReaperContext::GetLevelAssetPath());
+
+	// The engine's asset paths warn-and-return-null on broken content — honor
+	// the same contract here: recover to the debug level instead of crashing
+	// on the first OnFixedUpdate
+	if (!m_Level)
+	{
+		GAME_WARN("GameLayer: level asset '{}' failed to load - falling back to the debug level", ReaperContext::GetLevelAssetPath());
+		m_Level = Ref<Level>::Create();
+		CreateDEBUG();
+		return;
+	}
+
 	m_Level->FindEntityByName("Camera").AddOrReplaceComponent<NativeScriptComponent>().Bind<CameraController>();
 }
 
