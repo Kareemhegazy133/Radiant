@@ -82,6 +82,5 @@ Game code never writes these — the registry is private to `Level`, so views ex
 ## Known Issues & Evolution
 
 - **Components must become plain data (RAD-30):** `NativeScriptComponent` holds an owning raw pointer, `RigidBody2DComponent` holds a `void*` body plus two `std::function` callbacks. Shallow copies duplicate raw pointers, which blocks the `Level::Copy()` that play-in-editor requires (RAD-52). Runtime state moves to Level-owned side tables; the rule is *if it can't be memcpy'd and serialized, it doesn't belong in a component* (playbook §3).
-- **Physics readback is coupled to rendering (RAD-28):** Box2D→ECS transform sync currently happens inside the sprite render loop — see [Physics](Physics.md).
 - **Serialization gaps:** `IsActive` and script bindings are lost on round-trip; several nested YAML reads are unguarded against malformed files. Hardened alongside the Phase 4 asset work.
 - **No edit/play separation:** the engine has no `OnRuntimeStart/Stop` — physics and scripts run whenever the Level updates. Restored properly with play-in-editor (RAD-52).
