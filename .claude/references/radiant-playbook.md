@@ -15,6 +15,7 @@ Frame order: **pump + process events at frame start → fixed-step simulation (a
 - `LayerStack` owns its layers. Containers that own raw pointers must be the *only* deleter.
 - Types owning raw API handles (`m_RendererID`, `VkBuffer`, `b2Body*`) delete copy or implement rule-of-5.
 - The last-reference release idiom is `if (count.fetch_sub(1) == 1) delete` — decrement-then-separately-check is a race (the RAD-7 bug class).
+- **Weak references in Radiant are generation handles** (`TimerHandle`, `entt::entity`, asset UUIDs) — there is no `WeakRef` type, deliberately (decided 2026-07-09). An intrusive refcount cannot support weak semantics: the count dies with the object, and adding a control block forfeits intrusive's single-allocation benefit (UE agrees — `TRefCountPtr` has no weak counterpart; `TWeakObjectPtr` is index + serial, i.e. a generation handle). Domain handles also carry the right recovery semantics (placeholder asset, timer no-op, entity validity check) where a generic `Lock()` can only return null. Revisit only if the Phase 4 asset cache produces a concrete customer.
 
 ## §3 — Data-Only Components (target, Phase 2)
 
