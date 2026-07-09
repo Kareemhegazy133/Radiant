@@ -41,6 +41,17 @@ If no issue key is provided, ask the user which story to plan.
 9. **Transition into the Guided Implementation Walkthrough** (see section below).
 10. **After implementation and the user's `/review`: write the Story Implementation Report** (see section below), post it to the story, then transition per the Definition of Done.
 
+## The Explanation Level (locked 2026-07-08, RAD-26 planning)
+
+Kareem confirmed the target register during RAD-26 planning: **a principal engineer explaining to an associate who has never built an engine** — simpler than "knows C++ but not this codebase". Every explanation follows it: chat walkthroughs, plan files, and implementation reports alike.
+
+- **Plain words before pattern names.** The everyday-world version of the idea comes first (the letterbox, the notepad by the door, the piggy bank); the type or pattern name appears only after the mechanism has landed.
+- **Define even "basic" terms of art at first use** — event, callback, seam, re-entrancy, handle, accumulator. Assume smart; assume zero engine background.
+- **Show mechanisms as stripped pseudocode or annotated call-stack diagrams** (5–10 lines), never full listings. A before/after pair of call stacks teaches re-entrancy better than any paragraph.
+- **Walk one concrete scenario with real numbers** ("one poll delivers 17 mouse moves and an Escape press; the handler for event #3 rebuilds the stack events #4–18 are about to walk") instead of describing behavior abstractly.
+- **Close every concept honestly: what we gained AND what we deliberately did not gain** ("no latency win, no perf win — the work moved in space, not time"). If a change sounds like it has only upsides, the downside hasn't been found yet.
+- **Bookend with "what we have / what we're building"** in two plain sentences.
+
 ## Guided Plan Walkthrough (after writing the file)
 
 Nobody absorbs an architecture from a 10-section document. After writing the plan file, present it in chat the way a principal engineer explains an upcoming build to a colleague at a whiteboard: **one piece at a time, conversationally, checking understanding before moving on.**
@@ -48,7 +59,7 @@ Nobody absorbs an architecture from a 10-section document. After writing the pla
 - **Open with the problem, ground-up — before any architecture.** The first message must make the user *feel* why the current state is broken, assuming no prior context: (1) show what the code literally does today, stripped to 3–5 lines of plain pseudocode; (2) make the failure concrete — walk a specific scenario with real numbers, and cite a real shipped-game bug of this class where one exists; (3) give the fix as **one strong physical analogy** (a piggy bank, a pendulum clock, a mail queue) before naming any type or pattern; (4) close with a two-sentence "what we have / what we're building" summary in plain words. No class names, no plan-section numbers, no jargon until the problem has landed. (This mirrors the "The Problem This Solves" convention in `Docs/`.)
 - **Then the big picture** (same message or the next): the single architecture decision that shapes everything and why that shape. End by listing the pieces you'll walk through (the map), and the plan file path.
 - **Then one piece per message.** Chunk by *idea*, not by the file's section headings — e.g. "the accumulator and why it lives in GameApplication", "who owns the physics world now", "what the UE version of this looks like and what we're skipping", "what could bite us". 3–6 pieces for a typical plan.
-- **For each piece:** explain like a colleague, not a document — and calibrate to an **associate engineer** (knows C++, not this codebase or engine patterns; define terms of art on first use). Short prose, the why behind the decision, the alternative that was rejected and what rejecting it buys us. Name the plan section it corresponds to.
+- **For each piece:** explain like a colleague, not a document — at **The Explanation Level** (section above). Short prose, the why behind the decision, the alternative that was rejected and what rejecting it buys us. Name the plan section it corresponds to.
 - **End every piece with an explicit pause** — invite questions on THIS piece before advancing. Answer follow-ups fully; never advance while the user is still probing.
 - **Fold changes back into the file immediately.** If a question changes a decision, edit the plan file in place before continuing, and say what changed.
 - **Close the walkthrough** by collecting agreement to post the plan to Jira.
@@ -60,6 +71,8 @@ Do NOT: paste the file's tables/sections verbatim into chat; deliver several pie
 Write the plan to `.claude/plans/RAD-XX-<slug>.md` using the structure below. This folder is git-tracked: the file is both the readable artifact and the exact content posted to the Jira story, so there is a single source of truth.
 
 Optimize for **readability and visualization**: metadata table first; file plan as an ASCII tree *and* a table; implementation steps grouped into phases with `- [ ]` checkboxes; tables ≤4 columns.
+
+All explanatory prose in the file is written at **The Explanation Level** (section above) — the plan doubles as the teaching record: it gets posted to Jira and re-read months later by someone with no session context. §0 is mandatory and carries the full ground-up explanation; the later sections may then use the terms §0 established.
 
 ### Plan File Format
 
@@ -75,6 +88,14 @@ Optimize for **readability and visualization**: metadata table first; file plan 
 | **Planned** | <today's date, YYYY-MM-DD> |
 
 ---
+
+## 0. The Problem, Ground Up
+
+<The Explanation Level, in file form — written so someone who reads ONLY this section
+understands the story: what the code literally does today (stripped pseudocode or a
+call-stack diagram), one concrete failure scenario with real numbers, the fix as one
+everyday analogy, how the reference engine (UE) solves it in plain words, and what we
+gain AND deliberately don't gain. Define every term of art at first use.>
 
 ## 1. Architecture Decision
 
@@ -203,7 +224,7 @@ The plan is the map, not the destination. After posting the plan to Jira and loc
 
 When implementation is complete and the user has run `/review` (and any fixes landed), close the story with the **Story Implementation Report** — deliver it in chat AND post it as a new comment on the Jira story (append, never overwrite; same audit-trail rule as plans). Only then does the story transition per the Definition of Done.
 
-**Audience: an associate engineer** who knows C++ but was not in the room — assume zero context from the implementation sessions. Ground-up teaching voice (problem-first, one strong analogy where it helps, no unexplained jargon): every design decision carries its why and the rejected alternative.
+**Audience: an associate engineer** who was not in the room — assume zero context from the implementation sessions. Written at **The Explanation Level** (section above): problem-first, one strong analogy carried through, no unexplained jargon, honest non-gains; every design decision carries its why and the rejected alternative.
 
 Format:
 
