@@ -114,6 +114,5 @@ Boot logs the simulation rate (`"Simulation: 60 Hz (16.67 ms fixed step)"`); the
 
 - **Engine-global TimerManager (flagged at design time).** Gameplay timers capturing Level entities couple a global container to Level-lifetime objects — fine while exactly one Level exists, wrong the moment play-in-editor does. The UE answer (per-world manager) becomes per-Level here when RAD-52 lands; the API shape is identical, so the migration is mechanical.
 - **Movable-entity heuristic is implicit.** "Has rigidbody/camera/script" is correct and cheap today, but a future animation or tween system (RAD-64, RAD-70) adds movers this list doesn't know about. The end-state is an explicit opt-in marker or the component-hygiene rework (RAD-30) deciding movability.
-- **Event handlers still run inside OS callbacks** — polling moved to frame start (this system), but the queue that makes delivery deterministic is RAD-26.
 - **The clock is not reset across level loads:** a load hitch triggers the clamp WARN (observed: ~651 ms dropped at the MainMenu→Gameplay transition — the valve working as designed). A future loading-screen system should reset the clock across loads.
 - **Teleports must snap, not smear:** an explicit transform push should also refresh the snapshot or interpolation draws a one-frame streak. RAD-28's explicit-teleport path formalizes this.

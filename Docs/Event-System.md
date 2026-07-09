@@ -1,12 +1,14 @@
 # Event System
 
-**Status:** Stable — queue rework planned (Phase 2: RAD-26).
+**Status:** Stable — queued dispatch landed 2026-07-09 (RAD-26).
 
 ## The Problem This Solves
 
 The operating system reports things — a key went down, the mouse moved, the window resized — whenever it wants, in raw OS-specific form, by calling *your* code at moments you don't choose. Game code wants the opposite: those facts as typed, self-describing objects it can inspect and react to, delivered in an order and at a moment the engine controls.
 
-The event system is that translation-and-routing layer. Think of events as **letters**: the OS drops them at the door (GLFW callbacks), each is put in a typed envelope (`KeyPressedEvent`, `WindowResizeEvent`), and the dispatcher carries them down the layer stack, where each layer opens only the envelope types it cares about. A layer that fully handles a letter marks it `Handled`, and it stops being passed on — that's how the pause menu eats the Escape key before the game sees it.
+The event system is that translation-and-routing layer. Think of events as **letters**: the OS delivers them to the door (GLFW callbacks), each is put in a typed envelope (`KeyPressedEvent`, `WindowResizeEvent`) and dropped through the slot into a **letterbox** (`EventQueue`). Every morning at the same time — the top of each frame — the application takes the stack out of the box, in arrival order, and carries each letter down the layer stack, where each layer opens only the envelope types it cares about. A layer that fully handles a letter marks it `Handled`, and it stops being passed on — that's how the pause menu eats the Escape key before the game sees it.
+
+The letterbox is the load-bearing idea: the mail carrier (an OS callback) never stands in the hallway while you act on a letter. Callbacks only *record*; the engine *replays* at one point it owns. Before RAD-26, handlers executed synchronously inside the OS callbacks — arbitrary game logic running re-entrantly mid-`glfwPollEvents`, the bug class behind the DirectX-era alt-tab crashes.
 
 ## Architecture
 
@@ -19,11 +21,26 @@ Events (`Events/`) form a small closed hierarchy over `Event` (`Event.h`): windo
 
 Each event carries a `Handled` flag — the propagation short-circuit.
 
+### The queue (`EventQueue`)
+
+`EventQueue` (`Events/EventQueue.h`) is the letterbox: a `std::variant` of the nine concrete event types stored in a `std::vector` with persistent capacity — typed values, no heap allocation per event (rejected: Hazel-style heap-allocated polymorphic events), no switch-ladder re-translation (rejected: UE's raw-message POD shape, which exists because UE defers *untranslated* OS messages; GLFW already translated for us). Owned by value by `GameApplication`, declared before `m_Window` so the window's non-owning pointer (wired via `Window::SetEventQueue`) can never dangle. The two operations:
+
+```cpp
+data.Queue->Push(KeyPressedEvent(key, false));   // GLFW callback: enqueue only, return
+
+m_EventQueue.ProcessEvents(RADIANT_BIND_EVENT_FN(GameApplication::OnEvent));  // Run(), frame start
+```
+
+`ProcessEvents` swap-and-drains two buffers: the pending buffer swaps into the processing buffer (O(1), no copy — UE's `ProcessDeferredEvents` copies its whole array every tick), events are visited in arrival order into the sink, and anything pushed *during* processing lands in the pending buffer for **next frame** — deterministic, and immune to iterator invalidation. A re-entrancy assert guards the swap idiom; a `static_assert(sizeof(QueuedEvent) <= 64)` keeps events compact (big payloads travel as handles, never by value). Adding an event type = one line in the variant alias, compile-enforced.
+
 ### Dispatch & propagation
 
 ```text
-OS → GLFW callback (WindowsWindow) ── constructs stack event
-      └─ data.EventCallback(event)  ── bound to GameApplication::OnEvent
+OS → GLFW callback (WindowsWindow) ── constructs the typed event
+      └─ data.Queue->Push(event)    ── enqueue ONLY; the callback returns
+⋯ frame start ⋯
+GameApplication::Run
+      └─ m_EventQueue.ProcessEvents(OnEvent)   ── the single defined point, once per frame
            ├─ EventDispatcher: WindowClose / WindowResize → app handlers
            └─ layers top→bottom: layer->OnEvent(e); stop when e.Handled
 ```
@@ -46,15 +63,17 @@ bool UILayer::OnKeyPressed(KeyPressedEvent& e)
 
 Propagation is **top→bottom** through the layer stack (overlays first — UI consumes input before the world), stopping at the first layer that sets `Handled`.
 
-**Timing:** dispatch is currently *blocking* — handlers execute synchronously inside the GLFW C callback, which runs inside `glfwPollEvents()` during `Window::PollEvents()` at the **start** of the frame (moved there by the RAD-25 loop rework, so simulation sees the current frame's input). Only the *when* has moved; the *how* — handlers inside OS callbacks — remains interim until the RAD-26 queue.
+**Timing:** handlers run at exactly one point per frame — the `ProcessEvents` call in `Run()`, immediately after `PollEvents()` and before the simulation gate — on the engine's own call stack, in arrival order, in the same frame the input arrived (zero added latency; RAD-25 put polling at frame start, RAD-26 moved the handlers out of the callbacks). `ProcessEvents` runs even while minimized: restore and close arrive *as events*, so gating it would build a window that can never wake up.
 
 ## Design Rationale
 
 - **Static/virtual type-pair dispatch** is the right-sized alternative to RTTI or string comparison: zero allocation, one virtual call, and the dispatcher template reads naturally at call sites. Keep it — the Phase 2 rework changes *when* events are delivered, not *how* they're typed or dispatched.
 - **`Handled` + top→bottom order** is a simple, predictable consumption model. It is *not* an input-focus system — that arrives with the editor (RAD-53) as a drain-time routing policy.
-- **Why blocking dispatch must go:** handlers running inside an OS callback means arbitrary game logic executes re-entrantly mid-`glfwPollEvents` — Reaper already pushes game states from key handlers, and the deferred layer stack exists precisely to paper over one instance of this hazard. (The other half of the old problem — events arriving a frame late because polling ran after update/render — was fixed by the RAD-25 frame-start move.)
+- **Why dispatch is queued (and what it doesn't buy):** the work moved in *space*, not time — off the OS's call stack and onto ours, same frame. Gains: handlers can safely do anything (Reaper pushes game states from key handlers — now on a plain stack); input is *data* (each frame's events exist as a serializable list, the seam for recording/replay and headless tests); one line owns input policy (future ImGui-capture/editor routing filters at the drain, not in six callbacks). Explicitly not gained: no latency win, no perf win, and the Windows title-bar-drag freeze remains (the OS confiscates the thread inside `DefWindowProc`'s modal loop — below GLFW, out of reach). The queue does make that freeze *harmless*: callbacks that fire from inside the modal loop now merely append, instead of running full handlers at the deepest re-entrancy the platform can produce.
 
 ## Known Issues & Evolution
 
-- **Phase 2 (RAD-26):** callbacks will *enqueue* compact event structs; the application drains the queue at a single defined point at frame start. Deterministic timing, no re-entrancy, and the queue becomes the seam for input recording/replay and editor input routing. The dispatcher, categories, and `Handled` walk survive unchanged.
-- **No ImGui input gating** — ImGui and game layers both see every event (Hazel's `BlockEvents` was dropped in the fork). Interim mitigation is Reaper's state checks; the real fix is capture-flag gating at queue-drain time (Phase 5, RAD-53).
+- **No ImGui input gating** — ImGui and game layers both see every event (Hazel's `BlockEvents` was dropped in the fork; ImGui consumes input via its own chained GLFW callbacks, independent of the queue). Interim mitigation is Reaper's state checks; the real fix is capture-flag gating at the `ProcessEvents` drain (Phase 5, RAD-53) — the chokepoint now exists.
+- **The variant is a closed set, deliberately.** The OS input vocabulary is inherently closed (UE closes the same set). Open-set *gameplay* events ("player died") are a different system at a different altitude — a future gameplay event bus (icebox) — and must not ride the OS input queue.
+- **Events carry no source-window identity** — irrelevant single-window; the queue seam is where a window tag gets added when the editor's multi-window work lands (RAD-53).
+- **`KeyTypedEvent` is defined but never emitted** (no GLFW char callback registered); kept in the variant for completeness. Text input is a two-line follow-up when the editor needs it (Phase 5).

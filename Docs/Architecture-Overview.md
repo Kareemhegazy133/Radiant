@@ -47,17 +47,18 @@ The engine owns `main()`; a game provides `CreateGameApplication()` returning it
 ```text
 per frame (GameApplication::Run):
  1. frameDelta = now - lastFrameTime         (variable frame delta, double)
- 2. Window::PollEvents()                     — frame START; simulation sees this frame's input
- 3. fixed-step drain (0..N steps):           — accumulator converts frame time to fixed steps
+ 2. Window::PollEvents()                     — frame START; callbacks enqueue typed events only
+ 3. EventQueue::ProcessEvents(OnEvent)       — handlers run here, on the engine's call stack
+ 4. fixed-step drain (0..N steps):           — accumulator converts frame time to fixed steps
       TimerManager::Tick(fixedDelta)
       for each layer (bottom→top): OnFixedUpdate(fixedDelta)   — simulation
- 4. for each layer (bottom→top): OnUpdate(frameDelta)          — render-rate, once
- 5. ImGui Begin → each layer OnImGuiRender → End
- 6. Window::Present()                        — swap buffers
- 7. LayerStack::ProcessPendingLayers()       — deferred layer push/pop applied
+ 5. for each layer (bottom→top): OnUpdate(frameDelta)          — render-rate, once
+ 6. ImGui Begin → each layer OnImGuiRender → End
+ 7. Window::Present()                        — swap buffers
+ 8. LayerStack::ProcessPendingLayers()       — deferred layer push/pop applied
 ```
 
-Simulation is **framerate-independent** (fixed timestep + accumulator, with render interpolation — RAD-25, see [Time-And-Simulation](Time-And-Simulation.md)). One interim property remains for Phase 2: event handlers still execute inside the OS callbacks during polling; the queue that defers them to a single drain point is RAD-26.
+Simulation is **framerate-independent** (fixed timestep + accumulator, with render interpolation — RAD-25, see [Time-And-Simulation](Time-And-Simulation.md)), and event delivery is **deterministic**: OS callbacks only enqueue; handlers run at the single `ProcessEvents` point at frame start (RAD-26, see [Event-System](Event-System.md)).
 
 ## Locked Strategy
 

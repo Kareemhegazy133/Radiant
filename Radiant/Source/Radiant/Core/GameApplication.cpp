@@ -28,7 +28,7 @@ namespace Radiant {
 		windowSpec.IconPath = specification.IconPath;
 
 		m_Window = Window::Create(windowSpec);
-		m_Window->SetEventCallback(RADIANT_BIND_EVENT_FN(GameApplication::OnEvent));
+		m_Window->SetEventQueue(&m_EventQueue);
 
 		Renderer::Init();
 
@@ -140,9 +140,12 @@ namespace Radiant {
 			Timestep timestep = (float)frameDelta;
 
 			// Frame START: simulation must see this frame's input, not last
-			// frame's. Handlers still run inside the OS callbacks (queued
-			// dispatch is RAD-26 — only the *when* moved here).
+			// frame's. Polling only enqueues; handlers run in ProcessEvents
+			// below, on this call stack — never inside the OS callbacks.
+			// Unconditional even while minimized: restore/close arrive as
+			// events, so gating this would make a window that can't wake up.
 			m_Window->PollEvents();
+			m_EventQueue.ProcessEvents(RADIANT_BIND_EVENT_FN(GameApplication::OnEvent));
 
 			if (!m_Minimized)
 			{

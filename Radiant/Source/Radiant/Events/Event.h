@@ -4,12 +4,10 @@
 
 namespace Radiant {
 
-	// Events are currently BLOCKING: handlers execute synchronously inside the
-	// GLFW callbacks, which fire during frame-start event polling
-	// (Window::PollEvents). Handlers therefore run inside OS callbacks — do not
-	// assume mid-frame safety or re-entrancy safety. Phase 2 (RAD-26) replaces
-	// this with a queue drained from that same frame-start point; the type
-	// system and dispatcher below survive that change unchanged.
+	// Events are QUEUED (RAD-26): platform callbacks translate OS events and
+	// push them into the application's EventQueue; handlers run when the queue
+	// is processed at a single defined point at frame start (GameApplication::
+	// Run), on the engine's own call stack — never inside OS callbacks.
 
 	enum class EventType
 	{
@@ -41,8 +39,9 @@ namespace Radiant {
 #define EVENT_CLASS_CATEGORY(category) virtual int GetCategoryFlags() const override { return category; }
 
 	/**
-	 * Base of the closed event hierarchy. Events are stack-allocated by the
-	 * platform layer and passed by reference — valid only for the duration of
+	 * Base of the closed event hierarchy. Events are constructed by the
+	 * platform layer and stored by value in the application's EventQueue;
+	 * handlers receive them by reference — valid only for the duration of
 	 * dispatch; handlers must not store pointers or references to them. Setting
 	 * Handled stops propagation to the layers beneath the current one.
 	 */
@@ -62,6 +61,19 @@ namespace Radiant {
 		{
 			return GetCategoryFlags() & category;
 		}
+
+	protected:
+		// Copy/move are protected: derived events copy freely (EventQueue stores
+		// them by value), while copying through an Event& — which would slice off
+		// the derived half — does not compile. The user-declared destructor above
+		// deprecates the implicit copies and suppresses the moves, so all five are
+		// restated; declaring a constructor also suppresses the implicit default
+		// constructor, hence Event() reappears here.
+		Event() = default;
+		Event(const Event&) = default;
+		Event& operator=(const Event&) = default;
+		Event(Event&&) = default;
+		Event& operator=(Event&&) = default;
 	};
 
 	/**

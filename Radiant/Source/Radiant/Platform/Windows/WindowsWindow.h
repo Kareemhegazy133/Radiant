@@ -13,12 +13,15 @@ namespace Radiant {
 	 * the window, so every GPU resource must be released before this destructor
 	 * runs.
 	 *
-	 * GLFW callbacks translate OS events into Radiant events and dispatch them
-	 * synchronously (blocking) through the callback set via SetEventCallback —
-	 * they fire from inside PollEvents()'s glfwPollEvents, i.e. at frame start.
-	 * The initial VSync state comes from the WindowSpecification; SetVSync maps
-	 * it onto the GL swap interval, so it requires the context to be
-	 * initialized. Main-thread only, like GLFW itself.
+	 * GLFW callbacks translate OS events into Radiant events and push them
+	 * into the EventQueue set via SetEventQueue — enqueue only; no engine
+	 * handlers execute inside the callbacks (RAD-26). They fire from inside
+	 * PollEvents()'s glfwPollEvents at frame start — and, during OS modal
+	 * loops (window drag/resize), from inside the modal loop itself, which is
+	 * safe precisely because they only append. The initial VSync state comes
+	 * from the WindowSpecification; SetVSync maps it onto the GL swap
+	 * interval, so it requires the context to be initialized. Main-thread
+	 * only, like GLFW itself.
 	 */
 	class WindowsWindow : public Window
 	{
@@ -33,7 +36,7 @@ namespace Radiant {
 		inline unsigned int GetHeight() const override { return m_Data.Height; }
 
 		// Window attributes
-		inline void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
+		void SetEventQueue(EventQueue* queue) override;
 		void SetVSync(bool enabled) override;
 		bool IsVSync() const override;
 
@@ -50,12 +53,14 @@ namespace Radiant {
 		// Handed to GLFW via the window user pointer so the C callbacks can
 		// reach it without capturing `this`. Holds the live size — updated by
 		// the resize callback; m_Specification keeps only the initial values.
+		// Queue is non-owning (app-owned, outlives the window) and null until
+		// SetEventQueue — callbacks drop events while it is null (boot edge).
 		struct WindowData
 		{
 			std::string Title;
 			unsigned int Width, Height;
 
-			EventCallbackFn EventCallback;
+			EventQueue* Queue = nullptr;
 		};
 
 		WindowData m_Data;

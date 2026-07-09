@@ -3,9 +3,10 @@
 #include "Radiant/rdpch.h"
 
 #include "Base.h"
-#include "Radiant/Events/Event.h"
 
 namespace Radiant {
+
+	class EventQueue;
 
 	struct WindowSpecification
 	{
@@ -25,16 +26,14 @@ namespace Radiant {
 	class Window
 	{
 	public:
-		using EventCallbackFn = std::function<void(Event&)>;
-
 		virtual ~Window() {}
 
 		/**
-		 * Pumps OS events. The OS event callbacks — and therefore all engine
-		 * event handlers — execute synchronously inside this call (a queued
-		 * dispatch replaces that in RAD-26). Invoked once per frame by
-		 * GameApplication at frame START, so the simulation steps see this
-		 * frame's input.
+		 * Pumps OS events. The platform callbacks translate each OS event and
+		 * push it into the queue set via SetEventQueue — no engine handlers
+		 * execute inside this call. Invoked once per frame by GameApplication
+		 * at frame START; the queue is processed immediately after it returns,
+		 * so the simulation steps see this frame's input.
 		 */
 		virtual void PollEvents() = 0;
 
@@ -50,12 +49,13 @@ namespace Radiant {
 
 		// Window attributes
 		/**
-		 * Sets the sink that receives translated OS events (bound to
-		 * GameApplication::OnEvent). Invoked synchronously from inside OS
-		 * callbacks during PollEvents(); must remain valid for the lifetime of
-		 * the window.
+		 * Sets the queue that receives translated OS events. Non-owning: the
+		 * queue must outlive the window (GameApplication guarantees this by
+		 * member declaration order). Wire it before the first PollEvents — a
+		 * null queue is a programmer error (asserted); events arriving before
+		 * wiring are dropped.
 		 */
-		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
+		virtual void SetEventQueue(EventQueue* queue) = 0;
 		virtual void SetVSync(bool enabled) = 0;
 		virtual bool IsVSync() const = 0;
 

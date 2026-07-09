@@ -3,9 +3,9 @@
 
 #include <stb_image.h>
 
-#include "Radiant/Events/ApplicationEvent.h"
-#include "Radiant/Events/MouseEvent.h"
-#include "Radiant/Events/KeyEvent.h"
+#include "Radiant/Events/EventQueue.h"
+
+#include "Radiant/Core/Assert.h"
 
 #include "Radiant/Platform/OpenGL/OpenGLContext.h"
 
@@ -99,91 +99,86 @@ namespace Radiant {
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(specification.VSync);
 
-		// Set GLFW callbacks. Each one dispatches its Radiant event synchronously
-		// from inside the OS callback — the whole layer stack runs before the
-		// callback returns (a frame-start event queue replaces this in Phase 2,
-		// RAD-26)
+		// Set GLFW callbacks. Enqueue ONLY — no engine handler runs inside an
+		// OS callback; GameApplication processes the queue at frame start
+		// (RAD-26). A null Queue is the boot edge between window creation and
+		// SetEventQueue wiring: those events are dropped by design.
 		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+				// The live-size mirror stays immediate (state, not dispatch) —
+				// GetWidth() is current even before the resize event processes
 				data.Width = width;
 				data.Height = height;
 
-				WindowResizeEvent event(width, height);
-				data.EventCallback(event);
+				if (data.Queue)
+					data.Queue->Push(WindowResizeEvent(width, height));
 			});
 
 		glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-				WindowCloseEvent event;
-				data.EventCallback(event);
+				if (data.Queue)
+					data.Queue->Push(WindowCloseEvent());
 			});
 
 		glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+				if (!data.Queue)
+					return;
 
 				switch (action)
 				{
 				case GLFW_PRESS:
-				{
-					KeyPressedEvent event(key, 0);
-					data.EventCallback(event);
+					data.Queue->Push(KeyPressedEvent(key, false));
 					break;
-				}
 				case GLFW_RELEASE:
-				{
-					KeyReleasedEvent event(key);
-					data.EventCallback(event);
+					data.Queue->Push(KeyReleasedEvent(key));
 					break;
-				}
 				case GLFW_REPEAT:
-				{
-					KeyPressedEvent event(key, 1);
-					data.EventCallback(event);
+					data.Queue->Push(KeyPressedEvent(key, true));
 					break;
-				}
 				}
 			});
 
 		glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods)
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+				if (!data.Queue)
+					return;
 
 				switch (action)
 				{
 				case GLFW_PRESS:
-				{
-					MouseButtonPressedEvent event(button);
-					data.EventCallback(event);
+					data.Queue->Push(MouseButtonPressedEvent(button));
 					break;
-				}
 				case GLFW_RELEASE:
-				{
-					MouseButtonReleasedEvent event(button);
-					data.EventCallback(event);
+					data.Queue->Push(MouseButtonReleasedEvent(button));
 					break;
-				}
 				}
 			});
 
 		glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset)
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-
-				MouseScrolledEvent event((float)xOffset, (float)yOffset);
-				data.EventCallback(event);
+				if (data.Queue)
+					data.Queue->Push(MouseScrolledEvent((float)xOffset, (float)yOffset));
 			});
 
 		glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos)
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-
-				MouseMovedEvent event((float)xPos, (float)yPos);
-				data.EventCallback(event);
+				if (data.Queue)
+					data.Queue->Push(MouseMovedEvent((float)xPos, (float)yPos));
 			});
     }
+
+	void WindowsWindow::SetEventQueue(EventQueue* queue)
+	{
+		RADIANT_ASSERT(queue, "SetEventQueue: null queue");
+		m_Data.Queue = queue;
+	}
 
     void WindowsWindow::Shutdown()
 	{

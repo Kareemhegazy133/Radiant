@@ -1,6 +1,6 @@
 # Core: Application Lifecycle
 
-**Status:** Stable — event queue planned (Phase 2: RAD-26). Fixed-timestep loop landed 2026-07-05 (RAD-25; see [Time-And-Simulation](Time-And-Simulation.md)).
+**Status:** Stable. Fixed-timestep loop landed 2026-07-05 (RAD-25; see [Time-And-Simulation](Time-And-Simulation.md)); frame-start event queue landed 2026-07-09 (RAD-26; see [Event-System](Event-System.md)).
 
 ## The Problem This Solves
 
@@ -28,18 +28,21 @@ The "frame heartbeat" is the second idea. A game is not a program that runs once
 `GameApplication::Run()` primes `m_LastFrameTime` immediately before the loop (so frame one measures loop-start → frame-1, not GLFW-init → frame-1), then per frame:
 
 1. Compute the frame delta from `glfwGetTime()` minus the previous frame's time (`double` precision).
-2. `Window::PollEvents()` — frame **start**, so simulation sees this frame's input. Event callbacks fire here (handlers still run inside the OS callbacks until the RAD-26 queue).
-3. If not minimized:
+2. `Window::PollEvents()` — frame **start**, so simulation sees this frame's input. Callbacks only *enqueue* typed events into the app-owned `EventQueue`.
+3. `EventQueue::ProcessEvents(OnEvent)` — every queued event runs through the dispatcher and layer walk here, on the engine's call stack (never inside OS callbacks). Unconditional — restore/close arrive as events even while minimized (see [Event-System](Event-System.md)).
+4. If not minimized:
    - **Fixed-step drain:** `FrameClock::BeginFrame(frameDelta)` deposits scaled time; `while (ConsumeStep())` runs `TimerManager::Tick` then every layer's `OnFixedUpdate(fixedDelta)` bottom→top — 0..N simulation steps per frame.
    - **Render-rate update:** every layer's `OnUpdate(frameDelta)` bottom→top, exactly once.
    - ImGui pass: `ImGuiLayer::Begin()` → every layer's `OnImGuiRender()` → `End()`.
-4. `Window::Present()` — swap buffers at frame end (runs even while minimized; only simulation and render are gated).
-5. `LayerStack::ProcessPendingLayers()` — deferred layer pushes/pops are applied between frames.
+5. `Window::Present()` — swap buffers at frame end (runs even while minimized; only simulation and render are gated).
+6. `LayerStack::ProcessPendingLayers()` — deferred layer pushes/pops are applied between frames.
 
 The heart of it, condensed from `Run()` to the load-bearing lines:
 
 ```cpp
-m_Window->PollEvents();                        // frame START — simulation sees this frame's input
+m_Window->PollEvents();                        // frame START — callbacks enqueue only
+m_EventQueue.ProcessEvents(                    // handlers run HERE, on this call stack
+    RADIANT_BIND_EVENT_FN(GameApplication::OnEvent));
 m_Clock.BeginFrame(frameDelta);                // deposit real time (scaled by the time scale)
 while (m_Clock.ConsumeStep())                  // 0..N whole fixed steps banked this frame
 {
@@ -58,7 +61,7 @@ Shutdown: `Close()` merely sets `m_Running = false`; the destructor detaches and
 
 ### Window & Input
 
-`Window` is an abstract seam with one implementation, `Platform/Windows/WindowsWindow` (GLFW). The window owns the `GraphicsContext` (GL context today). GLFW callbacks translate OS events into Radiant `Event` objects and invoke the application's `OnEvent` callback synchronously (see [Event-System](Event-System.md)).
+`Window` is an abstract seam with one implementation, `Platform/Windows/WindowsWindow` (GLFW). The window owns the `GraphicsContext` (GL context today). GLFW callbacks translate OS events into Radiant `Event` objects and push them into the application's `EventQueue` (a non-owning pointer wired via `SetEventQueue`); handlers run at the frame-start `ProcessEvents` drain (see [Event-System](Event-System.md)).
 
 `Input` (`Core/Input.h`) is a static polling API (`IsKeyPressed`, `GetMousePosition`) implemented in `Platform/Windows/WindowsInput.cpp` by querying GLFW directly through `GameApplication::Get().GetWindow()`.
 
@@ -70,5 +73,4 @@ Shutdown: `Close()` merely sets `m_Running = false`; the destructor detaches and
 
 ## Known Issues & Evolution
 
-- **Event handlers still run inside OS callbacks** — polling moved to frame start with the RAD-25 loop, but dispatch remains blocking until the event queue lands (RAD-26).
 - **Windows-only** — `PlatformDetection.h` hard-errors on other platforms; the `Window`/`Input` seams exist, but no other implementations do. Not on any phase roadmap; deliberate.

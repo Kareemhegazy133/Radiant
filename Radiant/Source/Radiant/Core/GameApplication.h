@@ -7,6 +7,7 @@
 #include "Radiant/Core/LayerStack.h"
 #include "Radiant/Events/Event.h"
 #include "Radiant/Events/ApplicationEvent.h"
+#include "Radiant/Events/EventQueue.h"
 
 #include "Radiant/Core/Timestep.h"
 #include "Radiant/Core/FrameClock.h"
@@ -52,12 +53,12 @@ namespace Radiant {
 		virtual ~GameApplication();
 
 		/**
-		 * Entry point for every window/input event. Currently BLOCKING: called
-		 * synchronously from the GLFW callbacks during frame-start event
-		 * polling — handlers run inside OS callbacks, so do not assume
-		 * mid-frame safety (a queued dispatch replaces this in Phase 2,
-		 * RAD-26). Dispatches window close/resize to the application, then
-		 * walks the layers top→bottom until one sets Handled.
+		 * Entry point for every window/input event: the sink for the event
+		 * queue, invoked once per queued event when Run() processes the queue
+		 * at frame start — on the engine's own call stack, never inside OS
+		 * callbacks (RAD-26). Dispatches window close/resize to the
+		 * application, then walks the layers top→bottom until one sets
+		 * Handled.
 		 */
 		void OnEvent(Event& e);
 
@@ -101,6 +102,11 @@ namespace Radiant {
 
 	private:
 		GameApplicationSpecification m_Specification;
+		// Declared BEFORE m_Window deliberately — do not reorder: members are
+		// constructed in declaration order and destroyed in reverse, so this
+		// guarantees the queue outlives the window holding a non-owning
+		// pointer to it (WindowsWindow::WindowData::Queue)
+		EventQueue m_EventQueue;
 		Scope<Window> m_Window;
 		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;

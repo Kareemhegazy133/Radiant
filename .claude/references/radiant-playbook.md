@@ -2,11 +2,11 @@
 
 Established patterns and hard-won rules for this codebase. Cite sections by number (e.g. "playbook §3"). Seeded from the 2026-07-04 audit; grows via `/audit-standards` as patterns get established. Rules marked **(target)** describe the post-rework architecture — enforce them in all new code; legacy code migrates by phase.
 
-## §1 — Frame Architecture (landed 2026-07-05, RAD-25 — event queue still target, RAD-26)
+## §1 — Frame Architecture (landed: RAD-25 2026-07-05, RAD-26 2026-07-09)
 
-Frame order: **pump events at frame start → fixed-step simulation (accumulator) → variable-rate render (interpolated)**.
+Frame order: **pump + process events at frame start → fixed-step simulation (accumulator) → variable-rate render (interpolated)**.
 - Simulation steps at a fixed rate; never pass raw frame delta into physics or gameplay-critical logic.
-- Events are enqueued by OS callbacks and drained at a single defined point at frame start; handlers never execute inside OS callbacks (still target — RAD-26; today polling happens at frame start but handlers run inside the OS callbacks).
+- Events are enqueued by OS callbacks and processed at a single defined point at frame start (`EventQueue::ProcessEvents` in `Run()`, unconditional even while minimized); handlers never execute inside OS callbacks. Platform callbacks translate + `Push` only.
 - Rendering reads simulation state; it never mutates it. Reference: Glenn Fiedler, "Fix Your Timestep!".
 
 ## §2 — Ownership Contract
