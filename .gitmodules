@@ -1,7 +1,11 @@
 # ignore = untracked: premake generates project files inside submodule working
 # trees; without this, every generated .vcxproj shows as "?" noise in git status.
-# Fork policy: forks exist solely to add premake build scripts (see
-# Docs/Build-System.md for the dependency table and pin policy).
+# Fork policy (locked 2026-07-09, RAD-27): every submodule points at Kareem's OWN
+# fork — never a third-party fork. Forks exist solely to add premake build scripts,
+# on a branch named radiant/<base-tag> so the upstream tag provenance stays visible
+# (see Docs/Build-System.md for the dependency table and pin policy).
+# yaml-cpp and msdf-atlas-gen still point at TheCherno forks — migrations filed as
+# RAD-88 / RAD-89.
 [submodule "Radiant/Vendor/spdlog"]
 	path = Radiant/Vendor/spdlog
 	url = https://github.com/gabime/spdlog
@@ -14,10 +18,6 @@
 	path = Radiant/Vendor/glfw
 	url = https://github.com/Kareemhegazy133/glfw
 	ignore = untracked
-[submodule "Radiant/Vendor/box2d"]
-	path = Radiant/Vendor/box2d
-	url = https://github.com/TheCherno/box2d
-	ignore = untracked
 [submodule "Radiant/Vendor/yaml-cpp"]
 	path = Radiant/Vendor/yaml-cpp
 	url = https://github.com/TheCherno/yaml-cpp
@@ -29,4 +29,8 @@
 [submodule "Radiant/Vendor/imgui"]
 	path = Radiant/Vendor/imgui
 	url = https://github.com/Kareemhegazy133/imgui.git
+	ignore = untracked
+[submodule "Radiant/Vendor/box2d"]
+	path = Radiant/Vendor/box2d
+	url = https://github.com/Kareemhegazy133/box2d
 	ignore = untracked
