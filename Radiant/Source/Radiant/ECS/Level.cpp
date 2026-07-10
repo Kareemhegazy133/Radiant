@@ -10,9 +10,24 @@
 //#include "Radiant/GAS/AbilitySystemComponent.h"
 #include "ScriptableEntity.h"
 
-#include "Radiant/Physics/Physics2D.h"
+#include "Radiant/Physics/PhysicsWorld2D.h"
 
 namespace Radiant {
+
+	// Debug view of a box collider, drawn from ECS data only (never from Box2D
+	// state). Lives here rather than in the physics module so Physics/ carries
+	// no renderer dependency. Must be called inside a Renderer2D scene.
+	static void DebugDrawCollider(const TransformComponent& tc, const BoxCollider2DComponent& bc2d)
+	{
+		glm::vec3 translation = tc.Translation + glm::vec3(bc2d.Offset, 0.001f);
+		glm::vec3 scale = tc.Scale * glm::vec3(bc2d.Size * 2.0f, 1.0f);
+
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation)
+			* glm::rotate(glm::mat4(1.0f), tc.Rotation.z, glm::vec3(0.0f, 0.0f, 1.0f))
+			* glm::scale(glm::mat4(1.0f), scale);
+
+		Renderer2D::DrawRect(transform, glm::vec4(1.0f, 0.5f, 0.7f, 1.0f));
+	}
 
 	Level::Level(const std::string& name, bool initialize)
 		: m_Name(name)
@@ -20,7 +35,7 @@ namespace Radiant {
 		if (!initialize) return;
 
 		RADIANT_TRACE("Level Constructor");
-		Physics2D::Init(this);
+		m_PhysicsWorld = CreateScope<PhysicsWorld2D>(m_Name);
 
 		// entt construct/destroy signals
 		// Components with signals registered here should be explicitly removed from the entity
@@ -40,14 +55,14 @@ namespace Radiant {
 
 		// Destroy all entities one by one rather than calling m_Registry.clear()
 		// This ensures component on_destroy signals are fired in the correct order.
+		// Bodies die here, via the signals, while m_PhysicsWorld is still alive;
+		// the Scope then destroys the world itself after this destructor body.
+		// Scratch levels hold a null Scope — their destruction touches no other
+		// Level's physics (the RAD-27 fix).
 		for (auto entity : GetAllEntitiesWith<MetadataComponent>())
 		{
 			DestroyEntity({ entity, this });
 		}
-
-		// Runs even for levels constructed with initialize == false — destroying a
-		// scratch level tears down the live level's shared physics world (RAD-27)
-		Physics2D::Shutdown();
 
 		RADIANT_TRACE("Level Destructed: {0}", (void*)this);
 	}
@@ -178,35 +193,40 @@ namespace Radiant {
 				nsc.Instance->OnUpdate(ts);
 			});
 
-		auto view = GetAllEntitiesWith<MetadataComponent, RigidBody2DComponent>();
-		for (auto entityHandle : view)
+		// A level without a world (scratch levels, or a failed world create)
+		// still runs scripts above — it just has no physics to advance
+		if (m_PhysicsWorld)
 		{
-			auto [metadata, rb2d] = view.get<
-				MetadataComponent, RigidBody2DComponent>(entityHandle);
+			auto view = GetAllEntitiesWith<MetadataComponent, RigidBody2DComponent>();
+			for (auto entityHandle : view)
+			{
+				auto [metadata, rb2d] = view.get<
+					MetadataComponent, RigidBody2DComponent>(entityHandle);
 
-			// Skip inactive Entities
-			if (!metadata.IsActive) continue;
+				// Skip inactive Entities
+				if (!metadata.IsActive) continue;
 
-			// Submit Transforms/Colliders of all entities for physics
-			Entity entity = { entityHandle, this };
-			Physics2D::SubmitEntitiesTransforms(entity);
-		}
+				// Submit Transforms/Colliders of all entities for physics
+				Entity entity = { entityHandle, this };
+				m_PhysicsWorld->SubmitTransform(entity);
+			}
 
-		// Apply Physics
-		Physics2D::OnUpdate(ts);
+			// Apply Physics
+			m_PhysicsWorld->Step(ts);
 
-		// Readback: copy stepped body transforms into the ECS as a dedicated
-		// post-step pass (playbook §4). Runs for every active body — unlike the
-		// old in-render readback, which skipped bodies without sprites and did
-		// nothing at all without a primary camera. Must happen inside the fixed
-		// step: the NEXT step's scripts read these transforms.
-		for (auto entityHandle : view)
-		{
-			auto [metadata, rb2d] = view.get<MetadataComponent, RigidBody2DComponent>(entityHandle);
-			if (!metadata.IsActive) continue;
+			// Retrieve: copy stepped body transforms into the ECS as a dedicated
+			// post-step pass (playbook §4). Runs for every active body — unlike
+			// the old in-render readback, which skipped bodies without sprites
+			// and did nothing at all without a primary camera. Must happen inside
+			// the fixed step: the NEXT step's scripts read these transforms.
+			for (auto entityHandle : view)
+			{
+				auto [metadata, rb2d] = view.get<MetadataComponent, RigidBody2DComponent>(entityHandle);
+				if (!metadata.IsActive) continue;
 
-			Entity entity = { entityHandle, this };
-			Physics2D::UpdateEntitiesTransforms(entity);
+				Entity entity = { entityHandle, this };
+				m_PhysicsWorld->RetrieveTransform(entity);
+			}
 		}
 	}
 
@@ -277,7 +297,7 @@ namespace Radiant {
 				{
 					Entity e = { entityHandle, this };
 					if(auto* bc2d = e.TryGetComponent<BoxCollider2DComponent>())
-						Physics2D::DebugDraw(transform, *bc2d);
+						DebugDrawCollider(transform, *bc2d);
 				}
 			}
 
@@ -377,25 +397,41 @@ namespace Radiant {
 		return assetList;
 	}
 
+	// The signal handlers below only ever run on live levels: scratch levels
+	// (initialize == false) never connect them. A null world here means the
+	// wiring changed — a programmer error, guarded so Dist recovers.
+
 	void Level::OnRigidBody2DComponentConstruct(entt::registry& registry, entt::entity entity)
 	{
+		RADIANT_ASSERT(m_PhysicsWorld, "Physics signal fired on a level without a physics world");
+		if (!m_PhysicsWorld)
+			return;
+
 		Entity e = { entity, this };
 		auto& rb2d = e.GetComponent<RigidBody2DComponent>();
-		Physics2D::CreatePhysicsBody(e, rb2d);
+		m_PhysicsWorld->CreateBody(e, rb2d);
 	}
 
 	void Level::OnRigidBody2DComponentDestroy(entt::registry& registry, entt::entity entity)
 	{
+		RADIANT_ASSERT(m_PhysicsWorld, "Physics signal fired on a level without a physics world");
+		if (!m_PhysicsWorld)
+			return;
+
 		Entity e = { entity, this };
 		auto& rb2d = e.GetComponent<RigidBody2DComponent>();
-		Physics2D::DestroyPhysicsBody(e, rb2d);
+		m_PhysicsWorld->DestroyBody(e, rb2d);
 	}
 
 	void Level::OnBoxCollider2DComponentConstruct(entt::registry& registry, entt::entity entity)
 	{
+		RADIANT_ASSERT(m_PhysicsWorld, "Physics signal fired on a level without a physics world");
+		if (!m_PhysicsWorld)
+			return;
+
 		Entity e = { entity, this };
 		auto& bc2d = e.GetComponent<BoxCollider2DComponent>();
-		Physics2D::CreateBoxColliderFixture(e, bc2d);
+		m_PhysicsWorld->CreateBoxShape(e, bc2d);
 	}
 
 	void Level::SortEntities()

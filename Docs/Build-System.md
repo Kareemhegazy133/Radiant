@@ -49,11 +49,12 @@ Workspace: x64 only, `MultiProcessorCompile`, output pattern `bin/<Config>-<syst
 
 | Library | Form | Notes |
 |---------|------|-------|
-| spdlog, glm, yaml-cpp, box2d, glfw, imgui | git submodules | glfw/imgui are Kareem's forks, box2d/yaml-cpp/msdf-atlas-gen are TheCherno forks — forks exist to add premake scripts |
+| box2d | git submodule | **v3.1.1** — Kareem's fork of erincatto/box2d, branch `radiant/v3.1.1` (upstream tag + premake commit); upgraded from 2.4 per RAD-60, swapped in RAD-27. C17 static lib — the one C-language vendor project |
+| spdlog, glm, yaml-cpp, glfw, imgui | git submodules | glfw/imgui are Kareem's forks; yaml-cpp/msdf-atlas-gen still TheCherno forks — migrations to owned forks filed as RAD-88/RAD-89 |
 | msdf-atlas-gen | submodule, **orphaned from the build** | deliberately parked; revives with the Phase 4 MSDF font pipeline (RAD-47) |
 | glad, entt (3.13.2), stb_image | vendored in-tree | generated code / single headers — correct to vendor |
 
-**Pin policy:** submodules move only deliberately — updating one is a reviewed change with a reason, never a side effect of `submodule update --remote`. The ImGui vendor project is re-opened from `Build.lua` to align its C++ standard with the workspace (premake project re-entry), so the submodule itself is never modified. All submodules carry `ignore = untracked` in `.gitmodules` because premake generates project files inside their working trees.
+**Pin policy:** submodules move only deliberately — updating one is a reviewed change with a reason, never a side effect of `submodule update --remote`. **Fork policy (locked 2026-07-09, RAD-27):** every submodule points at Kareem's *own* fork, never a third-party fork — third-party forks are someone else's maintenance schedule and delete button. Forks add exactly one thing (the premake script) on a branch named `radiant/<base-tag>`, so the upstream tag a pin is based on stays readable even though the submodule pin itself is a fork commit hash. The ImGui vendor project is re-opened from `Build.lua` to align its C++ standard with the workspace (premake project re-entry), so the submodule itself is never modified. All submodules carry `ignore = untracked` in `.gitmodules` because premake generates project files inside their working trees.
 
 ## Design Rationale
 

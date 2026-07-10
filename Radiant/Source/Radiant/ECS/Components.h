@@ -20,8 +20,8 @@
 // 3) If it contains an asset, update GetAssetList() in Level.cpp
 //
 // Components are meant to be plain data: trivially copyable and serializable, no
-// owning pointers, no std::function. The violations below are marked and tracked
-// (RAD-29/RAD-30) — do not add new ones.
+// owning pointers, no std::function. The one remaining violation
+// (NativeScriptComponent, tracked by RAD-30) is marked — do not add new ones.
 
 namespace Radiant {
 
@@ -154,14 +154,13 @@ namespace Radiant {
 
 	// Physics
 
-	// Forward declaration
-	class Entity;
-
 	/**
 	 * Makes the entity a Box2D body — component presence IS the physics binding:
 	 * entt signals create the body on add and destroy it on remove. For Dynamic
 	 * bodies, physics owns the transform's Translation.xy and Rotation.z.
 	 * Requires a BoxCollider2DComponent (added after this component) to collide.
+	 * Collision notifications do not exist yet — they arrive with RAD-29's
+	 * event drain (Box2D v3 reports contacts via post-step event buffers).
 	 */
 	struct RigidBody2DComponent
 	{
@@ -170,17 +169,12 @@ namespace Radiant {
 		BodyType Type = BodyType::Static;
 		bool FixedRotation = false;
 
-		// b2Body*, owned by the physics world — known plain-data violation; moves to a Level-owned side table (RAD-30)
-		void* RuntimeBody = nullptr;
-		// Invoked by CollisionListener2D during the physics step with the OTHER
-		// entity when contact begins — do not create/destroy bodies or entities
-		// from inside it (Box2D forbids world mutation during callbacks).
-		// std::function on a component is a known plain-data violation — replaced
-		// by queued collision events in the Phase 2 rework (RAD-29, RAD-30).
-		std::function<void(Entity&)> OnCollisionBegin = nullptr;
-
-		// Same contract as OnCollisionBegin, invoked when contact ends (RAD-29, RAD-30)
-		std::function<void(Entity&)> OnCollisionEnd = nullptr;
+		// Packed b2BodyId (b2StoreBodyId/b2LoadBodyId), 0 = no body. A claim
+		// ticket, not ownership: the Level's PhysicsWorld2D owns the body and
+		// zeroes this on destroy. Runtime-only — never serialized; Level::Copy
+		// must zero it and recreate bodies (RAD-30/Phase 5). Kept as uint64_t
+		// so this header stays free of vendor includes.
+		uint64_t RuntimeBodyId = 0;
 
 		RigidBody2DComponent() = default;
 		RigidBody2DComponent(const RigidBody2DComponent&) = default;
@@ -199,11 +193,13 @@ namespace Radiant {
 		glm::vec2 Offset = { 0.0f, 0.0f };
 		glm::vec2 Size = { 0.5f, 0.5f };
 
-		// TODO: move into physics material in the future maybe
+		// TODO: move into physics material in the future maybe (Box2D v3's
+		// b2SurfaceMaterial maps naturally to a physics-material asset)
 		float Density = 1.0f;
 		float Friction = 0.5f;
 		float Restitution = 0.0f;
-		float RestitutionThreshold = 0.5f;
+		// No RestitutionThreshold: v3 moved it to the world (b2WorldDef) — a
+		// stale key in old .rdlvl files is ignored on load (RAD-27)
 
 		BoxCollider2DComponent() = default;
 		BoxCollider2DComponent(const BoxCollider2DComponent&) = default;

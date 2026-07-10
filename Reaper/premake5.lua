@@ -27,7 +27,8 @@ project "Reaper"
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
-		"%{IncludeDir.box2d}",
+		-- no box2d: physics is Level-internal; game code never sees vendor
+		-- physics headers (RAD-27 boundary — removing the path enforces it)
 		"%{IncludeDir.yaml_cpp}"
 	}
 

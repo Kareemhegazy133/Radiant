@@ -16,7 +16,7 @@
 | Jira | Project **RAD** @ `hndredgames.atlassian.net` |
 | Branches | `master` (PR base), `dev` (working) |
 | UE Reference Source | `C:\dev\HNDREDGAMES\UE_5_7_4` (study reference for system design) |
-| Key Dependencies | entt 3.13.2, Box2D 2.4.0, GLFW, ImGui (docking), glm, spdlog, yaml-cpp, stb_image; msdf-atlas-gen (parked submodule, revives in Phase 4) |
+| Key Dependencies | entt 3.13.2, Box2D 3.1.1 (owned fork, branch `radiant/v3.1.1`), GLFW, ImGui (docking), glm, spdlog, yaml-cpp, stb_image; msdf-atlas-gen (parked submodule, revives in Phase 4) |
 
 ---
 
@@ -45,7 +45,7 @@ Full audit (2026-07-04) is filed as Jira issues RAD-7…RAD-59 with `file:line` 
 | `Radiant/Source/Radiant/Platform/OpenGL/` | GL backend (deleted at end of Phase 3) | Legacy |
 | `Radiant/Source/Radiant/Platform/Windows/` | Window/input/filesystem impl | Working |
 | `Radiant/Source/Radiant/ECS/` | `Level` (wraps private `entt::registry`), `Entity` handle, components, YAML LevelSerializer, native scripts | Working; component hygiene rework in Phase 2 |
-| `Radiant/Source/Radiant/Physics/` | Box2D integration | Weakest subsystem; rebuilt in Phase 2 |
+| `Radiant/Source/Radiant/Physics/` | `PhysicsWorld2D` — per-Level Box2D v3 world | Per-Level worlds landed (RAD-27); sync semantics + collision events remain (RAD-28/29) |
 | `Radiant/Source/Radiant/Asset/` | Handle-based asset manager + YAML registry (`.rdar`) | Working; lifecycle redesign in Phase 4 |
 | `Radiant/Source/Radiant/Serialization/` | Stream I/O + binary AssetPack | AssetPack is dead code, parked for Phase 4 |
 | `Reaper/` | The game: state machine (MainMenu/Gameplay/Paused), GameLayer (Level driver), UILayer (ImGui) | Working shell |

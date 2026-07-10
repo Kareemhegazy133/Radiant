@@ -9,6 +9,8 @@
 
 namespace Radiant {
 
+	class PhysicsWorld2D;
+
 	/**
 	 * The world: one set of entities plus the loops that update and render them.
 	 *
@@ -24,18 +26,18 @@ namespace Radiant {
 	 *
 	 * The owner (Reaper's GameLayer) drives OnFixedUpdate at the engine's fixed
 	 * simulation rate and OnRender once per rendered frame.
-	 * Physics currently binds to the process-wide Physics2D singleton, so only one
-	 * fully-initialized Level may exist at a time (RAD-27).
+	 * Each Level owns its physics world (Scope<PhysicsWorld2D>) — worlds are
+	 * independent simulations, so any number of Levels may coexist (RAD-27).
 	 */
 	class Level : public Asset
 	{
 	public:
 		/**
-		 * Constructs an empty level. Constructing with initialize == true rebinds the
-		 * process-wide Physics2D singleton to this level (RAD-27) and connects the
-		 * physics component signals. Pass initialize == false only for scratch levels
-		 * that merely stage entities for (de)serialization — they get no physics and
-		 * no signals.
+		 * Constructs an empty level. Constructing with initialize == true creates
+		 * this level's own physics world and connects the physics component
+		 * signals. Pass initialize == false only for scratch levels that merely
+		 * stage entities for (de)serialization — they get no world and no
+		 * signals, and their destruction touches no other Level's physics.
 		 */
 		Level(const std::string& name = "UntitledLevel", bool initialize = true);
 		~Level();
@@ -137,6 +139,16 @@ namespace Radiant {
 		void SortEntities();
 
 	private:
+		// This level's own physics world — created in the constructor for live
+		// levels, null for scratch levels (initialize == false), destroyed with
+		// the level AFTER the destructor body's entity loop (bodies die while
+		// the world is still alive). Declared BEFORE m_Registry so the world
+		// also outlives the registry during member teardown — no signal can
+		// ever fire into a dead world regardless of entt's destruction
+		// behavior. PhysicsWorld2D is forward-declared, so the out-of-line
+		// ~Level() is required for the unique_ptr to destroy it.
+		Scope<PhysicsWorld2D> m_PhysicsWorld;
+
 		entt::registry m_Registry;
 
 		std::string m_Name;
@@ -148,7 +160,6 @@ namespace Radiant {
 		bool m_ShowPhysicsColliders = true;
 
 		friend class Entity;
-		friend class Physics2D;
 		friend class LevelSerializer;
 	};
 

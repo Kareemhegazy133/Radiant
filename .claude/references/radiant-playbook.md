@@ -25,7 +25,7 @@ Frame order: **pump + process events at frame start → fixed-step simulation (a
 
 ## §4 — Physics Integration Rules
 
-- One physics world **per Level**, owned by the Level (target; the static singleton is the RAD-27 bug).
+- One physics world **per Level**, owned by the Level as `Scope<PhysicsWorld2D>` (landed: RAD-27 2026-07-09, on Box2D v3.1.1 — body handles are packed `b2BodyId` generation handles, per §2).
 - Bodies/fixtures are created via entt `on_construct`/`on_destroy` signals — keep this pattern.
 - **Never** destroy/recreate fixtures per frame (kills contact persistence, sleeping, warm-starting). Rebuild fixtures only when collider properties change.
 - Physics owns the transform of dynamic bodies. ECS→Box2D push happens only on explicit teleport/spawn; Box2D→ECS readback is a dedicated sync pass after each step — never inside a render loop.
@@ -50,7 +50,7 @@ Frame order: **pump + process events at frame start → fixed-step simulation (a
 - Workspace root aggregates; each project has its own premake file declaring its own dependencies.
 - Generated files (`.sln`, `.vcxproj`) are never committed. Submodules pin to deliberate tags/commits; each fork's reason is documented.
 - Configs: Debug (asserts, symbols), Release (optimized + asserts), Dist (shipping: WindowedApp, LTO, no asserts). Code must compile in **all three** — beware Dist-only breaks from code that exists only inside assert/log macros.
-- **Upgrades (toolchain + vendors) happen at phase boundaries with a stated reason** — never mid-story, one library per commit, verified by all three configs + a Reaper run (+ ASan once available). "Newest" is not a reason; unowned drift is how the spdlog-1.14/fmt formatter breakage happened (2026-07-05). Planned: C++23 at Phase 4 start (`std::expected` for asset/serialization errors); Box2D v3 evaluated at RAD-27 planning; ImGui refreshed before Phase 5.
+- **Upgrades (toolchain + vendors) happen at phase boundaries with a stated reason** — never mid-story, one library per commit, verified by all three configs + a Reaper run (+ ASan once available). "Newest" is not a reason; unowned drift is how the spdlog-1.14/fmt formatter breakage happened (2026-07-05). Planned: C++23 at Phase 4 start (`std::expected` for asset/serialization errors); ImGui refreshed before Phase 5. Done: Box2D v3.1.1 (RAD-27, 2026-07-09 — first owned-fork vendor per the fork policy; yaml-cpp/msdf follow via RAD-88/89).
 
 ## §8 — Known Bug Patterns (watch for these in review)
 

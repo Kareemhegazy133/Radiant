@@ -22,7 +22,9 @@
 
 #include <imgui/imgui.h>
 
-#include "Radiant/Physics/Physics2D.h"
+// No physics include: PhysicsWorld2D is Level-internal (game code drives
+// physics through components; Level.h forward-declares the world) — keeping
+// it out of the umbrella keeps Box2D headers out of every game TU (RAD-27)
 
 #include "Radiant/ECS/Level.h"
 #include "Radiant/ECS/Components.h"

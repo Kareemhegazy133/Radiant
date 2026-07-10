@@ -199,7 +199,6 @@ namespace Radiant {
 			out << YAML::Key << "Density" << YAML::Value << bc2dComponent.Density;
 			out << YAML::Key << "Friction" << YAML::Value << bc2dComponent.Friction;
 			out << YAML::Key << "Restitution" << YAML::Value << bc2dComponent.Restitution;
-			out << YAML::Key << "RestitutionThreshold" << YAML::Value << bc2dComponent.RestitutionThreshold;
 
 			out << YAML::EndMap; // BoxCollider2DComponent
 		}
@@ -390,7 +389,8 @@ namespace Radiant {
 				bc2d.Density = boxCollider2DComponent["Density"].as<float>();
 				bc2d.Friction = boxCollider2DComponent["Friction"].as<float>();
 				bc2d.Restitution = boxCollider2DComponent["Restitution"].as<float>();
-				bc2d.RestitutionThreshold = boxCollider2DComponent["RestitutionThreshold"].as<float>();
+				// RestitutionThreshold is deliberately not read: the property is
+				// world-level in Box2D v3 — a stale key in old files is ignored
 				deserializedEntity.AddComponent<BoxCollider2DComponent>(bc2d);
 			}
 
