@@ -80,6 +80,16 @@ namespace Radiant {
 		template<typename T>
 		void RemoveComponentIfExists();
 
+		/**
+		 * Moves this entity discontinuously — forwarders to Level::Teleport
+		 * (see it for the full contract: ECS write + snapshot reset + explicit
+		 * physics push); the only logic here is warning on a level-less handle,
+		 * which cannot reach the Level to be warned about. rotationZ is
+		 * radians; the overload without it keeps the current rotation.
+		 */
+		void Teleport(const glm::vec3& translation, float rotationZ);
+		void Teleport(const glm::vec3& translation);
+
 		// The non-const overload hands out a mutable reference to the shared static
 		// fallback when metadata is missing — do not write through it in that case
 		std::string& Name() { return HasComponent<MetadataComponent>() ? GetComponent<MetadataComponent>().Tag : NoName; }

@@ -27,8 +27,8 @@ Frame order: **pump + process events at frame start → fixed-step simulation (a
 
 - One physics world **per Level**, owned by the Level as `Scope<PhysicsWorld2D>` (landed: RAD-27 2026-07-09, on Box2D v3.1.1 — body handles are packed `b2BodyId` generation handles, per §2).
 - Bodies/fixtures are created via entt `on_construct`/`on_destroy` signals — keep this pattern.
-- **Never** destroy/recreate fixtures per frame (kills contact persistence, sleeping, warm-starting). Rebuild fixtures only when collider properties change.
-- Physics owns the transform of dynamic bodies. ECS→Box2D push happens only on explicit teleport/spawn; Box2D→ECS readback is a dedicated sync pass after each step — never inside a render loop.
+- **Never** destroy/recreate fixtures per frame (kills contact persistence, sleeping, warm-starting). Shapes mutate in place on explicit refresh only (landed: RAD-28 2026-07-10 — `Level::RefreshCollider` → v3 setters + one mass recompute).
+- Physics owns the transform of dynamic bodies. ECS→Box2D push happens only at spawn and via `Level::Teleport` (which also stamps the render snapshot and wakes the body); Box2D→ECS readback drains the world's move events after each step — cost scales with activity, not population — never inside a render loop (landed: RAD-28 2026-07-10).
 - Collision contacts are *recorded* during the step and *dispatched* after it, with entity-validity checks. Never mutate the world from inside a Box2D callback.
 
 ## §5 — RHI v2 Principles (target, Phase 3)

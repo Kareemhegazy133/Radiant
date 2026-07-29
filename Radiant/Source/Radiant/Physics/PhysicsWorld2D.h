@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Radiant/Core/Timestep.h"
+#include "Radiant/Core/UUID.h"
 
 #include <glm/glm.hpp>
 
 #include <box2d/id.h>
 
 #include <string>
+#include <vector>
 
 namespace Radiant {
 
@@ -17,8 +19,10 @@ namespace Radiant {
 	/**
 	 * One Level's Box2D v3 world. Each instance is an independent simulation —
 	 * bodies in one world never interact with bodies in another — which is what
-	 * lets multiple Levels coexist (RAD-27). Grows the body/shape lifecycle and
-	 * the step/sync passes as the RAD-27 port progresses.
+	 * lets multiple Levels coexist (RAD-27). The full surface (RAD-28): entt
+	 * signals drive body/shape lifecycle, the explicit verbs (Teleport,
+	 * UpdateBoxShape) are the only ECS→Box2D writes, and Step reports results
+	 * through the move-event buffer.
 	 *
 	 * Ownership: owned by its Level via Scope<PhysicsWorld2D>, created in the
 	 * Level constructor and destroyed with the Level. Owns the underlying Box2D
@@ -41,6 +45,18 @@ namespace Radiant {
 	class PhysicsWorld2D
 	{
 	public:
+		/**
+		 * One "this body moved during the last Step" record, translated to
+		 * engine types at the module boundary — Box2D types never leave
+		 * Physics/. Position is world units; Rotation is radians.
+		 */
+		struct BodyMoveEvent
+		{
+			UUID EntityId;
+			glm::vec2 Position;
+			float Rotation;
+		};
+
 		/**
 		 * Creates the Box2D world. debugName appears in the create/destroy logs
 		 * (the paired-lifetime evidence for RAD-27's AC) — pass the owning
@@ -73,38 +89,66 @@ namespace Radiant {
 		void DestroyBody(Entity& entity, RigidBody2DComponent& component);
 
 		/**
-		 * Creates the box shape on the entity's EXISTING body: half-extents =
-		 * Size * transform scale, offset relative to the body. Asserts if the
-		 * entity has no RigidBody2DComponent — the rigidbody must be added
-		 * first.
+		 * Explicitly moves the entity's body to a world pose (position in
+		 * world units, rotation in radians) — the ONLY ECS→Box2D transform
+		 * push (RAD-28). A teleport, not a swept move: velocity is kept, no
+		 * collisions occur along the way, and the body is woken — SetTransform
+		 * alone would leave a sleeping body teleported into mid-air hanging
+		 * there until touched. Call through Level::Teleport, which also writes
+		 * the ECS transform and render snapshot. Zero/stale body ids are
+		 * survivable skips.
+		 */
+		void Teleport(Entity& entity, const glm::vec2& position, float rotation);
+
+		/**
+		 * Creates the box shape on the entity's EXISTING body and stores the
+		 * packed id in component.RuntimeShapeId: half-extents = Size * transform
+		 * scale, offset relative to the body, no local rotation — the shape is
+		 * body-local and the body already carries the world rotation. Asserts if
+		 * the entity has no RigidBody2DComponent — the rigidbody must be added
+		 * first. Invoked via the on_construct entt signal. Must not run during
+		 * a world step.
 		 */
 		void CreateBoxShape(Entity& entity, BoxCollider2DComponent& component);
 
 		/**
+		 * Destroys the entity's box shape and zeroes RuntimeShapeId. A zero id
+		 * is a silent no-op (shape never created, or already gone with its
+		 * body); a stale id warns and recovers — it means a lifecycle path
+		 * outside the entt signals touched the shape. Invoked via the
+		 * on_destroy entt signal. Must not run during a world step.
+		 */
+		void DestroyBoxShape(Entity& entity, BoxCollider2DComponent& component);
+
+		/**
+		 * Re-applies the collider component's properties to the entity's
+		 * EXISTING shape, in place: geometry from Size * transform scale and
+		 * Offset (body-local, no rotation), then density/friction/restitution,
+		 * then one body-mass refresh — v3's shape setters deliberately leave
+		 * mass untouched. Never destroys the shape, so its contacts survive
+		 * the refresh. Call through Level::RefreshCollider after mutating
+		 * collider fields or the transform's Scale. A collider without a live
+		 * shape warns and recovers.
+		 */
+		void UpdateBoxShape(Entity& entity, BoxCollider2DComponent& component);
+
+		/**
 		 * Advances the simulation one FIXED step with 4 sub-steps (v3's solver
-		 * unit, replacing v2's velocity/position iteration pair). Call with the
-		 * engine's fixed delta from the accumulator loop — never a variable
-		 * frame delta (playbook §1).
+		 * unit, replacing v2's velocity/position iteration pair), then refills
+		 * the move-event buffer (GetMoveEvents) with the bodies that moved.
+		 * Call with the engine's fixed delta from the accumulator loop — never
+		 * a variable frame delta (playbook §1).
 		 */
 		void Step(Timestep ts);
 
 		/**
-		 * Pushes the entity's ECS transform into its body, then destroys and
-		 * recreates its box shape from the current collider properties. The
-		 * per-step rebuild destroys contact persistence, sleeping, and
-		 * warm-starting, and allocates every step — known defect ported 1:1
-		 * (RAD-28); pushes become explicit-teleport-only and rebuilds become
-		 * property-change-only there. Asserts if the entity has no body id.
+		 * The bodies that moved during the last Step, translated to engine
+		 * types. Valid until the next Step (the buffer is refilled in place) —
+		 * consume within the same fixed update, never cache. Sleeping and
+		 * static bodies produce no entries: readback cost scales with
+		 * activity, not population.
 		 */
-		void SubmitTransform(Entity& entity);
-
-		/**
-		 * Reads the body's position/rotation back into the entity's transform
-		 * (Translation.xy, Rotation.z radians). Warns and returns for entities
-		 * without a rigidbody. Runs as the dedicated post-step sync pass
-		 * (playbook §4) — never from a render path.
-		 */
-		void RetrieveTransform(Entity& entity);
+		const std::vector<BodyMoveEvent>& GetMoveEvents() const { return m_MoveEvents; }
 
 	private:
 		// Generation handle to the Box2D world — zero-initialized is the null id
@@ -113,6 +157,10 @@ namespace Radiant {
 
 		// Identity for the lifecycle logs only; not used by simulation
 		std::string m_DebugName;
+
+		// Reusable move-event buffer refilled by Step — clear() keeps
+		// capacity, so steady-state refills allocate nothing
+		std::vector<BodyMoveEvent> m_MoveEvents;
 	};
 
 }

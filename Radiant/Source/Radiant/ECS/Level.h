@@ -20,9 +20,10 @@ namespace Radiant {
 	 *
 	 * Lifecycle contract: entity creation and destruction are IMMEDIATE (no command
 	 * buffer) — never call DestroyEntity while iterating a view containing that
-	 * entity. Physics body lifecycle is driven by the entt signals registered in the
-	 * constructor: adding a RigidBody2DComponent creates the Box2D body, removing it
-	 * destroys the body — component presence IS the physics binding.
+	 * entity. Physics lifecycle is driven by the entt signals registered in the
+	 * constructor: adding a RigidBody2DComponent creates the Box2D body and
+	 * removing it destroys the body; the same holds for BoxCollider2DComponent
+	 * and its shape — component presence IS the physics binding.
 	 *
 	 * The owner (Reaper's GameLayer) drives OnFixedUpdate at the engine's fixed
 	 * simulation rate and OnRender once per rendered frame.
@@ -68,12 +69,37 @@ namespace Radiant {
 		void DestroyEntity(UUID entityID);
 
 		/**
+		 * Moves an entity discontinuously — the ONLY way to reposition an
+		 * entity with a body (physics owns dynamic transforms; direct writes
+		 * to TransformComponent have no physical effect — RAD-28). Works on
+		 * any entity: writes the ECS transform, resets the render snapshot so
+		 * the jump doesn't smear across a frame, and, if the entity has a
+		 * body, pushes the pose into Box2D (velocity kept, body woken).
+		 * rotationZ is radians; the overload without it keeps the current
+		 * rotation. Invalid handles warn and recover.
+		 */
+		void Teleport(Entity entity, const glm::vec3& translation, float rotationZ);
+		void Teleport(Entity entity, const glm::vec3& translation);
+
+		/**
+		 * Re-applies an entity's BoxCollider2DComponent fields and transform
+		 * Scale to its live Box2D shape, in place — call after mutating
+		 * collider properties or Scale; nothing detects those writes
+		 * implicitly (RAD-28). Asserts if the entity has no collider
+		 * component; a collider without a live shape warns and recovers.
+		 */
+		void RefreshCollider(Entity entity);
+
+		/**
 		 * Advances the simulation one FIXED step: runs native scripts (lazily
-		 * instantiating unconstructed instances — see ScriptableEntity), pushes
-		 * active rigidbody entities' ECS transforms into Box2D, steps the physics
-		 * world, then reads stepped body transforms back into the ECS as a
-		 * dedicated post-step pass. Call with the engine's fixed delta (from
-		 * Layer::OnFixedUpdate) — never a variable frame delta.
+		 * instantiating unconstructed instances — see ScriptableEntity), steps
+		 * the physics world, then drains the world's move events — only the
+		 * bodies that actually moved — back into ECS transforms as a dedicated
+		 * post-step pass. Physics owns the transform of
+		 * dynamic bodies — nothing here pushes ECS transforms into Box2D
+		 * (RAD-28); pushes happen only at spawn and through the explicit
+		 * verbs. Call with the engine's fixed delta (from Layer::OnFixedUpdate)
+		 * — never a variable frame delta.
 		 */
 		void OnFixedUpdate(Timestep ts);
 
@@ -133,6 +159,7 @@ namespace Radiant {
 		void OnRigidBody2DComponentConstruct(entt::registry& registry, entt::entity entity);
 		void OnRigidBody2DComponentDestroy(entt::registry& registry, entt::entity entity);
 		void OnBoxCollider2DComponentConstruct(entt::registry& registry, entt::entity entity);
+		void OnBoxCollider2DComponentDestroy(entt::registry& registry, entt::entity entity);
 
 		// Keeps MetadataComponent pool order deterministic (creation order) after
 		// destruction/deserialization, so iteration order is stable across runs

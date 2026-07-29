@@ -29,6 +29,20 @@ void GameLayer::OnAttach()
 		LoadDEBUG();
 	}
 
+	// RAD-28 verification scaffolding: a 45°-rotated static body — its collider
+	// debug-outline must align with the sprite (the pre-RAD-28 shape rotated
+	// twice). Spawned at runtime on both load paths; running the game never
+	// writes assets, so this never pollutes the authored level.
+	{
+		Entity ramp = m_Level->CreateEntity("RotatedColliderTest");
+		ramp.AddComponent<SpriteComponent>(glm::vec4{ 1.0f, 0.6f, 0.1f, 1.0f });
+		auto& rampTransform = ramp.GetComponent<TransformComponent>();
+		rampTransform.Translation = { -4.0f, -2.0f, 0.0f };
+		rampTransform.Rotation.z = glm::radians(45.0f);
+		ramp.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Static);
+		ramp.AddComponent<BoxCollider2DComponent>();
+	}
+
 	FramebufferSpecification fbSpec;
 	fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
 	GameApplication& game = GameApplication::Get();
@@ -120,6 +134,43 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 		GameStateManager::Get()->PushState<GamePausedState>();
 		return true;
 	}
+
+	// RAD-28 verification cheats — the explicit physics verbs' first customers
+
+	if (e.GetKeyCode() == Key::T)
+	{
+		// Teleport the Reaper into mid-air: proves the full verb chain — ECS
+		// write, snapshot reset (no render smear), physics push, and
+		// wake-from-sleep (a settled body must resume falling, not hang)
+		Entity reaper = m_Level->FindEntityByName("Reaper");
+		if (reaper)
+			reaper.Teleport({ 4.0f, 2.0f, 0.0f });
+		else
+			GAME_WARN("Teleport cheat: no 'Reaper' entity in the level");
+		return true;
+	}
+
+	if (e.GetKeyCode() == Key::G)
+	{
+		// Grow the green square's collider, then re-apply it: proves shapes
+		// change ONLY on explicit refresh — the debug outline follows the
+		// component instantly, the body changes when RefreshCollider runs
+		Entity square = m_Level->FindEntityByName("Green Square");
+		auto* bc2d = square ? square.TryGetComponent<BoxCollider2DComponent>() : nullptr;
+		if (bc2d)
+		{
+			bc2d->Size *= 1.25f;
+			if (bc2d->Size.x > 1.5f)
+				bc2d->Size = { 0.5f, 0.5f };
+			m_Level->RefreshCollider(square);
+		}
+		else
+		{
+			GAME_WARN("Collider cheat: no 'Green Square' entity with a collider in the level");
+		}
+		return true;
+	}
+
 	return false;
 }
 

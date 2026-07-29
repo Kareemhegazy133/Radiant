@@ -138,11 +138,48 @@ namespace Radiant {
 		{
 			RADIANT_WARN("PhysicsWorld2D: DestroyBody called with a stale body id for entity {0}", entity.GetUUID());
 			component.RuntimeBodyId = 0;
+			// Wherever the body went, its shapes went with it
+			if (auto* bc2d = entity.TryGetComponent<BoxCollider2DComponent>())
+				bc2d->RuntimeShapeId = 0;
 			return;
 		}
 
 		b2DestroyBody(body);
 		component.RuntimeBodyId = 0;
+
+		// The body took its shapes with it — a surviving collider component
+		// (gameplay may remove just the rigidbody and keep the collider) must
+		// not keep a ticket to the wreckage
+		if (auto* bc2d = entity.TryGetComponent<BoxCollider2DComponent>())
+			bc2d->RuntimeShapeId = 0;
+	}
+
+	void PhysicsWorld2D::Teleport(Entity& entity, const glm::vec2& position, float rotation)
+	{
+		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+
+		// A zero id means CreateBody failed (already ERROR-logged there):
+		// survivable skip instead of feeding Box2D a null body
+		if (rb2d.RuntimeBodyId == 0)
+			return;
+
+		b2BodyId body = b2LoadBodyId(rb2d.RuntimeBodyId);
+		if (!b2Body_IsValid(body))
+		{
+			RADIANT_WARN("PhysicsWorld2D: Teleport called with a stale body id for entity {0}", entity.GetUUID());
+			rb2d.RuntimeBodyId = 0;
+			return;
+		}
+
+		// Teleports are rare, deliberate acts — this line is the audit trail
+		// of every explicit ECS→Box2D push
+		RADIANT_TRACE("PhysicsWorld2D: teleport entity {0} to ({1}, {2})", entity.GetUUID(), position.x, position.y);
+
+		b2Body_SetTransform(body, { position.x, position.y }, b2MakeRot(rotation));
+		// SetTransform does not wake: a sleeping body teleported into mid-air
+		// would hang there until touched (UE's SetBodyTransform defaults
+		// bAutoWake true for the same reason)
+		b2Body_SetAwake(body, true);
 	}
 
 	void PhysicsWorld2D::CreateBoxShape(Entity& entity, BoxCollider2DComponent& component)
@@ -162,15 +199,14 @@ namespace Radiant {
 		if (!b2Body_IsValid(body))
 			return;
 
-		// 1:1 port of the v2 fixture (RAD-28): the box's LOCAL rotation repeats
-		// the body's world rotation, so a rotated entity's collider turns twice
-		// — a pre-existing quirk, invisible while everything spawns at rotation
-		// 0; dies with RAD-28's sync rework
+		// The shape is BODY-LOCAL: no local rotation — the body already carries
+		// the world rotation. (Passing the world rotation here doubled a
+		// rotated entity's collider rotation; fixed by RAD-28.)
 		b2Polygon box = b2MakeOffsetBox(
 			component.Size.x * transform.Scale.x,
 			component.Size.y * transform.Scale.y,
 			{ component.Offset.x, component.Offset.y },
-			b2MakeRot(transform.Rotation.z));
+			b2Rot_identity);
 
 		b2ShapeDef shapeDef = b2DefaultShapeDef();
 		shapeDef.density = component.Density;
@@ -182,7 +218,74 @@ namespace Radiant {
 		shapeDef.material.friction = component.Friction;
 		shapeDef.material.restitution = component.Restitution;
 
-		b2CreatePolygonShape(body, &shapeDef, &box);
+		component.RuntimeShapeId = b2StoreShapeId(b2CreatePolygonShape(body, &shapeDef, &box));
+	}
+
+	void PhysicsWorld2D::DestroyBoxShape(Entity& entity, BoxCollider2DComponent& component)
+	{
+		// Never-created shape (CreateBoxShape failed or skipped), or the body
+		// already died and took the shape with it (DestroyBody zeroes the
+		// ticket): destroying nothing is a no-op, not a crash
+		if (component.RuntimeShapeId == 0)
+			return;
+
+		b2ShapeId shape = b2LoadShapeId(component.RuntimeShapeId);
+
+		// A stale ticket means a lifecycle path outside the entt signals
+		// touched the shape — recover instead of crashing, but say so
+		if (!b2Shape_IsValid(shape))
+		{
+			RADIANT_WARN("PhysicsWorld2D: DestroyBoxShape called with a stale shape id for entity {0}", entity.GetUUID());
+			component.RuntimeShapeId = 0;
+			return;
+		}
+
+		// true: the surviving body's mass must reflect the lost shape
+		b2DestroyShape(shape, true);
+		component.RuntimeShapeId = 0;
+	}
+
+	void PhysicsWorld2D::UpdateBoxShape(Entity& entity, BoxCollider2DComponent& component)
+	{
+		auto& transform = entity.GetComponent<TransformComponent>();
+
+		// No live shape to refresh: CreateBoxShape failed (ERROR-logged
+		// there), or the body died and took the shape with it — a state
+		// mistake by the caller, warn and recover
+		if (component.RuntimeShapeId == 0)
+		{
+			RADIANT_WARN("PhysicsWorld2D: UpdateBoxShape on entity {0} with no live shape - refresh skipped", entity.GetUUID());
+			return;
+		}
+
+		b2ShapeId shape = b2LoadShapeId(component.RuntimeShapeId);
+		if (!b2Shape_IsValid(shape))
+		{
+			RADIANT_WARN("PhysicsWorld2D: UpdateBoxShape called with a stale shape id for entity {0}", entity.GetUUID());
+			component.RuntimeShapeId = 0;
+			return;
+		}
+
+		RADIANT_TRACE("PhysicsWorld2D: collider refresh for entity {0}", entity.GetUUID());
+
+		// Same geometry derivation as CreateBoxShape: body-local, no local
+		// rotation
+		b2Polygon box = b2MakeOffsetBox(
+			component.Size.x * transform.Scale.x,
+			component.Size.y * transform.Scale.y,
+			{ component.Offset.x, component.Offset.y },
+			b2Rot_identity);
+
+		// In-place mutation keeps the shape id and its contacts — never
+		// destroy/recreate (playbook §4). v3's geometry setter deliberately
+		// leaves body mass untouched (box2d.h:637) and density defers it too:
+		// one ApplyMassFromShapes at the end instead of three recomputes.
+		b2Shape_SetPolygon(shape, &box);
+		b2Shape_SetDensity(shape, component.Density, false);
+		b2Shape_SetFriction(shape, component.Friction);
+		b2Shape_SetRestitution(shape, component.Restitution);
+
+		b2Body_ApplyMassFromShapes(b2Shape_GetBody(shape));
 	}
 
 	void PhysicsWorld2D::Step(Timestep ts)
@@ -198,76 +301,28 @@ namespace Radiant {
 		// the library's recommended default (box2d.h:38)
 		constexpr int subStepCount = 4;
 		b2World_Step(m_WorldId, ts, subStepCount);
-	}
 
-	void PhysicsWorld2D::SubmitTransform(Entity& entity)
-	{
-		RADIANT_PROFILE_FUNCTION();
-
-		auto& transform = entity.GetComponent<TransformComponent>();
-		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
-
-		// A zero id means CreateBody failed (already ERROR-logged there): skip,
-		// so that failure stays survivable instead of feeding Box2D a null body
-		RADIANT_ASSERT(rb2d.RuntimeBodyId != 0, "Entity must have a body id to submit a transform for physics");
-		if (rb2d.RuntimeBodyId == 0)
-			return;
-
-		b2BodyId body = b2LoadBodyId(rb2d.RuntimeBodyId);
-		// A stale id per-step is a lifecycle bug — break loudly in dev rather
-		// than warn-spam sixty times a second
-		RADIANT_ASSERT(b2Body_IsValid(body), "SubmitTransform: stale body id - lifecycle bug");
-		if (!b2Body_IsValid(body))
-			return;
-
-		// Known defect (RAD-28): v3's own docs call SetTransform "a teleport
-		// ... fairly expensive" (box2d.h:247) — yet we teleport every body
-		// every step. Push becomes explicit-teleport-only in RAD-28.
-		b2Body_SetTransform(body, { transform.Translation.x, transform.Translation.y }, b2MakeRot(transform.Rotation.z));
-
-		if (auto* bc2d = entity.TryGetComponent<BoxCollider2DComponent>())
+		// Drain the move events NOW: Box2D's event array is transient ("do
+		// not store a reference", box2d.h:44) — copy into engine types before
+		// anything else runs. clear() keeps capacity, so steady-state refills
+		// allocate nothing.
+		m_MoveEvents.clear();
+		b2BodyEvents bodyEvents = b2World_GetBodyEvents(m_WorldId);
+		m_MoveEvents.reserve(bodyEvents.moveCount);
+		for (int i = 0; i < bodyEvents.moveCount; ++i)
 		{
-			// Known defect (RAD-28): per-step shape destroy/recreate wrecks
-			// contact persistence, sleeping, and warm-starting, and allocates
-			// every step. Destroying only the FIRST shape mirrors v2's
-			// head-fixture removal — safe only while bodies carry one shape.
-			b2ShapeId shape;
-			if (b2Body_GetShapes(body, &shape, 1) > 0)
-			{
-				// Mass update deferred: CreateBoxShape refreshes it anyway
-				// (b2ShapeDef.updateBodyMass defaults true)
-				b2DestroyShape(shape, false);
-			}
-			CreateBoxShape(entity, *bc2d);
+			const b2BodyMoveEvent& bodyMoveEvent = bodyEvents.moveEvents[i];
+
+			// The UUID stamped into userData at CreateBody rides back out here
+			UUID entityId(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(bodyMoveEvent.userData)));
+			m_MoveEvents.push_back({ entityId, { bodyMoveEvent.transform.p.x, bodyMoveEvent.transform.p.y }, b2Rot_GetAngle(bodyMoveEvent.transform.q) });
+
+			// A body earning sleep is the visible proof that contact
+			// persistence survived the step (RAD-28's AC) — and rare enough
+			// to log
+			if (bodyMoveEvent.fellAsleep)
+				RADIANT_TRACE("PhysicsWorld2D: body for entity {0} fell asleep", entityId);
 		}
-	}
-
-	void PhysicsWorld2D::RetrieveTransform(Entity& entity)
-	{
-		RADIANT_PROFILE_FUNCTION();
-
-		auto& transform = entity.GetComponent<TransformComponent>();
-		auto* rb2d = entity.TryGetComponent<RigidBody2DComponent>();
-		if (!rb2d)
-		{
-			RADIANT_WARN("PhysicsWorld2D: cannot retrieve transform for entity '{0}' - no RigidBody2DComponent", entity.GetComponent<MetadataComponent>().Tag);
-			return;
-		}
-
-		// Same survivable-CreateBody-failure skip as SubmitTransform
-		if (rb2d->RuntimeBodyId == 0)
-			return;
-
-		b2BodyId body = b2LoadBodyId(rb2d->RuntimeBodyId);
-		if (!b2Body_IsValid(body))
-			return;
-
-		b2Vec2 position = b2Body_GetPosition(body);
-		transform.Translation.x = position.x;
-		transform.Translation.y = position.y;
-		// v3 stores rotation as a cosine/sine pair; convert back to the Euler Z
-		// radians the Transform owns
-		transform.Rotation.z = b2Rot_GetAngle(b2Body_GetRotation(body));
 	}
 
 }

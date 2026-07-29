@@ -28,8 +28,9 @@ namespace Radiant {
 	/**
 	 * Identity every entity carries (added automatically at creation): persistent
 	 * UUID, human-readable tag, and active flag. IsActive gates script updates,
-	 * physics transform submission, and rendering — but is not serialized yet
-	 * (known round-trip gap).
+	 * the physics move-event writeback, and rendering — the body itself keeps
+	 * simulating (see Docs/Physics.md) — and is not serialized yet (known
+	 * round-trip gap).
 	 */
 	struct MetadataComponent
 	{
@@ -78,8 +79,8 @@ namespace Radiant {
 	 * Level::OnRender draws lerp(snapshot, current, alpha) so fixed-rate motion
 	 * looks smooth at any display rate. No scale — nothing simulates scale.
 	 * Trivially copyable POD, so Level::Copy (Phase 5) shallow-copies it safely.
-	 * Until RAD-28's explicit-teleport path resets it, a teleport smears across
-	 * one rendered frame.
+	 * Level::Teleport stamps it to the destination pose, so a teleport draws
+	 * there immediately instead of smearing across one frame (RAD-28).
 	 */
 	struct TransformSnapshotComponent
 	{
@@ -183,10 +184,13 @@ namespace Radiant {
 	};
 
 	/**
-	 * Box fixture for the entity's rigidbody. Size is HALF-extents in world units,
-	 * multiplied by the transform's scale (defaults produce a 1x1 box matching a
-	 * unit sprite); Offset is from the body origin. Adding this component requires
-	 * an existing RigidBody2DComponent — order matters (asserts otherwise).
+	 * Box shape for the entity's rigidbody — component presence IS the physics
+	 * binding in both directions: adding this component creates the Box2D shape
+	 * (requires an existing RigidBody2DComponent — order matters, asserts
+	 * otherwise), removing it destroys the shape. Size is HALF-extents in world
+	 * units, multiplied by the transform's scale (defaults produce a 1x1 box
+	 * matching a unit sprite); Offset is from the body origin, with no local
+	 * rotation — the body carries the world rotation.
 	 */
 	struct BoxCollider2DComponent
 	{
@@ -200,6 +204,14 @@ namespace Radiant {
 		float Restitution = 0.0f;
 		// No RestitutionThreshold: v3 moved it to the world (b2WorldDef) — a
 		// stale key in old .rdlvl files is ignored on load (RAD-27)
+
+		// Packed b2ShapeId (b2StoreShapeId/b2LoadShapeId), 0 = no shape. Same
+		// claim-ticket pattern as RigidBody2DComponent::RuntimeBodyId: the
+		// Level's PhysicsWorld2D owns the shape and zeroes this on destroy —
+		// including when the body dies and takes its shapes with it.
+		// Runtime-only — never serialized; deserialization builds the component
+		// fresh, so the field stays 0 until the construct signal stores a ticket.
+		uint64_t RuntimeShapeId = 0;
 
 		BoxCollider2DComponent() = default;
 		BoxCollider2DComponent(const BoxCollider2DComponent&) = default;

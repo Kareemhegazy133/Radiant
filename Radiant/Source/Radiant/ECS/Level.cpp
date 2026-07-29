@@ -45,6 +45,7 @@ namespace Radiant {
 		m_Registry.on_construct<RigidBody2DComponent>().connect<&Level::OnRigidBody2DComponentConstruct>(this);
 		m_Registry.on_destroy<RigidBody2DComponent>().connect<&Level::OnRigidBody2DComponentDestroy>(this);
 		m_Registry.on_construct<BoxCollider2DComponent>().connect<&Level::OnBoxCollider2DComponentConstruct>(this);
+		m_Registry.on_destroy<BoxCollider2DComponent>().connect<&Level::OnBoxCollider2DComponentDestroy>(this);
 
 		RADIANT_TRACE("Level Constructed: {0}", (void*)this);
 	}
@@ -119,6 +120,9 @@ namespace Radiant {
 		// Remove components for which there exist on_destroy handlers
 		// This ensures that if the handlers rely on other entity components (in particular
 		// the MetadataComponent and the TransformComponent), they can still access them.
+		// Collider before rigidbody: destroying a body destroys its shapes inside
+		// Box2D, so body-first would leave the collider handler a stale ticket.
+		entity.RemoveComponentIfExists<BoxCollider2DComponent>();
 		entity.RemoveComponentIfExists<RigidBody2DComponent>();
 
 		m_Registry.destroy(entity.m_EntityHandle);
@@ -134,6 +138,60 @@ namespace Radiant {
 			return;
 
 		DestroyEntity(it->second);
+	}
+
+	void Level::Teleport(Entity entity, const glm::vec3& translation, float rotationZ)
+	{
+		// Stale/null handles reach here from gameplay — a content-level
+		// mistake (same contract as DestroyEntity), not grounds for UB
+		if (!entity.IsValid())
+		{
+			RADIANT_WARN("Level: Teleport called with an invalid entity handle");
+			return;
+		}
+
+		auto& transform = entity.GetComponent<TransformComponent>();
+		transform.Translation = translation;
+		transform.Rotation.z = rotationZ;
+
+		// Reset the render snapshot to the destination: OnRender draws
+		// lerp(snapshot, current, alpha), and a stale snapshot would smear the
+		// jump across one rendered frame
+		m_Registry.emplace_or_replace<TransformSnapshotComponent>(entity.m_EntityHandle, transform.Translation, transform.Rotation);
+
+		// The one legitimate ECS→Box2D transform push (RAD-28)
+		if (m_PhysicsWorld && entity.HasComponent<RigidBody2DComponent>())
+			m_PhysicsWorld->Teleport(entity, { translation.x, translation.y }, rotationZ);
+	}
+
+	void Level::Teleport(Entity entity, const glm::vec3& translation)
+	{
+		if (!entity.IsValid())
+		{
+			RADIANT_WARN("Level: Teleport called with an invalid entity handle");
+			return;
+		}
+
+		Teleport(entity, translation, entity.GetComponent<TransformComponent>().Rotation.z);
+	}
+
+	void Level::RefreshCollider(Entity entity)
+	{
+		if (!entity.IsValid())
+		{
+			RADIANT_WARN("Level: RefreshCollider called with an invalid entity handle");
+			return;
+		}
+
+		// Calling this on an entity with no collider is a programmer error —
+		// the call site believes it configured a collider it never added
+		auto* bc2d = entity.TryGetComponent<BoxCollider2DComponent>();
+		RADIANT_ASSERT(bc2d, "RefreshCollider: entity has no BoxCollider2DComponent");
+		if (!bc2d)
+			return;
+
+		if (m_PhysicsWorld)
+			m_PhysicsWorld->UpdateBoxShape(entity, *bc2d);
 	}
 
 	void Level::OnFixedUpdate(Timestep ts)
@@ -197,35 +255,39 @@ namespace Radiant {
 		// still runs scripts above — it just has no physics to advance
 		if (m_PhysicsWorld)
 		{
-			auto view = GetAllEntitiesWith<MetadataComponent, RigidBody2DComponent>();
-			for (auto entityHandle : view)
-			{
-				auto [metadata, rb2d] = view.get<
-					MetadataComponent, RigidBody2DComponent>(entityHandle);
-
-				// Skip inactive Entities
-				if (!metadata.IsActive) continue;
-
-				// Submit Transforms/Colliders of all entities for physics
-				Entity entity = { entityHandle, this };
-				m_PhysicsWorld->SubmitTransform(entity);
-			}
-
-			// Apply Physics
+			// Physics owns the transform of dynamic bodies (RAD-28): nothing
+			// pushes ECS transforms into Box2D here — the simulation advances
+			// from its own state. ECS→Box2D writes happen only at spawn (the
+			// component signals) and through the explicit verbs.
 			m_PhysicsWorld->Step(ts);
 
-			// Retrieve: copy stepped body transforms into the ECS as a dedicated
-			// post-step pass (playbook §4). Runs for every active body — unlike
-			// the old in-render readback, which skipped bodies without sprites
-			// and did nothing at all without a primary camera. Must happen inside
-			// the fixed step: the NEXT step's scripts read these transforms.
-			for (auto entityHandle : view)
+			// Drain the move events: physics reports what moved, we write only
+			// those transforms (playbook §4) — cost scales with activity, not
+			// population; sleeping and static bodies produce no events. Must
+			// happen inside the fixed step: the NEXT step's scripts read these
+			// transforms.
+			for (const auto& move : m_PhysicsWorld->GetMoveEvents())
 			{
-				auto [metadata, rb2d] = view.get<MetadataComponent, RigidBody2DComponent>(entityHandle);
-				if (!metadata.IsActive) continue;
+				// Nothing destroys entities between Step and this drain
+				// (scripts run BEFORE the step, in this same function), so a
+				// miss is a broken invariant, not a content mistake
+				auto it = m_EntityMap.find(move.EntityId);
+				RADIANT_ASSERT(it != m_EntityMap.end(), "Move-event drain: entity missing from map - destroyed between Step and drain?");
+				if (it == m_EntityMap.end())
+					continue;
 
-				Entity entity = { entityHandle, this };
-				m_PhysicsWorld->RetrieveTransform(entity);
+				Entity entity = it->second;
+
+				// IsActive gating preserved from the old readback: an inactive
+				// entity's body keeps simulating (pre-existing behavior), its
+				// ECS transform just stops following
+				if (!entity.GetComponent<MetadataComponent>().IsActive)
+					continue;
+
+				auto& transform = entity.GetComponent<TransformComponent>();
+				transform.Translation.x = move.Position.x;
+				transform.Translation.y = move.Position.y;
+				transform.Rotation.z = move.Rotation;
 			}
 		}
 	}
@@ -432,6 +494,17 @@ namespace Radiant {
 		Entity e = { entity, this };
 		auto& bc2d = e.GetComponent<BoxCollider2DComponent>();
 		m_PhysicsWorld->CreateBoxShape(e, bc2d);
+	}
+
+	void Level::OnBoxCollider2DComponentDestroy(entt::registry& registry, entt::entity entity)
+	{
+		RADIANT_ASSERT(m_PhysicsWorld, "Physics signal fired on a level without a physics world");
+		if (!m_PhysicsWorld)
+			return;
+
+		Entity e = { entity, this };
+		auto& bc2d = e.GetComponent<BoxCollider2DComponent>();
+		m_PhysicsWorld->DestroyBoxShape(e, bc2d);
 	}
 
 	void Level::SortEntities()
