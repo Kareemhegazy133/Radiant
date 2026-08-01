@@ -32,4 +32,14 @@ namespace Radiant {
 		}
 		m_Level->Teleport(*this, translation);
 	}
+
+	void Entity::Destroy()
+	{
+		if (!m_Level)
+		{
+			RADIANT_WARN("Entity: Destroy called on a handle with no level");
+			return;
+		}
+		m_Level->DestroyEntity(*this);
+	}
 }

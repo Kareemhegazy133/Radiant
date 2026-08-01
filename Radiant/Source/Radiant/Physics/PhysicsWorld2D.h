@@ -2,6 +2,7 @@
 
 #include "Radiant/Core/Timestep.h"
 #include "Radiant/Core/UUID.h"
+#include "Radiant/Physics/ContactEvent.h"
 
 #include <glm/glm.hpp>
 
@@ -135,9 +136,12 @@ namespace Radiant {
 		/**
 		 * Advances the simulation one FIXED step with 4 sub-steps (v3's solver
 		 * unit, replacing v2's velocity/position iteration pair), then refills
-		 * the move-event buffer (GetMoveEvents) with the bodies that moved.
-		 * Call with the engine's fixed delta from the accumulator loop — never
-		 * a variable frame delta (playbook §1).
+		 * the move-event buffer (GetMoveEvents) with the bodies that moved and
+		 * the contact-event buffer (GetContactEvents) with the touches that
+		 * began or ended. Both drains copy Box2D's transient arrays into engine
+		 * types immediately, which is what lets consumers mutate the world
+		 * freely afterwards. Call with the engine's fixed delta from the
+		 * accumulator loop — never a variable frame delta (playbook §1).
 		 */
 		void Step(Timestep ts);
 
@@ -150,6 +154,20 @@ namespace Radiant {
 		 */
 		const std::vector<BodyMoveEvent>& GetMoveEvents() const { return m_MoveEvents; }
 
+		/**
+		 * The touches that began or ended during the last Step, translated to
+		 * engine types. Valid until the next Step (the buffer is refilled in
+		 * place) — consume within the same fixed update, never cache. Begins
+		 * come before ends: a batch may hold both an End for a contact that
+		 * died and a Begin for one that replaced it, and dispatching begins
+		 * first keeps an overlap counter from transiently crossing zero.
+		 *
+		 * Only TRANSITIONS appear here — a settled stack of resting bodies
+		 * produces nothing, step after step. Shapes report only if they (or
+		 * their partner) opted in via BoxCollider2DComponent::EnableContactEvents.
+		 */
+		const std::vector<ContactEvent>& GetContactEvents() const { return m_ContactEvents; }
+
 	private:
 		// Generation handle to the Box2D world — zero-initialized is the null id
 		// (box2d/id.h). The only Box2D state this class holds.
@@ -161,6 +179,9 @@ namespace Radiant {
 		// Reusable move-event buffer refilled by Step — clear() keeps
 		// capacity, so steady-state refills allocate nothing
 		std::vector<BodyMoveEvent> m_MoveEvents;
+
+		// Reusable contact-event buffer, same refill contract as m_MoveEvents
+		std::vector<ContactEvent> m_ContactEvents;
 	};
 
 }

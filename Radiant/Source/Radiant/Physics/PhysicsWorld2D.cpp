@@ -27,6 +27,21 @@ namespace Radiant {
 			return b2_staticBody;
 		}
 
+		// Walks a contact event's shape back to the entity UUID stamped into
+		// its body's userData at CreateBody. Returns 0 — the engine's "none"
+		// id, as with AssetHandle — when the shape is already destroyed, which
+		// an END event may legitimately name (v3 reports an end one step after
+		// the destroy that caused it). Validity is checked BEFORE the id is
+		// followed, so nothing here can dereference a dead slot.
+		UUID ResolveShapeEntity(b2ShapeId shape)
+		{
+			if (!b2Shape_IsValid(shape))
+				return UUID(0);
+
+			void* userData = b2Body_GetUserData(b2Shape_GetBody(shape));
+			return UUID(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(userData)));
+		}
+
 		// Box2D's internal assert callback: log through our sink, then return
 		// nonzero so Box2D raises its breakpoint at the faulting call site.
 		// RADIANT_ASSERT cannot take format arguments (Assert.h), so the hook
@@ -213,10 +228,12 @@ namespace Radiant {
 		// v3.1 moved friction/restitution into the shape's surface material;
 		// the restitution THRESHOLD is world-level in v3 (b2WorldDef), so the
 		// component's RestitutionThreshold maps to nothing and is removed in
-		// Phase 3. enableContactEvents stays default-false until RAD-29 builds
-		// the event drain.
+		// Phase 3.
 		shapeDef.material.friction = component.Friction;
 		shapeDef.material.restitution = component.Restitution;
+		// b2DefaultShapeDef leaves this false, so nothing reports contacts
+		// unless the component opts in (RAD-29)
+		shapeDef.enableContactEvents = component.EnableContactEvents;
 
 		component.RuntimeShapeId = b2StoreShapeId(b2CreatePolygonShape(body, &shapeDef, &box));
 	}
@@ -285,6 +302,14 @@ namespace Radiant {
 		b2Shape_SetFriction(shape, component.Friction);
 		b2Shape_SetRestitution(shape, component.Restitution);
 
+		// Applies to contacts created from now on: a contact copies the flag
+		// when it is BORN (contact.c:253), so toggling this while two shapes
+		// are already touching yields an unpaired event — an End with no
+		// matching Begin, or a Begin that never ends. Box2D documents the same
+		// caveat (box2d.h:580) and offers no fix; treat the flag as spawn-time
+		// configuration and this line as the completeness case.
+		b2Shape_EnableContactEvents(shape, component.EnableContactEvents);
+
 		b2Body_ApplyMassFromShapes(b2Shape_GetBody(shape));
 	}
 
@@ -322,6 +347,43 @@ namespace Radiant {
 			// to log
 			if (bodyMoveEvent.fellAsleep)
 				RADIANT_TRACE("PhysicsWorld2D: body for entity {0} fell asleep", entityId);
+		}
+
+		// Same transient-array contract as the move events: copy out before
+		// anything else runs. This copy is what makes contact dispatch safe —
+		// once the records are engine-typed, gameplay can destroy bodies and
+		// spawn entities freely, because nothing will touch Box2D's arrays
+		// again this step (RAD-29).
+		m_ContactEvents.clear();
+		b2ContactEvents contactEvents = b2World_GetContactEvents(m_WorldId);
+		m_ContactEvents.reserve(static_cast<size_t>(contactEvents.beginCount) + contactEvents.endCount);
+
+		// Begins BEFORE ends, deliberately: one batch can hold both an End for
+		// a contact that died and a Begin for the one replacing it, and Box2D
+		// gives no cross-array ordering. Draining begins first means an overlap
+		// counter goes 1 -> 2 -> 1 rather than 1 -> 0 -> 1, so "I left the
+		// ground" never fires spuriously for a single step. This order is a
+		// guarantee consumers may rely on, not an implementation detail.
+		for (int i = 0; i < contactEvents.beginCount; ++i)
+		{
+			const b2ContactBeginTouchEvent& beginTouchEvent = contactEvents.beginEvents[i];
+			// Nothing runs between b2World_Step returning and this loop, so a
+			// shape here CANNOT have been destroyed — unlike the end events
+			// below. An invalid id means the drain moved away from the step.
+			RADIANT_ASSERT(b2Shape_IsValid(beginTouchEvent.shapeIdA) && b2Shape_IsValid(beginTouchEvent.shapeIdB),
+				"Contact drain: begin event names a destroyed shape - is the drain still directly after b2World_Step?");
+			m_ContactEvents.push_back({ ResolveShapeEntity(beginTouchEvent.shapeIdA), ResolveShapeEntity(beginTouchEvent.shapeIdB), ContactPhase::Begin });
+		}
+
+		for (int i = 0; i < contactEvents.endCount; ++i)
+		{
+			const b2ContactEndTouchEvent& endTouchEvent = contactEvents.endEvents[i];
+			// These CAN name destroyed shapes, and routinely do: v3 keeps two
+			// end-event buffers and swaps them per step (world.c:807), so an
+			// end caused by a destroy between the last two steps surfaces now,
+			// with the shape long gone. ResolveShapeEntity answers 0 for a dead
+			// side; the surviving side still gets told (see ContactEvent).
+			m_ContactEvents.push_back({ ResolveShapeEntity(endTouchEvent.shapeIdA), ResolveShapeEntity(endTouchEvent.shapeIdB), ContactPhase::End });
 		}
 	}
 

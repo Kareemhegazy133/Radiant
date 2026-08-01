@@ -199,6 +199,7 @@ namespace Radiant {
 			out << YAML::Key << "Density" << YAML::Value << bc2dComponent.Density;
 			out << YAML::Key << "Friction" << YAML::Value << bc2dComponent.Friction;
 			out << YAML::Key << "Restitution" << YAML::Value << bc2dComponent.Restitution;
+			out << YAML::Key << "EnableContactEvents" << YAML::Value << bc2dComponent.EnableContactEvents;
 
 			out << YAML::EndMap; // BoxCollider2DComponent
 		}
@@ -391,6 +392,11 @@ namespace Radiant {
 				bc2d.Restitution = boxCollider2DComponent["Restitution"].as<float>();
 				// RestitutionThreshold is deliberately not read: the property is
 				// world-level in Box2D v3 — a stale key in old files is ignored
+				// Absent key = a file written before RAD-29. It must default TRUE
+				// (the component's own default), or every authored level would
+				// silently stop reporting collisions on the day the field landed.
+				if (auto enableContactEvents = boxCollider2DComponent["EnableContactEvents"])
+					bc2d.EnableContactEvents = enableContactEvents.as<bool>();
 				deserializedEntity.AddComponent<BoxCollider2DComponent>(bc2d);
 			}
 

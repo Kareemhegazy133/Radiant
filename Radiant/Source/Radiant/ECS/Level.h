@@ -4,8 +4,12 @@
 
 #include "Radiant/Core/GameApplication.h"
 #include "Radiant/Core/UUID.h"
+#include "Radiant/Physics/ContactEvent.h"
 
 #include "Entity.h"
+
+#include <deque>
+#include <functional>
 
 namespace Radiant {
 
@@ -33,6 +37,37 @@ namespace Radiant {
 	class Level : public Asset
 	{
 	public:
+		/**
+		 * A contact resolved to entities — the gameplay-facing twin of the
+		 * physics module's ContactEvent. EITHER handle may be invalid, meaning
+		 * that side was destroyed before the notification was delivered; never
+		 * both, since an event with nobody left to tell is skipped. The handles
+		 * are valid for the duration of the call only — resolve by UUID if you
+		 * need to remember a participant.
+		 */
+		struct CollisionEvent
+		{
+			Entity A;
+			Entity B;
+			ContactPhase Phase;
+		};
+
+		/**
+		 * Opaque, copyable identity for a registered collision observer. Index
+		 * says which slot, Generation says which lifetime of that slot — so a
+		 * handle to a removed observer is always safe, even after its slot has
+		 * been reused: RemoveCollisionObserver on it is a no-op instead of
+		 * unregistering whoever inherited the slot. Same shape and reasoning as
+		 * TimerHandle (playbook §2).
+		 */
+		struct CollisionObserverHandle
+		{
+			static constexpr uint32_t InvalidIndex = 0xFFFFFFFF;
+
+			uint32_t Index = InvalidIndex;
+			uint32_t Generation = 0;
+		};
+
 		/**
 		 * Constructs an empty level. Constructing with initialize == true creates
 		 * this level's own physics world and connects the physics component
@@ -89,6 +124,38 @@ namespace Radiant {
 		 * component; a collider without a live shape warns and recovers.
 		 */
 		void RefreshCollider(Entity entity);
+
+		/**
+		 * Registers a callback invoked once per collision with BOTH
+		 * participants — the channel for level-wide systems (damage, audio,
+		 * VFX, abilities) that belong to no single entity's script. Observers
+		 * run BEFORE per-entity script hooks, so they see the collision before
+		 * gameplay starts reacting to it. An empty callable is a programmer
+		 * error (asserted; returns an invalid handle).
+		 *
+		 * CALLBACK LIFETIME CONTRACT: the Level owns the callback by value, and
+		 * therefore owns whatever it captured. A callback capturing an object
+		 * (an Entity, a system pointer, `this`) outlives its target unless the
+		 * owner removes the handle in its teardown path — RemoveCollisionObserver
+		 * releases the callback and its captures immediately. The Level cannot
+		 * detect a subscriber that died without unregistering.
+		 *
+		 * Registering from inside a collision callback is legal: the new
+		 * observer starts receiving events with the NEXT batch, never the one
+		 * being dispatched.
+		 */
+		CollisionObserverHandle AddCollisionObserver(std::function<void(const CollisionEvent&)> observer);
+
+		/**
+		 * Unregisters the observer, releases its callback (and captures), and
+		 * resets the handle. Stale, invalid, and already-removed handles are
+		 * benign no-ops by design — this is the correct idiom for "remove if
+		 * still registered". Safe to call from inside a collision callback,
+		 * including on itself: the release is deferred to the end of the batch,
+		 * since freeing a std::function that is currently executing would
+		 * destroy the running lambda's own captures.
+		 */
+		void RemoveCollisionObserver(CollisionObserverHandle& handle);
 
 		/**
 		 * Advances the simulation one FIXED step: runs native scripts (lazily
@@ -156,6 +223,22 @@ namespace Radiant {
 		}
 
 	private:
+		/**
+		 * Hands the physics world's contact batch to gameplay: observers first
+		 * (whole event), then each live side's script hook. Both participants
+		 * are re-resolved from their UUIDs immediately before every call, because
+		 * an earlier callback in the same batch may have destroyed them.
+		 * Called from OnFixedUpdate after the move drain, so handlers read this
+		 * step's transforms.
+		 */
+		void DispatchContactEvents();
+
+		/** Delivers one side's collision hook, if it has a live, active script. */
+		void NotifyScript(Entity entity, Entity other, ContactPhase phase);
+
+		/** Frees an observer slot's callback and retires every handle to it. */
+		void ReleaseObserverSlot(uint32_t index);
+
 		void OnRigidBody2DComponentConstruct(entt::registry& registry, entt::entity entity);
 		void OnRigidBody2DComponentDestroy(entt::registry& registry, entt::entity entity);
 		void OnBoxCollider2DComponentConstruct(entt::registry& registry, entt::entity entity);
@@ -182,6 +265,33 @@ namespace Radiant {
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
 		std::unordered_map<UUID, Entity> m_EntityMap;
+
+		// Level-wide collision observers. Slot storage plus a free list, the
+		// same pool shape TimerManager uses: slots never shrink, so an index
+		// stays meaningful forever and the generation counter retires handles
+		// to a recycled slot.
+		struct CollisionObserver
+		{
+			std::function<void(const CollisionEvent&)> Callback;
+			uint32_t Generation = 0;
+			bool Active = false;
+		};
+
+		// deque, NOT vector, and this is load-bearing: registering an observer
+		// from inside a collision callback is documented as legal, and a vector
+		// growing past capacity would free the buffer holding the std::function
+		// that is mid-call — a use-after-free on return. Deque insertion
+		// invalidates iterators but never references to existing elements, and
+		// indexing stays O(1).
+		std::deque<CollisionObserver> m_CollisionObservers;
+		std::vector<uint32_t> m_FreeObserverSlots;       // released slots awaiting reuse
+		std::vector<uint32_t> m_PendingObserverReleases; // removals deferred until dispatch ends
+
+		// True only while DispatchContactEvents is walking a batch. Two jobs:
+		// it defers observer releases (a callback may be removing itself), and
+		// it is the tripwire for a handler re-entering the fixed update — which
+		// would Step the world again and clear the buffer being walked.
+		bool m_DispatchingContacts = false;
 
 		// For Debugging Purposes
 		bool m_ShowPhysicsColliders = true;

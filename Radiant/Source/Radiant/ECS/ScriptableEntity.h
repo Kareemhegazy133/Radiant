@@ -72,6 +72,32 @@ namespace Radiant {
 		virtual void OnUpdate(Timestep ts) { RADIANT_INFO("Scriptable OnUpdate"); }
 		virtual void OnDestroy() { RADIANT_INFO("Scriptable OnDestroy"); }
 
+		/**
+		 * Called once when this entity's collider starts (Begin) or stops (End)
+		 * touching another's, during the fixed step that detected it — after
+		 * physics has advanced, so transforms are current. Silent by default,
+		 * unlike the hooks above: a level of falling crates would log every
+		 * landing.
+		 *
+		 * `other` MAY BE INVALID — check it before use. An invalid partner
+		 * means it was destroyed before the notification could be delivered;
+		 * for OnCollisionEnd that is the normal way "the thing I was standing
+		 * on was deleted" arrives, one step after the deletion.
+		 *
+		 * The physics step is over by the time this runs, so anything is legal
+		 * here: destroy entities (including `other`), teleport, spawn, add or
+		 * remove components. One caveat — destroying THIS entity deletes the
+		 * script instance whose method is executing, so it must be the last
+		 * statement.
+		 *
+		 * Requires the collider to opt in (BoxCollider2DComponent::
+		 * EnableContactEvents, on by default; Box2D reports the contact if
+		 * EITHER shape opted in), and is skipped while the entity's
+		 * MetadataComponent is inactive — the same gate OnUpdate uses.
+		 */
+		virtual void OnCollisionBegin(Entity other) {}
+		virtual void OnCollisionEnd(Entity other) {}
+
 	private:
 		Entity m_Entity;
 		friend class Level;

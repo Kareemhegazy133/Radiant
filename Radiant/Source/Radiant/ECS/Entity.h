@@ -90,6 +90,16 @@ namespace Radiant {
 		void Teleport(const glm::vec3& translation, float rotationZ);
 		void Teleport(const glm::vec3& translation);
 
+		/**
+		 * Destroys this entity immediately — a forwarder to Level::DestroyEntity
+		 * (see it for the full contract: script OnDestroy, physics teardown, and
+		 * the rule against calling it while iterating a view). Exists so gameplay
+		 * that only holds an Entity — a native script, a collision handler — can
+		 * destroy without reaching for the Level. Every handle to this entity,
+		 * including this one, dangles afterwards.
+		 */
+		void Destroy();
+
 		// The non-const overload hands out a mutable reference to the shared static
 		// fallback when metadata is missing — do not write through it in that case
 		std::string& Name() { return HasComponent<MetadataComponent>() ? GetComponent<MetadataComponent>().Tag : NoName; }

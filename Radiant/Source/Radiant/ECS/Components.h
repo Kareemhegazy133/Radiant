@@ -205,6 +205,18 @@ namespace Radiant {
 		// No RestitutionThreshold: v3 moved it to the world (b2WorldDef) — a
 		// stale key in old .rdlvl files is ignored on load (RAD-27)
 
+		// Whether this shape's touches are reported to gameplay (RAD-29).
+		// Defaults ON: Box2D reports TRANSITIONS, not states — a settled stack
+		// costs nothing per step — so defaulting off would buy no measurable
+		// performance while recreating UE's classic "why isn't my hit event
+		// firing" trap (bNotifyRigidBodyCollision defaults false there). Turn
+		// it off for shapes nobody listens to, e.g. debris, to skip the
+		// dispatch cost. Box2D ORs the flag: a contact reports if EITHER shape
+		// has it. Read once when the CONTACT is created, so this is effectively
+		// a spawn-time property — see Level::RefreshCollider for what toggling
+		// it mid-touch does.
+		bool EnableContactEvents = true;
+
 		// Packed b2ShapeId (b2StoreShapeId/b2LoadShapeId), 0 = no shape. Same
 		// claim-ticket pattern as RigidBody2DComponent::RuntimeBodyId: the
 		// Level's PhysicsWorld2D owns the shape and zeroes this on destroy —

@@ -194,8 +194,185 @@ namespace Radiant {
 			m_PhysicsWorld->UpdateBoxShape(entity, *bc2d);
 	}
 
+	Level::CollisionObserverHandle Level::AddCollisionObserver(std::function<void(const CollisionEvent&)> observer)
+	{
+		// An empty callable would throw std::bad_function_call on the first
+		// collision, far from the wiring mistake that caused it
+		RADIANT_ASSERT(observer, "AddCollisionObserver called with an empty callable");
+		if (!observer)
+			return {};
+
+		uint32_t index;
+		if (!m_FreeObserverSlots.empty())
+		{
+			index = m_FreeObserverSlots.back();
+			m_FreeObserverSlots.pop_back();
+		}
+		else
+		{
+			index = static_cast<uint32_t>(m_CollisionObservers.size());
+			m_CollisionObservers.emplace_back();
+		}
+
+		CollisionObserver& slot = m_CollisionObservers[index];
+		slot.Callback = std::move(observer);
+		slot.Active = true;
+
+		// The slot's CURRENT generation — bumped on release, which is what
+		// makes every earlier handle to this slot stale
+		return { index, slot.Generation };
+	}
+
+	void Level::RemoveCollisionObserver(CollisionObserverHandle& handle)
+	{
+		// Out-of-range covers the default-constructed InvalidIndex too
+		if (handle.Index >= m_CollisionObservers.size())
+			return;
+
+		CollisionObserver& slot = m_CollisionObservers[handle.Index];
+
+		// Already removed, or a handle from an earlier occupant of this slot:
+		// the "remove if still registered" case, not an error
+		if (!slot.Active || slot.Generation != handle.Generation)
+		{
+			handle = {};
+			return;
+		}
+
+		// Stops delivery immediately either way; only the FREEING is delicate
+		slot.Active = false;
+
+		if (m_DispatchingContacts)
+		{
+			// This may be the callback currently executing (an observer
+			// removing itself). Freeing it here would destroy the running
+			// lambda's captures underneath it — defer to the end of the batch.
+			m_PendingObserverReleases.push_back(handle.Index);
+		}
+		else
+		{
+			ReleaseObserverSlot(handle.Index);
+		}
+
+		handle = {};
+	}
+
+	void Level::ReleaseObserverSlot(uint32_t index)
+	{
+		CollisionObserver& slot = m_CollisionObservers[index];
+		// Frees the captures now rather than at Level teardown — they may hold
+		// Refs or own resources
+		slot.Callback = nullptr;
+		// Every handle naming this slot is now stale
+		++slot.Generation;
+		m_FreeObserverSlots.push_back(index);
+	}
+
+	void Level::NotifyScript(Entity entity, Entity other, ContactPhase phase)
+	{
+		auto* nsc = entity.TryGetComponent<NativeScriptComponent>();
+
+		// No script, or one not instantiated yet (instances are created lazily
+		// on the first fixed update after binding): nothing to notify
+		if (!nsc || !nsc->Instance)
+			return;
+
+		// Same gate as OnUpdate: an inactive entity's body keeps colliding, its
+		// script just stops hearing about it
+		if (!entity.GetComponent<MetadataComponent>().IsActive)
+			return;
+
+		// Instance is read BEFORE the call and never touched after it — the
+		// handler is allowed to destroy this very entity, which deletes the
+		// instance whose method is running
+		ScriptableEntity* instance = nsc->Instance;
+		if (phase == ContactPhase::Begin)
+			instance->OnCollisionBegin(other);
+		else
+			instance->OnCollisionEnd(other);
+	}
+
+	void Level::DispatchContactEvents()
+	{
+		RADIANT_PROFILE_FUNCTION();
+
+		// Scoped rather than a plain assignment pair: a gameplay callback that
+		// throws would otherwise leave the flag set forever, wedging every
+		// later fixed update on the re-entrancy assert and stranding the
+		// deferred releases. Unwinding must restore the flag and still free
+		// the slots that asked to be freed.
+		struct DispatchScope
+		{
+			Level& Owner;
+
+			explicit DispatchScope(Level& owner) : Owner(owner) { Owner.m_DispatchingContacts = true; }
+
+			~DispatchScope()
+			{
+				Owner.m_DispatchingContacts = false;
+
+				// Removals that arrived during the batch: safe now that no
+				// callback is on the stack
+				for (uint32_t index : Owner.m_PendingObserverReleases)
+					Owner.ReleaseObserverSlot(index);
+				Owner.m_PendingObserverReleases.clear();
+			}
+		} dispatchScope(*this);
+
+		for (const ContactEvent& contact : m_PhysicsWorld->GetContactEvents())
+		{
+			// Every resolution below happens at the moment of use, never
+			// hoisted: a callback for an EARLIER event in this batch may have
+			// destroyed either participant. An unresolvable side arrives as
+			// UUID(0), which is never in the map, so it needs no special case.
+			if (!GetEntityByUUID(contact.EntityA) && !GetEntityByUUID(contact.EntityB))
+				continue; // both gone — nobody left to tell
+
+			// Observers first: level-wide systems see the collision before
+			// per-entity gameplay starts changing the world. (UE dispatches its
+			// world-level handler ahead of per-actor notifies for the same
+			// reason — PhysScene_Chaos.cpp:1154.)
+			//
+			// Indexed with the count captured now, so an observer registered by
+			// another observer joins the NEXT batch rather than this one —
+			// EventQueue's rule. The container is a deque precisely so that
+			// such a registration cannot invalidate the callback executing
+			// below (see m_CollisionObservers' declaration).
+			const size_t observerCount = m_CollisionObservers.size();
+			for (size_t i = 0; i < observerCount; ++i)
+			{
+				// Checked per iteration, not cached: a previous observer may
+				// have removed this one
+				if (!m_CollisionObservers[i].Active)
+					continue;
+
+				CollisionEvent collision{ GetEntityByUUID(contact.EntityA), GetEntityByUUID(contact.EntityB), contact.Phase };
+				if (!collision.A && !collision.B)
+					break; // a previous observer destroyed both participants
+
+				m_CollisionObservers[i].Callback(collision);
+			}
+
+			// Then each side's script hook, with the other side resolved at the
+			// moment of the call
+			if (Entity a = GetEntityByUUID(contact.EntityA))
+				NotifyScript(a, GetEntityByUUID(contact.EntityB), contact.Phase);
+
+			// Re-resolved rather than reused: A's handler may have destroyed B
+			if (Entity b = GetEntityByUUID(contact.EntityB))
+				NotifyScript(b, GetEntityByUUID(contact.EntityA), contact.Phase);
+		}
+
+		// Flag clearing and the deferred-release flush happen in ~DispatchScope
+	}
+
 	void Level::OnFixedUpdate(Timestep ts)
 	{
+		// Re-entering the fixed update from a collision callback would Step the
+		// world again, clearing the very event buffer DispatchContactEvents is
+		// walking
+		RADIANT_ASSERT(!m_DispatchingContacts, "Level::OnFixedUpdate re-entered from a collision callback");
+
 		// Snapshot movable entities BEFORE anything moves: rendering interpolates
 		// between this (where the entity was) and the post-step transform (where
 		// it is). "Movable" today = has physics, a camera, or a script — iterated
@@ -289,6 +466,13 @@ namespace Radiant {
 				transform.Translation.y = move.Position.y;
 				transform.Rotation.z = move.Rotation;
 			}
+
+			// Contacts AFTER the move drain: handlers ask "where am I?" and
+			// must read this step's transforms, not the previous step's. This
+			// is also the only place gameplay code runs with the physics world
+			// idle, which is what makes destroying entities from a handler safe
+			// (RAD-29).
+			DispatchContactEvents();
 		}
 	}
 
@@ -400,8 +584,11 @@ namespace Radiant {
 
 	Entity Level::GetEntityByUUID(UUID uuid)
 	{
-		if (m_EntityMap.find(uuid) != m_EntityMap.end())
-			return { m_EntityMap.at(uuid), this };
+		// One lookup, not find-then-at: the contact dispatch resolves both
+		// participants before every callback, so this is on a per-collision path
+		auto it = m_EntityMap.find(uuid);
+		if (it != m_EntityMap.end())
+			return it->second;
 
 		return {};
 	}
