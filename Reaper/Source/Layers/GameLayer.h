@@ -43,6 +43,11 @@ private:
 	Ref<Framebuffer> m_Framebuffer;
 	Ref<Level> m_Level;
 
+	// RAD-29 verification scaffolding — the level-wide collision channel (the
+	// one GAS will use). Removed in OnDetach: the Level owns the callback and
+	// cannot tell when its subscriber dies. Retires with RAD-92.
+	Level::CollisionObserverHandle m_CollisionObserver;
+
 	// TEMP
 	Entity m_Camera;
 };

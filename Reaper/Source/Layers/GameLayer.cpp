@@ -4,6 +4,7 @@
 #include "Core/GameStateManager.h"
 
 #include "CameraController.h"
+#include "CollisionLogger.h"
 
 GameLayer::GameLayer()
 	: Layer("GameLayer")
@@ -43,6 +44,30 @@ void GameLayer::OnAttach()
 		ramp.AddComponent<BoxCollider2DComponent>();
 	}
 
+	// RAD-29 verification scaffolding (retires with RAD-92). Both channels are
+	// exercised: per-entity script hooks on two entities — proving each side of
+	// a contact is notified independently — and one level-wide observer.
+	{
+		for (const char* name : { "Green Square", "Platform" })
+		{
+			if (Entity entity = m_Level->FindEntityByName(name))
+				entity.AddOrReplaceComponent<NativeScriptComponent>().Bind<CollisionLogger>();
+			else
+				GAME_WARN("CollisionLogger: no '{0}' entity in the level", name);
+		}
+
+		// Observer lines must appear BEFORE the script lines for the same event
+		// — that ordering is a guarantee gameplay may rely on, so it is part of
+		// what this run verifies
+		m_CollisionObserver = m_Level->AddCollisionObserver([](const Level::CollisionEvent& collision)
+			{
+				GAME_TRACE("[collision] {0} observer: {1} <-> {2}",
+					collision.Phase == ContactPhase::Begin ? "BEGIN" : "END  ",
+					collision.A ? collision.A.Name() : "<destroyed>",
+					collision.B ? collision.B.Name() : "<destroyed>");
+			});
+	}
+
 	FramebufferSpecification fbSpec;
 	fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
 	GameApplication& game = GameApplication::Get();
@@ -58,6 +83,11 @@ void GameLayer::OnDetach()
 	// mutate authored content — saving is an explicit editor/tool action (RAD-17).
 	// Asset clearing lives in GameplayState::OnExit, not here: OnDetach runs deferred
 	// at end of frame, after the next state's OnEnter has already loaded its assets.
+	// Before the Level goes: the Level owns this callback by value and has no
+	// way to learn its subscriber died. Removing it here is the contract from
+	// Level::AddCollisionObserver, and the worked example of it (RAD-29).
+	m_Level->RemoveCollisionObserver(m_CollisionObserver);
+
 	m_Framebuffer.Reset();
 	m_Level.Reset();
 }
@@ -167,6 +197,33 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 		else
 		{
 			GAME_WARN("Collider cheat: no 'Green Square' entity with a collider in the level");
+		}
+		return true;
+	}
+
+	if (e.GetKeyCode() == Key::C)
+	{
+		// RAD-29 verification: arm the platform to destroy whatever lands on
+		// it, then drop the square. This is the case Box2D v2's contact
+		// listener made impossible — mutating the world from a collision
+		// callback — and the reason the event queue exists. Watch for: no
+		// crash, the square vanishing, and the platform receiving an
+		// OnCollisionEnd with <destroyed> one step later.
+		Entity platform = m_Level->FindEntityByName("Platform");
+		auto* nsc = platform ? platform.TryGetComponent<NativeScriptComponent>() : nullptr;
+		if (nsc && nsc->Instance)
+		{
+			static_cast<CollisionLogger*>(nsc->Instance)->SetDestroyOnContact(true);
+			GAME_WARN("Collision cheat: platform will destroy the next thing that touches it");
+
+			if (Entity square = m_Level->FindEntityByName("Green Square"))
+				square.Teleport({ 0.0f, 3.0f, 0.0f });
+		}
+		else
+		{
+			// The instance is created lazily on the first fixed update, so this
+			// only fires if the entity or its binding is missing
+			GAME_WARN("Collision cheat: no 'Platform' entity with a live CollisionLogger");
 		}
 		return true;
 	}
