@@ -42,6 +42,17 @@ namespace Radiant {
 	 *
 	 * Units: positions are world units (meters-ish, mapping to Transform
 	 * Translation.xy); angles are radians (Transform Rotation.z).
+	 *
+	 * Verb-surface convention (RAD-91): every method takes Entity BY VALUE —
+	 * it is a 16-byte value handle owning nothing, and a mutable reference
+	 * would imply a mutation none of these perform. A component reference is a
+	 * parameter only where the caller necessarily already holds one: the entt
+	 * signal handlers are handed theirs by entt, and Level::RefreshCollider
+	 * fetches the collider for its own precondition assert. Every other verb
+	 * takes Entity plus its arguments and resolves the component itself — a
+	 * gameplay call site must not need to know which component stores the
+	 * runtime id. Zero and stale runtime ids are resolved in one place per id
+	 * kind (see PhysicsWorld2D.cpp), never per verb.
 	 */
 	class PhysicsWorld2D
 	{
@@ -77,17 +88,17 @@ namespace Radiant {
 		 * Creates the entity's Box2D body from its transform (position =
 		 * Translation.xy, rotation = Rotation.z radians), stamps the entity's
 		 * UUID into the body's user data (contact resolution, RAD-29), and
-		 * stores the packed id in component.RuntimeBodyId. Invoked via the
+		 * stores the packed id in component.RuntimeBodyId. Invoked via the21
 		 * on_construct entt signal. Must not run during a world step.
 		 */
-		void CreateBody(Entity& entity, RigidBody2DComponent& component);
+		void CreateBody(Entity entity, RigidBody2DComponent& component);
 
 		/**
 		 * Destroys the entity's body and zeroes RuntimeBodyId. A zero or stale
 		 * id is a no-op, never a crash. Invoked via the on_destroy entt signal.
 		 * Must not run during a world step.
 		 */
-		void DestroyBody(Entity& entity, RigidBody2DComponent& component);
+		void DestroyBody(Entity entity, RigidBody2DComponent& component);
 
 		/**
 		 * Explicitly moves the entity's body to a world pose (position in
@@ -99,7 +110,7 @@ namespace Radiant {
 		 * the ECS transform and render snapshot. Zero/stale body ids are
 		 * survivable skips.
 		 */
-		void Teleport(Entity& entity, const glm::vec2& position, float rotation);
+		void Teleport(Entity entity, const glm::vec2& position, float rotation);
 
 		/**
 		 * Creates the box shape on the entity's EXISTING body and stores the
@@ -110,7 +121,7 @@ namespace Radiant {
 		 * first. Invoked via the on_construct entt signal. Must not run during
 		 * a world step.
 		 */
-		void CreateBoxShape(Entity& entity, BoxCollider2DComponent& component);
+		void CreateBoxShape(Entity entity, BoxCollider2DComponent& component);
 
 		/**
 		 * Destroys the entity's box shape and zeroes RuntimeShapeId. A zero id
@@ -119,7 +130,7 @@ namespace Radiant {
 		 * outside the entt signals touched the shape. Invoked via the
 		 * on_destroy entt signal. Must not run during a world step.
 		 */
-		void DestroyBoxShape(Entity& entity, BoxCollider2DComponent& component);
+		void DestroyBoxShape(Entity entity, BoxCollider2DComponent& component);
 
 		/**
 		 * Re-applies the collider component's properties to the entity's
@@ -131,7 +142,7 @@ namespace Radiant {
 		 * collider fields or the transform's Scale. A collider without a live
 		 * shape warns and recovers.
 		 */
-		void UpdateBoxShape(Entity& entity, BoxCollider2DComponent& component);
+		void UpdateBoxShape(Entity entity, BoxCollider2DComponent& component);
 
 		/**
 		 * Advances the simulation one FIXED step with 4 sub-steps (v3's solver

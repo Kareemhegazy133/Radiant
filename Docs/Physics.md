@@ -1,6 +1,6 @@
 # Physics
 
-**Status:** Collision reporting landed 2026-08-01 (RAD-29): contacts are drained into an engine-typed event queue after the step and dispatched to gameplay with validity checks. Sync semantics landed 2026-07-10 (RAD-28): physics owns dynamic transforms, ECS→Box2D pushes are explicit verbs only, readback drains v3 move events, shapes are never rebuilt per step. Per-Level worlds on **Box2D v3.1.1** landed 2026-07-09 (RAD-27; the v3 upgrade was decided in RAD-60). Fixed timestep landed 2026-07-05 (RAD-25). Phase 2's physics rework is complete; remaining physics work is follow-on (RAD-90 dynamics verbs, RAD-91 verb-surface cleanup).
+**Status:** Verb-surface cleanup landed 2026-08-01 (RAD-91): one id-resolution helper per id kind, `Entity` passed by value. Collision reporting landed 2026-08-01 (RAD-29): contacts are drained into an engine-typed event queue after the step and dispatched to gameplay with validity checks. Sync semantics landed 2026-07-10 (RAD-28): physics owns dynamic transforms, ECS→Box2D pushes are explicit verbs only, readback drains v3 move events, shapes are never rebuilt per step. Per-Level worlds on **Box2D v3.1.1** landed 2026-07-09 (RAD-27; the v3 upgrade was decided in RAD-60). Fixed timestep landed 2026-07-05 (RAD-25). Phase 2's physics rework is complete; remaining physics work is follow-on (RAD-90 dynamics verbs).
 
 ## The Problem This Solves
 
@@ -45,6 +45,21 @@ Driven by entt signals, unchanged in pattern (see [ECS-And-Levels](ECS-And-Level
 - `on_destroy<RigidBody2DComponent>` → `DestroyBody`; `on_destroy<BoxCollider2DComponent>` → `DestroyBoxShape`: validity-checked; a stale ticket is a warned no-op where v2's pointer would have been undefined behavior. `Level::DestroyEntity` removes the collider **before** the rigidbody — a body destroy takes its shapes with it, so body-first would hand the collider handler a stale ticket.
 
 Signal handlers assert on a null world (programmer error — scratch levels never connect signals) and recover in Dist.
+
+### The verb surface (RAD-91)
+
+Every verb must answer the same question before it acts — *is the body/shape I was handed still there?* — which means turning the component's packed id (the *ticket* of the previous section) back into something Box2D will accept. There are exactly **two** ways for that to fail, so the policy lives in **one helper per id kind** (`ResolveBodyId` / `ResolveShapeId`, file-local in `PhysicsWorld2D.cpp`) rather than a copy per verb:
+
+- **Zero id** → return the null id, **silently**. The body/shape was never created, and the failure was already ERROR-logged where it happened.
+- **Stale id** (nonzero, no longer live) → `RADIANT_WARN` naming the calling verb, **zero the component field**, return null. v3 makes this detectable where v2's raw pointer would have dangled, so we recover rather than crash — but a stale id means a lifecycle path outside the entt signals touched the object, and the log is the audit trail.
+
+Callers test `B2_IS_NULL` and skip. One caller keeps its own zero-id branch deliberately: `UpdateBoxShape` **warns** on a missing shape, because refreshing a shape that doesn't exist is a caller *state* mistake, where destroying nothing is merely a no-op. That difference stays at the call site instead of becoming a policy flag on the shared helper.
+
+The helpers take the `Entity`, not its UUID, so `GetUUID()` — a component lookup — stays inside the cold warn branch: `RADIANT_WARN` survives Dist, so its arguments are evaluated in every config, and hoisting the lookup to the call site would put it on the hot path of every verb.
+
+**Parameter convention.** Verbs take `Entity` **by value** — it is a 16-byte value handle owning nothing, and a mutable reference implies a mutation none of them perform (and refuses to bind a temporary). A component reference is a parameter only where the caller necessarily already holds one: entt hands the signal handlers theirs, and `Level::RefreshCollider` fetches the collider for its own precondition assert. Everything else takes `Entity` plus its arguments and resolves the component itself — a gameplay call site must not need to know which component stores the runtime id.
+
+UE's comparison is instructive: `FBodyInstance::AddForce`/`AddImpulse`/… each repeat their guard (`FPhysicsInterface::IsInScene(GetPhysicsActor()) && IsBodyDynamic(…)`, `BodyInstance.cpp:3695+`), but it costs **one line** because resolution and validity are already factored into an accessor and a predicate. The goal is not "never repeat the guard" — it is that the repeated part is one legible line. UE's `FPhysicsCommand::ExecuteWrite(handle, lambda)` shape was deliberately declined: it exists to bracket a physics-scene write lock, and Radiant is main-thread-only with no scope to bracket.
 
 ### Transform ownership & the explicit verbs (RAD-28)
 

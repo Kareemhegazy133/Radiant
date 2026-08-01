@@ -33,13 +33,70 @@ namespace Radiant {
 		// an END event may legitimately name (v3 reports an end one step after
 		// the destroy that caused it). Validity is checked BEFORE the id is
 		// followed, so nothing here can dereference a dead slot.
-		UUID ResolveShapeEntity(b2ShapeId shape)
+		UUID ResolveEntityFromShape(b2ShapeId shape)
 		{
 			if (!b2Shape_IsValid(shape))
 				return UUID(0);
 
 			void* userData = b2Body_GetUserData(b2Shape_GetBody(shape));
 			return UUID(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(userData)));
+		}
+
+		// Turns a component's packed id into a live body id, applying the one
+		// stale-recovery policy every verb shares — this is the single home of
+		// that policy, not a copy per verb (RAD-91). Unlike
+		// ResolveEntityFromShape above, this is not a pure query: it logs, and
+		// it clears packedId in place on the stale path.
+		//
+		// Two failures, deliberately different: a ZERO id returns null
+		// SILENTLY (the body was never created, and CreateBody already
+		// ERROR-logged why); a STALE id — nonzero, but no longer naming a live
+		// body — warns, clears the field, and returns null. v3 makes that
+		// second case DETECTABLE where v2's raw pointer would have dangled, so
+		// we recover rather than crash, but we say so: a stale id means a
+		// lifecycle path outside the entt signals touched the body.
+		//
+		// Callers test B2_IS_NULL and skip. Nothing here follows a dead slot.
+		//
+		// The Entity is passed rather than its UUID so that GetUUID() — a
+		// component lookup — stays inside the cold warn branch. RADIANT_WARN
+		// survives Dist (Core/Log.h), so its arguments are evaluated in every
+		// config; hoisting that lookup to the call site would put it on the
+		// hot path of every verb.
+		b2BodyId ResolveBodyId(Entity entity, uint64_t& packedId, const char* verb)
+		{
+			if (packedId == 0)
+				return b2_nullBodyId;
+
+			b2BodyId body = b2LoadBodyId(packedId);
+			if (!b2Body_IsValid(body))
+			{
+				RADIANT_WARN("PhysicsWorld2D: {0} called with a stale body id for entity {1}", verb, entity.GetUUID());
+				packedId = 0;
+				return b2_nullBodyId;
+			}
+
+			return body;
+		}
+
+		// The shape twin of ResolveBodyId — same contract, same two failure
+		// cases. A zero shape id also means "the body died and took its shapes
+		// with it", which DestroyBody records by zeroing the field; that is
+		// still a silent no-op, not an error.
+		b2ShapeId ResolveShapeId(Entity entity, uint64_t& packedId, const char* verb)
+		{
+			if (packedId == 0)
+				return b2_nullShapeId;
+
+			b2ShapeId shape = b2LoadShapeId(packedId);
+			if (!b2Shape_IsValid(shape))
+			{
+				RADIANT_WARN("PhysicsWorld2D: {0} called with a stale shape id for entity {1}", verb, entity.GetUUID());
+				packedId = 0;
+				return b2_nullShapeId;
+			}
+
+			return shape;
 		}
 
 		// Box2D's internal assert callback: log through our sink, then return
@@ -101,7 +158,7 @@ namespace Radiant {
 		m_WorldId = {};
 	}
 
-	void PhysicsWorld2D::CreateBody(Entity& entity, RigidBody2DComponent& component)
+	void PhysicsWorld2D::CreateBody(Entity entity, RigidBody2DComponent& component)
 	{
 		// Failed world creation (ERROR'd in the ctor) leaves the null id —
 		// no-op instead of feeding Box2D an invalid world (UB in Dist, where
@@ -136,55 +193,39 @@ namespace Radiant {
 		component.RuntimeBodyId = b2StoreBodyId(body);
 	}
 
-	void PhysicsWorld2D::DestroyBody(Entity& entity, RigidBody2DComponent& component)
+	void PhysicsWorld2D::DestroyBody(Entity entity, RigidBody2DComponent& component)
 	{
 		// Never-created body (CreateBody failed): destroying nothing is a
-		// no-op, not a crash
+		// no-op, not a crash. This early return is load-bearing for the clear
+		// below — a body that never existed cannot have orphaned a shape, so
+		// there is no collider id to zero.
 		if (component.RuntimeBodyId == 0)
 			return;
 
-		b2BodyId body = b2LoadBodyId(component.RuntimeBodyId);
+		b2BodyId body = ResolveBodyId(entity, component.RuntimeBodyId, "DestroyBody");
+		if (B2_IS_NON_NULL(body))
+			b2DestroyBody(body);
 
-		// A stale ticket (generation mismatch, world already gone) is
-		// DETECTABLE in v3 where the v2 pointer would have dangled — recover
-		// instead of crashing, but say so: a stale id here means a lifecycle
-		// path outside the entt signals touched the body
-		if (!b2Body_IsValid(body))
-		{
-			RADIANT_WARN("PhysicsWorld2D: DestroyBody called with a stale body id for entity {0}", entity.GetUUID());
-			component.RuntimeBodyId = 0;
-			// Wherever the body went, its shapes went with it
-			if (auto* bc2d = entity.TryGetComponent<BoxCollider2DComponent>())
-				bc2d->RuntimeShapeId = 0;
-			return;
-		}
-
-		b2DestroyBody(body);
+		// Unconditional, and correct on both paths: either the body was just
+		// destroyed, or it was already gone. Either way it took its shapes
+		// with it — a surviving collider component (gameplay may remove just
+		// the rigidbody and keep the collider) must not keep an id pointing at
+		// the wreckage.
 		component.RuntimeBodyId = 0;
-
-		// The body took its shapes with it — a surviving collider component
-		// (gameplay may remove just the rigidbody and keep the collider) must
-		// not keep a ticket to the wreckage
 		if (auto* bc2d = entity.TryGetComponent<BoxCollider2DComponent>())
 			bc2d->RuntimeShapeId = 0;
 	}
 
-	void PhysicsWorld2D::Teleport(Entity& entity, const glm::vec2& position, float rotation)
+	void PhysicsWorld2D::Teleport(Entity entity, const glm::vec2& position, float rotation)
 	{
 		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
 
-		// A zero id means CreateBody failed (already ERROR-logged there):
-		// survivable skip instead of feeding Box2D a null body
-		if (rb2d.RuntimeBodyId == 0)
+		// Zero and stale body ids are both survivable skips here rather than a
+		// null body handed to Box2D — see ResolveBodyId for which of them
+		// warns
+		b2BodyId body = ResolveBodyId(entity, rb2d.RuntimeBodyId, "Teleport");
+		if (B2_IS_NULL(body))
 			return;
-
-		b2BodyId body = b2LoadBodyId(rb2d.RuntimeBodyId);
-		if (!b2Body_IsValid(body))
-		{
-			RADIANT_WARN("PhysicsWorld2D: Teleport called with a stale body id for entity {0}", entity.GetUUID());
-			rb2d.RuntimeBodyId = 0;
-			return;
-		}
 
 		// Teleports are rare, deliberate acts — this line is the audit trail
 		// of every explicit ECS→Box2D push
@@ -197,7 +238,7 @@ namespace Radiant {
 		b2Body_SetAwake(body, true);
 	}
 
-	void PhysicsWorld2D::CreateBoxShape(Entity& entity, BoxCollider2DComponent& component)
+	void PhysicsWorld2D::CreateBoxShape(Entity entity, BoxCollider2DComponent& component)
 	{
 		auto& transform = entity.GetComponent<TransformComponent>();
 
@@ -208,10 +249,12 @@ namespace Radiant {
 			return;
 		}
 
-		b2BodyId body = b2LoadBodyId(rb2d->RuntimeBodyId);
-		// CreateBody failure was ERROR-logged there; keep that failure
-		// survivable here instead of feeding Box2D a null body
-		if (!b2Body_IsValid(body))
+		// A zero id keeps CreateBody's failure survivable and silent (it was
+		// ERROR-logged there). A STALE id now warns and clears like every
+		// other verb — before RAD-91 this one path failed silently and left
+		// the dead id in place, which is how a policy starts drifting.
+		b2BodyId body = ResolveBodyId(entity, rb2d->RuntimeBodyId, "CreateBoxShape");
+		if (B2_IS_NULL(body))
 			return;
 
 		// The shape is BODY-LOCAL: no local rotation — the body already carries
@@ -238,50 +281,40 @@ namespace Radiant {
 		component.RuntimeShapeId = b2StoreShapeId(b2CreatePolygonShape(body, &shapeDef, &box));
 	}
 
-	void PhysicsWorld2D::DestroyBoxShape(Entity& entity, BoxCollider2DComponent& component)
+	void PhysicsWorld2D::DestroyBoxShape(Entity entity, BoxCollider2DComponent& component)
 	{
 		// Never-created shape (CreateBoxShape failed or skipped), or the body
 		// already died and took the shape with it (DestroyBody zeroes the
-		// ticket): destroying nothing is a no-op, not a crash
-		if (component.RuntimeShapeId == 0)
+		// id): destroying nothing is a no-op, not a crash. A stale id is the
+		// separate case the resolver warns about.
+		b2ShapeId shape = ResolveShapeId(entity, component.RuntimeShapeId, "DestroyBoxShape");
+		if (B2_IS_NULL(shape))
 			return;
-
-		b2ShapeId shape = b2LoadShapeId(component.RuntimeShapeId);
-
-		// A stale ticket means a lifecycle path outside the entt signals
-		// touched the shape — recover instead of crashing, but say so
-		if (!b2Shape_IsValid(shape))
-		{
-			RADIANT_WARN("PhysicsWorld2D: DestroyBoxShape called with a stale shape id for entity {0}", entity.GetUUID());
-			component.RuntimeShapeId = 0;
-			return;
-		}
 
 		// true: the surviving body's mass must reflect the lost shape
 		b2DestroyShape(shape, true);
 		component.RuntimeShapeId = 0;
 	}
 
-	void PhysicsWorld2D::UpdateBoxShape(Entity& entity, BoxCollider2DComponent& component)
+	void PhysicsWorld2D::UpdateBoxShape(Entity entity, BoxCollider2DComponent& component)
 	{
 		auto& transform = entity.GetComponent<TransformComponent>();
 
-		// No live shape to refresh: CreateBoxShape failed (ERROR-logged
-		// there), or the body died and took the shape with it — a state
-		// mistake by the caller, warn and recover
+		// This verb owns its own zero-id case, deliberately: refreshing a
+		// shape that does not exist is a caller STATE mistake (the call site
+		// believes it configured a shape it never got), where destroying
+		// nothing is merely a no-op. The shared resolver stays silent on zero
+		// for everyone else rather than growing a policy flag for this one
+		// caller.
 		if (component.RuntimeShapeId == 0)
 		{
 			RADIANT_WARN("PhysicsWorld2D: UpdateBoxShape on entity {0} with no live shape - refresh skipped", entity.GetUUID());
 			return;
 		}
 
-		b2ShapeId shape = b2LoadShapeId(component.RuntimeShapeId);
-		if (!b2Shape_IsValid(shape))
-		{
-			RADIANT_WARN("PhysicsWorld2D: UpdateBoxShape called with a stale shape id for entity {0}", entity.GetUUID());
-			component.RuntimeShapeId = 0;
+		b2ShapeId shape = ResolveShapeId(entity, component.RuntimeShapeId, "UpdateBoxShape");
+		if (B2_IS_NULL(shape))
 			return;
-		}
 
 		RADIANT_TRACE("PhysicsWorld2D: collider refresh for entity {0}", entity.GetUUID());
 
@@ -372,7 +405,7 @@ namespace Radiant {
 			// below. An invalid id means the drain moved away from the step.
 			RADIANT_ASSERT(b2Shape_IsValid(beginTouchEvent.shapeIdA) && b2Shape_IsValid(beginTouchEvent.shapeIdB),
 				"Contact drain: begin event names a destroyed shape - is the drain still directly after b2World_Step?");
-			m_ContactEvents.push_back({ ResolveShapeEntity(beginTouchEvent.shapeIdA), ResolveShapeEntity(beginTouchEvent.shapeIdB), ContactPhase::Begin });
+			m_ContactEvents.push_back({ ResolveEntityFromShape(beginTouchEvent.shapeIdA), ResolveEntityFromShape(beginTouchEvent.shapeIdB), ContactPhase::Begin });
 		}
 
 		for (int i = 0; i < contactEvents.endCount; ++i)
@@ -381,9 +414,9 @@ namespace Radiant {
 			// These CAN name destroyed shapes, and routinely do: v3 keeps two
 			// end-event buffers and swaps them per step (world.c:807), so an
 			// end caused by a destroy between the last two steps surfaces now,
-			// with the shape long gone. ResolveShapeEntity answers 0 for a dead
+			// with the shape long gone. ResolveEntityFromShape answers 0 for a dead
 			// side; the surviving side still gets told (see ContactEvent).
-			m_ContactEvents.push_back({ ResolveShapeEntity(endTouchEvent.shapeIdA), ResolveShapeEntity(endTouchEvent.shapeIdB), ContactPhase::End });
+			m_ContactEvents.push_back({ ResolveEntityFromShape(endTouchEvent.shapeIdA), ResolveEntityFromShape(endTouchEvent.shapeIdB), ContactPhase::End });
 		}
 	}
 

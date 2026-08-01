@@ -45,7 +45,7 @@ Full audit (2026-07-04) is filed as Jira issues RAD-7…RAD-59 with `file:line` 
 | `Radiant/Source/Radiant/Platform/OpenGL/` | GL backend (deleted at end of Phase 3) | Legacy |
 | `Radiant/Source/Radiant/Platform/Windows/` | Window/input/filesystem impl | Working |
 | `Radiant/Source/Radiant/ECS/` | `Level` (wraps private `entt::registry`), `Entity` handle, components, YAML LevelSerializer, native scripts | Working; component hygiene rework in Phase 2 |
-| `Radiant/Source/Radiant/Physics/` | `PhysicsWorld2D` — per-Level Box2D v3 world; `ContactEvent` — vendor-free contact record | Phase 2 rework complete: per-Level worlds (RAD-27), sync semantics (RAD-28: explicit verbs, move-event drain), collision events (RAD-29: post-step contact drain, validity-checked dispatch to Level observers + script hooks). Follow-ups: RAD-90 dynamics verbs, RAD-91 verb-surface cleanup |
+| `Radiant/Source/Radiant/Physics/` | `PhysicsWorld2D` — per-Level Box2D v3 world; `ContactEvent` — vendor-free contact record | Phase 2 rework complete: per-Level worlds (RAD-27), sync semantics (RAD-28: explicit verbs, move-event drain), collision events (RAD-29: post-step contact drain, validity-checked dispatch to Level observers + script hooks), verb surface (RAD-91: one id-resolution helper per id kind, `Entity` by value). Follow-up: RAD-90 dynamics verbs |
 | `Radiant/Source/Radiant/Asset/` | Handle-based asset manager + YAML registry (`.rdar`) | Working; lifecycle redesign in Phase 4 |
 | `Radiant/Source/Radiant/Serialization/` | Stream I/O + binary AssetPack | AssetPack is dead code, parked for Phase 4 |
 | `Reaper/` | The game: state machine (MainMenu/Gameplay/Paused), GameLayer (Level driver), UILayer (ImGui) | Working shell |
