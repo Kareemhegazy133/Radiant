@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Entity.h"
+#include "PhysicsBody.h"
 
 namespace Radiant {
 
@@ -44,6 +45,23 @@ namespace Radiant {
 		{
 			m_Entity.RemoveComponent<T>();
 		}
+
+		/**
+		 * This entity's physics handle — forces, impulses, velocities,
+		 * kinematic targets (see PhysicsBody). Test it before use; it is false
+		 * when the entity has no rigidbody.
+		 *
+		 * Forwarded because a script cannot otherwise reach its own Entity
+		 * (m_Entity is private), which would leave RAD-90's verbs unreachable
+		 * from the only gameplay code the engine has. The wider question — what
+		 * else a script should be able to reach, including its Level — is
+		 * RAD-95; this forwarder answers the physics case only and deliberately
+		 * does not pre-empt it.
+		 *
+		 * Called from OnUpdate, the effect lands in the step about to run;
+		 * called from a collision hook, in the next one.
+		 */
+		PhysicsBody GetPhysicsBody() { return m_Entity.GetPhysicsBody(); }
 
 		bool operator==(const ScriptableEntity& other) const
 		{

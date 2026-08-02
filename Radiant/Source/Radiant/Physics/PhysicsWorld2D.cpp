@@ -79,6 +79,34 @@ namespace Radiant {
 			return body;
 		}
 
+		// The door every GAMEPLAY verb comes through: the component fetch plus
+		// the resolution above, so a verb body is a resolve, a null check, and
+		// one Box2D call. ResolveBodyId remains the door for callers that
+		// already hold the component — the entt signal handlers, Teleport —
+		// which is why this wraps it rather than repeating it: one policy, two
+		// entry points, chosen by what the caller already has in hand.
+		//
+		// A missing RigidBody2DComponent is a different mistake from a dead id.
+		// A dead id means something destroyed the body behind our back; a
+		// missing component means the call site believes it is pushing a
+		// physics object that was never one — a programmer error. So it WARNs
+		// with the verb and entity (formatted, and RADIANT_WARN survives Dist)
+		// and then asserts, breaking the debugger at the call that did it.
+		// The two are separate statements because RADIANT_ASSERT takes no
+		// format arguments (Assert.h) — the same split CreateBody uses.
+		b2BodyId ResolveBody(Entity entity, const char* verb)
+		{
+			auto* rb2d = entity.TryGetComponent<RigidBody2DComponent>();
+			if (!rb2d)
+			{
+				RADIANT_WARN("PhysicsWorld2D: {0} called on entity {1} with no RigidBody2DComponent", verb, entity.GetUUID());
+				RADIANT_ASSERT(false, "Dynamics verb called on an entity with no RigidBody2DComponent");
+				return b2_nullBodyId;
+			}
+
+			return ResolveBodyId(entity, rb2d->RuntimeBodyId, verb);
+		}
+
 		// The shape twin of ResolveBodyId — same contract, same two failure
 		// cases. A zero shape id also means "the body died and took its shapes
 		// with it", which DestroyBody records by zeroing the field; that is
@@ -216,7 +244,7 @@ namespace Radiant {
 			bc2d->RuntimeShapeId = 0;
 	}
 
-	void PhysicsWorld2D::Teleport(Entity entity, const glm::vec2& position, float rotation)
+	void PhysicsWorld2D::Teleport(Entity entity, const glm::vec2& position, float rotation, TeleportType teleportType)
 	{
 		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
 
@@ -228,14 +256,36 @@ namespace Radiant {
 			return;
 
 		// Teleports are rare, deliberate acts — this line is the audit trail
-		// of every explicit ECS→Box2D push
-		RADIANT_TRACE("PhysicsWorld2D: teleport entity {0} to ({1}, {2})", entity.GetUUID(), position.x, position.y);
+		// of every explicit ECS→Box2D push. The mode is named because the two
+		// are indistinguishable in the log otherwise, and "why is it still
+		// spinning" is exactly the question this log gets read to answer.
+		RADIANT_TRACE("PhysicsWorld2D: teleport entity {0} to ({1}, {2}) [{3}]",
+			entity.GetUUID(), position.x, position.y,
+			teleportType == TeleportType::ResetVelocity ? "reset velocity" : "keep velocity");
 
 		b2Body_SetTransform(body, { position.x, position.y }, b2MakeRot(rotation));
 		// SetTransform does not wake: a sleeping body teleported into mid-air
 		// would hang there until touched (UE's SetBodyTransform defaults
 		// bAutoWake true for the same reason)
 		b2Body_SetAwake(body, true);
+
+		// AFTER the wake, and that order is load-bearing. v3 wakes a body from
+		// SetLinearVelocity only when the velocity is NONZERO (body.c), and a
+		// sleeping body has no b2BodyState to write into — so zeroing first
+		// would be dropped silently on exactly the bodies that were asleep.
+		// Harmless today (a sleeping body is already stopped), but it would
+		// stop being harmless the moment anything else moves between these
+		// lines.
+		//
+		// Velocity only: Box2D v3.1 has no ClearForces, so a force applied
+		// earlier in this same fixed update still lands on the next step. The
+		// caller asked for two contradictory things; we do not silently pick a
+		// winner (see TeleportType).
+		if (teleportType == TeleportType::ResetVelocity)
+		{
+			b2Body_SetLinearVelocity(body, b2Vec2_zero);
+			b2Body_SetAngularVelocity(body, 0.0f);
+		}
 	}
 
 	void PhysicsWorld2D::CreateBoxShape(Entity entity, BoxCollider2DComponent& component)
@@ -344,6 +394,136 @@ namespace Radiant {
 		b2Shape_EnableContactEvents(shape, component.EnableContactEvents);
 
 		b2Body_ApplyMassFromShapes(b2Shape_GetBody(shape));
+	}
+
+	// --- Dynamics verbs (RAD-90) -----------------------------------------
+	//
+	// Each one is a resolve, a null check, and one Box2D call. That uniformity
+	// is the deliverable, not a coincidence: the guard policy lives once in
+	// ResolveBody and the entity guard once in Level::ResolvePhysics, so
+	// nothing here has a preamble to get subtly wrong (playbook §4).
+	//
+	// Every call passes wake = true and none of them exposes the flag: a
+	// sleeping body IGNORES forces and impulses (box2d.h:290, :319), so
+	// wake = false would be a silent no-op with no customer. UE's
+	// SetLinearVelocity takes a bAutoWake it never reads — a parameter that
+	// lies is worse than no parameter at all.
+
+	void PhysicsWorld2D::ApplyForce(Entity entity, const glm::vec2& force)
+	{
+		b2BodyId body = ResolveBody(entity, "ApplyForce");
+		if (B2_IS_NULL(body))
+			return;
+
+		b2Body_ApplyForceToCenter(body, { force.x, force.y }, true);
+	}
+
+	void PhysicsWorld2D::ApplyForceAtPoint(Entity entity, const glm::vec2& force, const glm::vec2& worldPoint)
+	{
+		b2BodyId body = ResolveBody(entity, "ApplyForceAtPoint");
+		if (B2_IS_NULL(body))
+			return;
+
+		// Box2D derives the torque itself: cross(point - centreOfMass, force)
+		b2Body_ApplyForce(body, { force.x, force.y }, { worldPoint.x, worldPoint.y }, true);
+	}
+
+	void PhysicsWorld2D::ApplyTorque(Entity entity, float torque)
+	{
+		b2BodyId body = ResolveBody(entity, "ApplyTorque");
+		if (B2_IS_NULL(body))
+			return;
+
+		b2Body_ApplyTorque(body, torque, true);
+	}
+
+	void PhysicsWorld2D::ApplyLinearImpulse(Entity entity, const glm::vec2& impulse)
+	{
+		b2BodyId body = ResolveBody(entity, "ApplyLinearImpulse");
+		if (B2_IS_NULL(body))
+			return;
+
+		b2Body_ApplyLinearImpulseToCenter(body, { impulse.x, impulse.y }, true);
+	}
+
+	void PhysicsWorld2D::ApplyLinearImpulseAtPoint(Entity entity, const glm::vec2& impulse, const glm::vec2& worldPoint)
+	{
+		b2BodyId body = ResolveBody(entity, "ApplyLinearImpulseAtPoint");
+		if (B2_IS_NULL(body))
+			return;
+
+		b2Body_ApplyLinearImpulse(body, { impulse.x, impulse.y }, { worldPoint.x, worldPoint.y }, true);
+	}
+
+	void PhysicsWorld2D::ApplyAngularImpulse(Entity entity, float impulse)
+	{
+		b2BodyId body = ResolveBody(entity, "ApplyAngularImpulse");
+		if (B2_IS_NULL(body))
+			return;
+
+		b2Body_ApplyAngularImpulse(body, impulse, true);
+	}
+
+	void PhysicsWorld2D::SetLinearVelocity(Entity entity, const glm::vec2& velocity)
+	{
+		b2BodyId body = ResolveBody(entity, "SetLinearVelocity");
+		if (B2_IS_NULL(body))
+			return;
+
+		// No wake argument on the v3 setters: they wake on a nonzero velocity
+		// and only then (body.c). Setting {0,0} on a sleeping body is a no-op,
+		// which is harmless — it is already stopped — but it does mean this is
+		// not a way to wake something up.
+		b2Body_SetLinearVelocity(body, { velocity.x, velocity.y });
+	}
+
+	void PhysicsWorld2D::SetAngularVelocity(Entity entity, float angularVelocity)
+	{
+		b2BodyId body = ResolveBody(entity, "SetAngularVelocity");
+		if (B2_IS_NULL(body))
+			return;
+
+		b2Body_SetAngularVelocity(body, angularVelocity);
+	}
+
+	glm::vec2 PhysicsWorld2D::GetLinearVelocity(Entity entity)
+	{
+		// Non-const because this line can CLEAR a stale id — see the header
+		b2BodyId body = ResolveBody(entity, "GetLinearVelocity");
+		if (B2_IS_NULL(body))
+			return { 0.0f, 0.0f };
+
+		b2Vec2 velocity = b2Body_GetLinearVelocity(body);
+		return { velocity.x, velocity.y };
+	}
+
+	float PhysicsWorld2D::GetAngularVelocity(Entity entity)
+	{
+		b2BodyId body = ResolveBody(entity, "GetAngularVelocity");
+		if (B2_IS_NULL(body))
+			return 0.0f;
+
+		return b2Body_GetAngularVelocity(body);
+	}
+
+	void PhysicsWorld2D::MoveKinematic(Entity entity, const glm::vec2& position, float rotation, float fixedDelta)
+	{
+		b2BodyId body = ResolveBody(entity, "MoveKinematic");
+		if (B2_IS_NULL(body))
+			return;
+
+		// A design mistake rather than a runtime hazard: driving a DYNAMIC body
+		// by target transform overwrites the velocities the solver just
+		// computed, so it half-ignores gravity and slides. Asserted, not
+		// warned — this verb runs once per platform per step, and a WARN here
+		// would be 60 lines a second. b2Body_GetType is a pure read, so the
+		// expression has no side effect to lose when asserts compile out in
+		// Dist (playbook §8.5). Execution continues either way: Box2D handles
+		// it coherently, and a false assert must never change behaviour.
+		RADIANT_ASSERT(b2Body_GetType(body) == b2_kinematicBody,
+			"MoveKinematic on a non-kinematic body - use forces or impulses to move a dynamic body");
+
+		b2Body_SetTargetTransform(body, { { position.x, position.y }, b2MakeRot(rotation) }, fixedDelta);
 	}
 
 	void PhysicsWorld2D::Step(Timestep ts)

@@ -4,9 +4,16 @@
 
 #include "Components.h"
 
+#include "Radiant/Physics/TeleportType.h"
+
 namespace Radiant {
 
 	class Level;
+	// Returned by value from GetPhysicsBody below, which needs only an
+	// incomplete type to DECLARE — the definition lives in Entity.cpp, which
+	// includes PhysicsBody.h. PhysicsBody.h includes this header (it holds an
+	// Entity by value), so declaring it the other way round would be a cycle.
+	class PhysicsBody;
 
 	/**
 	 * Value handle to an entity: {entt handle, Level*}, 16 bytes, copied freely.
@@ -83,12 +90,13 @@ namespace Radiant {
 		/**
 		 * Moves this entity discontinuously — forwarders to Level::Teleport
 		 * (see it for the full contract: ECS write + snapshot reset + explicit
-		 * physics push); the only logic here is warning on a level-less handle,
-		 * which cannot reach the Level to be warned about. rotationZ is
-		 * radians; the overload without it keeps the current rotation.
+		 * physics push, and what teleportType does to velocity); the only
+		 * logic here is warning on a level-less handle, which cannot reach the
+		 * Level to be warned about. rotationZ is radians; the overload without
+		 * it keeps the current rotation.
 		 */
-		void Teleport(const glm::vec3& translation, float rotationZ);
-		void Teleport(const glm::vec3& translation);
+		void Teleport(const glm::vec3& translation, float rotationZ, TeleportType teleportType = TeleportType::KeepVelocity);
+		void Teleport(const glm::vec3& translation, TeleportType teleportType = TeleportType::KeepVelocity);
 
 		/**
 		 * Destroys this entity immediately — a forwarder to Level::DestroyEntity
@@ -108,6 +116,19 @@ namespace Radiant {
 		operator bool() const;
 		operator entt::entity() const { return m_EntityHandle; }
 		operator uint32_t() const { return (uint32_t)m_EntityHandle; }
+
+		/**
+		 * This entity's physics handle — how gameplay applies forces,
+		 * impulses, velocities and kinematic targets (see PhysicsBody for the
+		 * full contract and for why those verbs live there rather than here).
+		 *
+		 * Always returns a handle; test it before use. It is false when the
+		 * entity has no rigidbody, no live Level, or a Level with no physics
+		 * world, so `if (PhysicsBody body = entity.GetPhysicsBody())` is the
+		 * idiom. Cheap enough to call per use — it copies this handle and
+		 * nothing else — so prefer calling it again over storing one.
+		 */
+		PhysicsBody GetPhysicsBody() const;
 
 		/** The entity's persistent identity — stable across save/load, unlike this handle. */
 		UUID GetUUID() { return GetComponent<MetadataComponent>().ID; }
@@ -132,5 +153,10 @@ namespace Radiant {
 		inline static std::string NoName = "Unnamed";
 
 		friend class Level;
+		// Reads m_Level to route its verbs through Level::ResolvePhysics. The
+		// alternative — storing the Level* in PhysicsBody as well — would keep
+		// the same pointer in two places for the sake of avoiding one friend
+		// declaration between two types in the same module.
+		friend class PhysicsBody;
 	};
 }

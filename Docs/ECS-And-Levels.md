@@ -30,6 +30,16 @@ square.AddComponent<BoxCollider2DComponent>();
 
 Every entity carries `MetadataComponent` (UUID, tag string, `IsActive`) and `TransformComponent` (translation / Euler-radians rotation / scale, TRS matrix on demand), added at creation.
 
+**Reaching a subsystem from an entity (RAD-90).** Beyond component access, `Entity` exposes *subsystem facades* — value handles that gather one subsystem's verbs for one entity:
+
+```cpp
+// ECS/PhysicsBody.h — 16 bytes, owns nothing, re-resolves per call
+if (PhysicsBody body = entity.GetPhysicsBody())
+    body.ApplyLinearImpulse({ 0.0f, 5.0f });
+```
+
+The shape is Unreal's `GetPhysicsActor()` idiom adapted to an ECS, and the distinction is worth stating because it is easy to get backwards. A facade is a namespace for **verbs**, so the handle knows which component stores the runtime state and `Entity` does not. Radiant deliberately does **not** add typed component wrappers (`entity.GetSprite()`): they would be `GetComponent<SpriteComponent>()` with a shorter name, and would force `Entity.h` to learn about every component type in the engine, so every new component would touch the header that everything includes. `PhysicsBody` is the first facade; the general convention — what qualifies, and what is rejected — is RAD-94.
+
 ### Components (`ECS/Components.h`)
 
 | Component | Purpose |

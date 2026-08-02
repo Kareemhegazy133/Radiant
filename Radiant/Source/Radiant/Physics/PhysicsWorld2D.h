@@ -3,6 +3,7 @@
 #include "Radiant/Core/Timestep.h"
 #include "Radiant/Core/UUID.h"
 #include "Radiant/Physics/ContactEvent.h"
+#include "Radiant/Physics/TeleportType.h"
 
 #include <glm/glm.hpp>
 
@@ -88,7 +89,7 @@ namespace Radiant {
 		 * Creates the entity's Box2D body from its transform (position =
 		 * Translation.xy, rotation = Rotation.z radians), stamps the entity's
 		 * UUID into the body's user data (contact resolution, RAD-29), and
-		 * stores the packed id in component.RuntimeBodyId. Invoked via the21
+		 * stores the packed id in component.RuntimeBodyId. Invoked via the
 		 * on_construct entt signal. Must not run during a world step.
 		 */
 		void CreateBody(Entity entity, RigidBody2DComponent& component);
@@ -103,14 +104,16 @@ namespace Radiant {
 		/**
 		 * Explicitly moves the entity's body to a world pose (position in
 		 * world units, rotation in radians) — the ONLY ECS→Box2D transform
-		 * push (RAD-28). A teleport, not a swept move: velocity is kept, no
-		 * collisions occur along the way, and the body is woken — SetTransform
-		 * alone would leave a sleeping body teleported into mid-air hanging
-		 * there until touched. Call through Level::Teleport, which also writes
-		 * the ECS transform and render snapshot. Zero/stale body ids are
-		 * survivable skips.
+		 * push (RAD-28). A teleport, not a swept move: no collisions occur
+		 * along the way, and the body is woken — SetTransform alone would
+		 * leave a sleeping body teleported into mid-air hanging there until
+		 * touched. teleportType decides what happens to velocity on arrival
+		 * (see TeleportType); ResetVelocity zeroes linear and angular velocity
+		 * but cannot cancel forces already applied this step. Call through
+		 * Level::Teleport, which also writes the ECS transform and render
+		 * snapshot. Zero/stale body ids are survivable skips.
 		 */
-		void Teleport(Entity entity, const glm::vec2& position, float rotation);
+		void Teleport(Entity entity, const glm::vec2& position, float rotation, TeleportType teleportType);
 
 		/**
 		 * Creates the box shape on the entity's EXISTING body and stores the
@@ -143,6 +146,136 @@ namespace Radiant {
 		 * shape warns and recovers.
 		 */
 		void UpdateBoxShape(Entity entity, BoxCollider2DComponent& component);
+
+		// --- Dynamics verbs (RAD-90) -------------------------------------
+		//
+		// Every one of these: wakes the body (a sleeping body ignores forces,
+		// box2d.h:290, so a no-wake option would be a silent no-op); is a
+		// warned no-op on an entity with no rigidbody or a dead body id; and
+		// is reached from gameplay through Entity::GetPhysicsBody() rather
+		// than called directly. None of them logs — they are routine and
+		// continuous, unlike Teleport, and a per-step verb that TRACEs drowns
+		// the log at 60 Hz.
+		//
+		// WHEN THE EFFECT LANDS depends on the caller: scripts run before the
+		// step, so OnUpdate calls apply to the step about to run; collision
+		// handlers run after it, so their calls apply to the next one.
+
+		/**
+		 * Pushes the body at its centre of mass with a sustained force, in
+		 * newtons (N) — wind, thrust, a held movement key. Force accumulates
+		 * until the next step consumes it, so this must be re-applied EVERY
+		 * fixed step for as long as the push lasts; one call is one step's
+		 * worth of push. Acceleration is force / mass, so heavier bodies
+		 * respond less.
+		 *
+		 * Applied at the centre of mass, so it never induces spin. Prefer this
+		 * over a per-step impulse train: Box2D's sub-stepping solver handles a
+		 * steady force better (box2d.h:319).
+		 */
+		void ApplyForce(Entity entity, const glm::vec2& force);
+
+		/**
+		 * As ApplyForce, but applied at a point in WORLD coordinates. Off the
+		 * centre of mass this also generates torque — the body pushes and
+		 * turns, which is the whole reason to choose this overload. Force in
+		 * newtons (N), point in world units.
+		 */
+		void ApplyForceAtPoint(Entity entity, const glm::vec2& force, const glm::vec2& worldPoint);
+
+		/**
+		 * Twists the body about the z-axis with a sustained torque, in newton-
+		 * metres (N·m), without pushing it. Same per-step contract as
+		 * ApplyForce: re-apply every fixed step while the twist lasts.
+		 * Positive is counter-clockwise. No effect on a fixed-rotation body.
+		 */
+		void ApplyTorque(Entity entity, float torque);
+
+		/**
+		 * Adds an instantaneous change in momentum at the body's centre of
+		 * mass, in newton-seconds (N·s) — a jump, an explosion, a bullet hit.
+		 * Velocity changes immediately by impulse / mass, so heavier bodies
+		 * move less for the same impulse. Applied ONCE, not per step; applied
+		 * at the centre, so it never induces spin.
+		 */
+		void ApplyLinearImpulse(Entity entity, const glm::vec2& impulse);
+
+		/**
+		 * As ApplyLinearImpulse, but at a point in WORLD coordinates. Off the
+		 * centre of mass it also changes angular velocity — a hit on the
+		 * corner of a crate spins it. Impulse in newton-seconds (N·s), point
+		 * in world units.
+		 */
+		void ApplyLinearImpulseAtPoint(Entity entity, const glm::vec2& impulse, const glm::vec2& worldPoint);
+
+		/**
+		 * Adds an instantaneous change in angular momentum, in kg·m²/s —
+		 * "start spinning now". The rotational twin of ApplyLinearImpulse:
+		 * applied once, changes angular velocity immediately by impulse /
+		 * rotational inertia. No effect on a fixed-rotation body.
+		 */
+		void ApplyAngularImpulse(Entity entity, float impulse);
+
+		/**
+		 * Overwrites the body's linear velocity, in metres per second — the
+		 * blunt instrument, and the right one for a character controller or a
+		 * conveyor. It ignores mass and DISCARDS whatever the solver had
+		 * computed, so a body being set every step is no longer really being
+		 * simulated in that axis. Reach for a force or an impulse unless you
+		 * genuinely mean to be the authority on this speed.
+		 *
+		 * Note that Box2D wakes on a NONZERO velocity only, so setting {0,0}
+		 * on a sleeping body does nothing — harmless, since it is already
+		 * stopped, but it means "stop" is not a way to wake something.
+		 */
+		void SetLinearVelocity(Entity entity, const glm::vec2& velocity);
+
+		/** Overwrites angular velocity, in radians per second. Ignored on a fixed-rotation body. */
+		void SetAngularVelocity(Entity entity, float angularVelocity);
+
+		/**
+		 * The body's linear velocity in metres per second, or {0,0} when it
+		 * has no live body.
+		 *
+		 * NON-CONST deliberately (locked 2026-08-01): resolving the id CLEARS
+		 * a stale one as part of recovering from it, which a const method
+		 * cannot do. A const overload that warned without clearing would leave
+		 * the dead id in place to warn again on every subsequent call — log
+		 * spam plus a permanently broken field. `const` would be claiming this
+		 * call only observes, and it does not only observe.
+		 */
+		glm::vec2 GetLinearVelocity(Entity entity);
+
+		/** Angular velocity in radians per second, or 0. Non-const for GetLinearVelocity's reason. */
+		float GetAngularVelocity(Entity entity);
+
+		/**
+		 * Drives a KINEMATIC body toward a world pose by next step: Box2D
+		 * computes the velocity that gets it there (position and rotation) and
+		 * applies that, so the body genuinely MOVES rather than teleporting.
+		 * That distinction is the whole point — a moving platform needs a real
+		 * velocity for friction to carry its riders and for contacts to be
+		 * generated along the way. Setting the transform per step instead
+		 * gives a platform that slides out from under everything standing on
+		 * it. Position in world units, rotation in radians, fixedDelta in
+		 * seconds.
+		 *
+		 * CALL THIS EVERY FIXED STEP. Box2D sets the velocity and walks away:
+		 * a body that stops receiving targets keeps moving at its last
+		 * computed velocity forever. (UE's Chaos auto-stops via
+		 * EKinematicTargetMode::Reset; Box2D has no equivalent, and building
+		 * one needs per-body bookkeeping with no customer yet.)
+		 *
+		 * fixedDelta is a parameter rather than read from the clock so this
+		 * class stays a pure function of its inputs — constructible in a test
+		 * with no GameApplication. PhysicsBody supplies it from
+		 * Time::GetFixedDeltaTime(); never pass a frame delta (playbook §1).
+		 *
+		 * Two vendor behaviours worth knowing: a move small enough that the
+		 * resulting velocity falls below the sleep threshold is declined
+		 * entirely rather than performed slowly, and static bodies are ignored.
+		 */
+		void MoveKinematic(Entity entity, const glm::vec2& position, float rotation, float fixedDelta);
 
 		/**
 		 * Advances the simulation one FIXED step with 4 sub-steps (v3's solver

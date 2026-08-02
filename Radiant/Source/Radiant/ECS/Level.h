@@ -5,6 +5,7 @@
 #include "Radiant/Core/GameApplication.h"
 #include "Radiant/Core/UUID.h"
 #include "Radiant/Physics/ContactEvent.h"
+#include "Radiant/Physics/TeleportType.h"
 
 #include "Entity.h"
 
@@ -109,12 +110,16 @@ namespace Radiant {
 		 * to TransformComponent have no physical effect — RAD-28). Works on
 		 * any entity: writes the ECS transform, resets the render snapshot so
 		 * the jump doesn't smear across a frame, and, if the entity has a
-		 * body, pushes the pose into Box2D (velocity kept, body woken).
+		 * body, pushes the pose into Box2D (body woken).
 		 * rotationZ is radians; the overload without it keeps the current
-		 * rotation. Invalid handles warn and recover.
+		 * rotation. teleportType decides what the body's velocity does on
+		 * arrival and defaults to KeepVelocity — portal semantics, and what
+		 * this verb has always done; pass ResetVelocity for respawn semantics
+		 * (see TeleportType). Body-less entities ignore it: there is no
+		 * velocity to keep or reset. Invalid handles warn and recover.
 		 */
-		void Teleport(Entity entity, const glm::vec3& translation, float rotationZ);
-		void Teleport(Entity entity, const glm::vec3& translation);
+		void Teleport(Entity entity, const glm::vec3& translation, float rotationZ, TeleportType teleportType = TeleportType::KeepVelocity);
+		void Teleport(Entity entity, const glm::vec3& translation, TeleportType teleportType = TeleportType::KeepVelocity);
 
 		/**
 		 * Re-applies an entity's BoxCollider2DComponent fields and transform
@@ -224,6 +229,21 @@ namespace Radiant {
 
 	private:
 		/**
+		 * The one place a physics-only verb answers "may I touch this entity's
+		 * physics?" — PhysicsBody's whole guard, so no verb carries its own
+		 * (playbook §4, one resolver per layer). Returns null on an invalid
+		 * handle, after a WARN naming the verb, matching DestroyEntity and
+		 * Teleport; and null WITHOUT a warning on a scratch level, because
+		 * having no world is a fact about the level rather than a mistake by
+		 * the caller (the same contract OnFixedUpdate's null check uses).
+		 *
+		 * Stays private deliberately: it hands back the physics world, and the
+		 * world is Level-owned state, not public API. PhysicsBody is a friend
+		 * precisely so this can remain so.
+		 */
+		PhysicsWorld2D* ResolvePhysics(Entity entity, const char* verb);
+
+		/**
 		 * Hands the physics world's contact batch to gameplay: observers first
 		 * (whole event), then each live side's script hook. Both participants
 		 * are re-resolved from their UUIDs immediately before every call, because
@@ -297,6 +317,10 @@ namespace Radiant {
 		bool m_ShowPhysicsColliders = true;
 
 		friend class Entity;
+		// Reaches ResolvePhysics (above) and nothing else. The alternative was
+		// a public physics-world accessor, which would expose Level-owned
+		// state to every consumer to serve one type in this same module.
+		friend class PhysicsBody;
 		friend class LevelSerializer;
 	};
 

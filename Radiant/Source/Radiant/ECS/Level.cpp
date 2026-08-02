@@ -140,7 +140,7 @@ namespace Radiant {
 		DestroyEntity(it->second);
 	}
 
-	void Level::Teleport(Entity entity, const glm::vec3& translation, float rotationZ)
+	void Level::Teleport(Entity entity, const glm::vec3& translation, float rotationZ, TeleportType teleportType)
 	{
 		// Stale/null handles reach here from gameplay — a content-level
 		// mistake (same contract as DestroyEntity), not grounds for UB
@@ -159,12 +159,14 @@ namespace Radiant {
 		// jump across one rendered frame
 		m_Registry.emplace_or_replace<TransformSnapshotComponent>(entity.m_EntityHandle, transform.Translation, transform.Rotation);
 
-		// The one legitimate ECS→Box2D transform push (RAD-28)
+		// The one legitimate ECS→Box2D transform push (RAD-28). A body-less
+		// entity has already been fully moved by the two writes above —
+		// teleportType is simply meaningless without a velocity to act on.
 		if (m_PhysicsWorld && entity.HasComponent<RigidBody2DComponent>())
-			m_PhysicsWorld->Teleport(entity, { translation.x, translation.y }, rotationZ);
+			m_PhysicsWorld->Teleport(entity, { translation.x, translation.y }, rotationZ, teleportType);
 	}
 
-	void Level::Teleport(Entity entity, const glm::vec3& translation)
+	void Level::Teleport(Entity entity, const glm::vec3& translation, TeleportType teleportType)
 	{
 		if (!entity.IsValid())
 		{
@@ -172,7 +174,7 @@ namespace Radiant {
 			return;
 		}
 
-		Teleport(entity, translation, entity.GetComponent<TransformComponent>().Rotation.z);
+		Teleport(entity, translation, entity.GetComponent<TransformComponent>().Rotation.z, teleportType);
 	}
 
 	void Level::RefreshCollider(Entity entity)
@@ -192,6 +194,22 @@ namespace Radiant {
 
 		if (m_PhysicsWorld)
 			m_PhysicsWorld->UpdateBoxShape(entity, *bc2d);
+	}
+
+	PhysicsWorld2D* Level::ResolvePhysics(Entity entity, const char* verb)
+	{
+		// Stale/null handles reach here from gameplay holding a PhysicsBody a
+		// step too long — the same contract DestroyEntity and Teleport carry
+		if (!entity.IsValid())
+		{
+			RADIANT_WARN("Level: {0} called with an invalid entity handle", verb);
+			return nullptr;
+		}
+
+		// Silent: a scratch level (initialize == false) legitimately has no
+		// world, and saying so on every verb would be noise about a level, not
+		// a diagnosis of a bug
+		return m_PhysicsWorld.get();
 	}
 
 	Level::CollisionObserverHandle Level::AddCollisionObserver(std::function<void(const CollisionEvent&)> observer)

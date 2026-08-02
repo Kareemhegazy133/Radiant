@@ -1,6 +1,6 @@
 # Physics
 
-**Status:** Verb-surface cleanup landed 2026-08-01 (RAD-91): one id-resolution helper per id kind, `Entity` passed by value. Collision reporting landed 2026-08-01 (RAD-29): contacts are drained into an engine-typed event queue after the step and dispatched to gameplay with validity checks. Sync semantics landed 2026-07-10 (RAD-28): physics owns dynamic transforms, ECS→Box2D pushes are explicit verbs only, readback drains v3 move events, shapes are never rebuilt per step. Per-Level worlds on **Box2D v3.1.1** landed 2026-07-09 (RAD-27; the v3 upgrade was decided in RAD-60). Fixed timestep landed 2026-07-05 (RAD-25). Phase 2's physics rework is complete; remaining physics work is follow-on (RAD-90 dynamics verbs).
+**Status:** Gameplay dynamics verbs landed 2026-08-01 (RAD-90): forces, impulses, velocity and a kinematic mover on a `PhysicsBody` handle, plus `TeleportType`. Verb-surface cleanup landed 2026-08-01 (RAD-91): one id-resolution helper per id kind, `Entity` passed by value. Collision reporting landed 2026-08-01 (RAD-29): contacts are drained into an engine-typed event queue after the step and dispatched to gameplay with validity checks. Sync semantics landed 2026-07-10 (RAD-28): physics owns dynamic transforms, ECS→Box2D pushes are explicit verbs only, readback drains v3 move events, shapes are never rebuilt per step. Per-Level worlds on **Box2D v3.1.1** landed 2026-07-09 (RAD-27; the v3 upgrade was decided in RAD-60). Fixed timestep landed 2026-07-05 (RAD-25). Phase 2's physics rework is complete.
 
 ## The Problem This Solves
 
@@ -65,10 +65,75 @@ UE's comparison is instructive: `FBodyInstance::AddForce`/`AddImpulse`/… each 
 
 **Physics owns the transform of dynamic bodies.** Nothing pushes ECS transforms into Box2D implicitly — writing `TransformComponent` on a body-owning entity has no physical effect. ECS→Box2D writes exist in exactly two forms, both explicit, both funneled through `Level` (the only type owning all the touched state — registry, render snapshot, physics world):
 
-- **`Level::Teleport(entity, translation[, rotationZ])`** (+ zero-logic `Entity::Teleport` forwarders): writes the ECS transform, stamps the `TransformSnapshotComponent` to the destination (so the jump renders instantly instead of smearing through interpolation), and — if the entity has a body — `b2Body_SetTransform` + `b2Body_SetAwake(true)`. The wake matters: SetTransform alone leaves a *sleeping* body teleported into mid-air hanging there until touched (UE's `SetBodyTransform` defaults `bAutoWake` for the same reason). Velocity is kept — UE's `TeleportPhysics` semantics. Works on body-less entities too (ECS + snapshot only): it is *the* universal discontinuous-move verb.
+- **`Level::Teleport(entity, translation[, rotationZ][, teleportType])`** (+ zero-logic `Entity::Teleport` forwarders): writes the ECS transform, stamps the `TransformSnapshotComponent` to the destination (so the jump renders instantly instead of smearing through interpolation), and — if the entity has a body — `b2Body_SetTransform` + `b2Body_SetAwake(true)`. The wake matters: SetTransform alone leaves a *sleeping* body teleported into mid-air hanging there until touched (UE's `SetBodyTransform` defaults `bAutoWake` for the same reason). Works on body-less entities too (ECS + snapshot only): it is *the* universal discontinuous-move verb. Velocity semantics are the caller's choice since RAD-90 — see below.
 - **`Level::RefreshCollider(entity)`** → `UpdateBoxShape`: re-applies collider fields + transform scale to the **existing** shape in place — `b2Shape_SetPolygon` + density/friction/restitution setters + one `b2Body_ApplyMassFromShapes` (v3's setters deliberately leave mass untouched). The shape id never changes; contacts survive a refresh. Changing collider fields or `Scale` without calling this leaves the physics shape stale *by design* — implicit change detection is the antipattern RAD-28 killed; the debug collider draw reads ECS data, so a stale shape is visible as outline/behavior mismatch.
 
 Both verbs TRACE — the log is the audit trail of every explicit push.
+
+### Dynamics verbs (RAD-90)
+
+**The problem this solves.** RAD-28 gave gameplay two things it could do to a body: put it somewhere (`Teleport`) and tell it its shape changed (`RefreshCollider`). Neither of those is a *push*. So physics ran and gameplay watched: a character that cannot be pushed cannot be controlled, and Reaper had no player movement — not for want of movement code, but because there was no engine call for it to make.
+
+There are **four** ways to push a body, they are not interchangeable, and confusing them is the classic beginner physics bug:
+
+| Everyday version | Name | Units | Use it for | Applied |
+|---|---|---|---|---|
+| A hand pressed against it, pushing steadily | **Force** | N | wind, thrust, a held movement key | every step, while it lasts |
+| A single hammer tap | **Impulse** | N·s | a jump, an explosion, a bullet hit | once |
+| Picking it up and throwing it at this speed | **Set velocity** | m/s | character controllers, conveyors | once, overwrites |
+| A hand underneath moving it along a track | **Kinematic target** | world units | platforms, elevators, doors | every step |
+
+A **force** is spread over time, so its effect depends on how long you push and how heavy the thing is (acceleration = force / mass), and it accumulates until the next step consumes it — one call buys one step's worth of push. An **impulse** is instantaneous: velocity changes *now*, by impulse / mass. Setting **velocity** ignores mass entirely and discards whatever the solver computed — blunt and honest, right for a character controller, wrong for nearly everything else. Each verb has an at-point variant (`ApplyForceAtPoint`, `ApplyLinearImpulseAtPoint`) that also generates torque, and a rotation-only twin (`ApplyTorque`, `ApplyAngularImpulse`).
+
+**Where they live, and the rule it establishes.** Not on `Level`, and not on `Entity`. They hang off a `PhysicsBody` handle:
+
+```cpp
+// ECS/PhysicsBody.h — a 16-byte value handle over an Entity, owning nothing
+PhysicsBody body = entity.GetPhysicsBody();
+if (body)
+    body.ApplyLinearImpulse({ 0.0f, 5.0f });
+```
+
+> **`Level` owns the verbs that touch ECS state. `PhysicsBody` owns the verbs that touch only physics state.**
+
+`Teleport` and `RefreshCollider` write `TransformComponent` and the render snapshot, so only the type owning the registry can perform them. Forces, impulses, velocities and kinematic targets never touch the registry — putting them on `Level` would have cost a verb plus an `Entity` forwarder apiece (22 trivial functions on the two most widely-included headers) for no boundary benefit. Unreal draws the same line: its verbs hang off a per-body handle (`FBodyInstance`), not off the world.
+
+The handle **owns nothing and caches nothing** — it stores one `Entity` and re-resolves the body every call, so RAD-91's warn-clear-and-recover policy still applies if something destroys the body underneath it. It is transient exactly as `Entity` is: obtain it, use it, drop it. `operator bool` answers "is this entity physics-capable right now" (live handle, live Level with a world, `RigidBody2DComponent` present) and deliberately does *not* probe the packed id — that check belongs to the verb, which is the thing that can recover from a dead one.
+
+**Three layers, three guards, one each** (the RAD-91 pattern generalised): `PhysicsBody::Resolve` catches a level-less handle → `Level::ResolvePhysics` catches a dead entity and a world-less scratch level → `ResolveBody` catches a missing component and a dead id. Every `PhysicsWorld2D` verb is consequently three lines and every `PhysicsBody` verb is two.
+
+**Everything wakes, and no verb exposes a wake flag.** A sleeping body ignores forces and impulses outright (`box2d.h:290`), so `wake = false` would be a silent no-op with no customer. UE shows the alternative: `FBodyInstance::SetLinearVelocity` accepts a `bAutoWake` parameter its body never reads (`BodyInstance.cpp:3557`) — a parameter that lies. One asymmetry survives from the vendor: v3's velocity *setters* wake only on a **nonzero** velocity, so `SetLinearVelocity({0,0})` on a sleeping body does nothing. Harmless (it is already stopped), but "stop" is not a way to wake something.
+
+**None of them logs.** `Teleport` TRACEs because a teleport is rare and deliberate; a character controller applies a force sixty times a second, and a per-step verb that TRACEs drowns every other line in the file. The rule: **verbs that are rare and discontinuous log; verbs that are routine and continuous do not.**
+
+**Timing depends on the caller, and cannot be hidden.** Scripts run *before* the step, so a verb called from `OnUpdate` lands in the step about to run. Collision handlers run *after* it, so the same call from `OnCollisionBegin` lands in the **next** step. Both are correct; the asymmetry falls straight out of the per-step flow above.
+
+#### Teleport gets two flavours
+
+`TeleportType::KeepVelocity` (the default, and what `Teleport` has always done — momentum survives the discontinuity, portal semantics) or `TeleportType::ResetVelocity` (arrives with zero linear and angular velocity, respawn semantics). This is UE's `ETeleportType` minus its third mode (`None`, a *swept* move that collides along the way — Radiant has no sweep API until RAD-76).
+
+It exists because one verb was being asked to be two things. Observed during RAD-28 verification (2026-07-10): teleporting mid-landing carries the transient angular velocity of that landing into open air, and the body tumbles all the way down. Correct physics; wrong tool for "put the player back at the checkpoint."
+
+A `bool` was rejected — `Teleport(pos, 0.f, true)` does not say what `true` means. The enum lives in its own `Physics/TeleportType.h` for exactly the reason `ContactEvent.h` exists: `Level.h` must name it while still only forward-declaring `PhysicsWorld2D`, which is what keeps `<box2d/id.h>` out of the ECS layer.
+
+**Ordering inside `PhysicsWorld2D::Teleport` is load-bearing:** SetTransform → wake → *then* zero the velocities. Reversed, the zeroing is silently dropped — v3 wakes on a nonzero velocity only, and a sleeping body has no `b2BodyState` to write into. `ResetVelocity` zeroes velocity but **cannot** cancel forces already applied this step: v3.1 exposes no `ClearForces`, so a script that applies a force and then reset-teleports gets a body that arrives still and is immediately shoved. Contradictory instructions from the caller, documented rather than silently reconciled.
+
+#### The kinematic mover
+
+`MoveKinematic(position, rotation)` → `b2Body_SetTargetTransform`. The library computes the velocity that reaches the target in one step and applies *that*:
+
+```c
+// src/body.c — the whole trick
+b2Vec2 linearVelocity = b2MulSV( invTimeStep, b2Sub( center2, center1 ) );
+```
+
+So the platform genuinely **moves** rather than teleporting, which is the entire point: friction only carries a rider when the surfaces have relative velocity, and contacts are only generated along a path that was actually travelled. Setting a kinematic body's transform per step instead gives a platform that slides out from under everything standing on it and tunnels through anything in between. Chaos does the identical thing internally — `FVec3::CalculateVelocity(CurrentX, NewX, Dt)` (`PBDRigidsEvolutionGBF.cpp:1180`).
+
+**Call it every fixed step.** Box2D sets the velocity and walks away: a body that stops receiving targets keeps moving at its last computed velocity, forever. UE auto-stops via `EKinematicTargetMode::Reset`, which zeroes the velocities the step after the target is reached; replicating that needs per-body bookkeeping ("which bodies got a target this step, zero the rest"), which is a kinematic-mover *system* belonging with RAD-30's side tables, and it has no customer yet.
+
+The fixed delta is a **parameter** on `PhysicsWorld2D::MoveKinematic`, supplied by `PhysicsBody` from `Time::GetFixedDeltaTime()`. That keeps the physics module a pure function of its inputs — no clock, so it stays constructible in a unit test with no `GameApplication` (RAD-67). A cached "last step's delta" member was rejected: scripts run *before* the first `Step`, so it would be 0 on the first fixed update and `b2Body_SetTargetTransform` declines a non-positive timestep silently. One dropped step in sixty is invisible, which makes it a worse bug than a loud one.
+
+Two vendor behaviours to know: a move small enough that the resulting velocity falls below the sleep threshold is **declined entirely** rather than performed slowly (`body.c`), and static bodies are ignored. Driving a *dynamic* body with this verb asserts (`b2Body_GetType`, a pure read that compiles out in Dist) and then proceeds — it is a design mistake, not a runtime hazard, and a false assert must never change behaviour.
 
 ### Per-step flow
 
@@ -144,6 +209,7 @@ The observer callback lifetime contract is `TimerManager`'s, word for word: **th
 - **Box2D v3, not 2.4 — landed (RAD-60 decision, RAD-27 execution).** v3 *is* the target architecture: id handles legal in plain-data components, per-Level worlds as values, event-buffer contacts. Migrating during the seam rebuild paid for the port once.
 - **Fixed timestep — landed (RAD-25).** Simulation steps at a fixed rate from an accumulator; rendering interpolates.
 - **Physics owns dynamic transforms — landed (RAD-28).** Push ECS→Box2D only at spawn and through the explicit verbs (`Teleport`/`RefreshCollider`); readback drains v3 move events; shapes mutate in place and are never destroyed per step. Rejected alternative: implicit change detection (dirty flags or per-step compares) — the per-step push this replaced *was* the implicit design, and it cost contact persistence, sleeping, and warm-starting.
+- **Gameplay pushes bodies through a per-entity handle — landed (RAD-90).** The four push kinds (force, impulse, velocity, kinematic target) live on `PhysicsBody`, obtained from `Entity::GetPhysicsBody()`; `Level` keeps only the verbs that touch ECS state. Rejected alternatives: a verb on `Level` plus an `Entity` forwarder for each operation (22 trivial functions on the two most-included headers, for no boundary benefit); and a data-driven `ApplyPhysicsCommand(CommandType, vec2, float)` behind a switch, which discards compile-time argument checking, makes units ambiguous at the call site — is that scalar a torque or an angular impulse? — and grows just as fast. The general convention this instantiates is RAD-94.
 - **Collision events are queued, not called back — landed (RAD-29).** v3 enforces the queue shape at the API level; RAD-29 added the three entity-validity checks and two dispatch channels (Level-wide observers, then per-side script hooks — never `std::function`s on components). The move-event drain (RAD-28) was the rehearsal of exactly this idiom. Rejected alternatives: reusing `EventQueue` (frame-scoped, closed variant list, propagation semantics that mean nothing for a physics fact); dispatching inside `PhysicsWorld2D` (needs the `Level*` back-pointer RAD-27 deleted); and a batch observer signature (exports re-validation to every subscriber).
 
 ## Known Issues & Evolution
@@ -151,8 +217,13 @@ The observer callback lifetime contract is `TimerManager`'s, word for word: **th
 - **Contacts report entities, not shapes.** One collider per entity today, so entity identity suffices. The moment an entity carries several shapes ("hurtbox vs feet sensor"), gameplay needs to know *which* shape touched and `ContactEvent` must be extended — never duplicated.
 - **No contact detail and no sensors yet.** `ContactEvent` carries the pair and the phase, not the manifold: no contact normal, no impact point, no `approachSpeed` (v3's hit events, `enableHitEvents`, are untouched), and no sensor events. Nothing needs them yet; the normal's A/B ordering semantics deserve their own design pass.
 - **No collision filtering.** `b2Filter` is left at default — no channels, no filtering matrix. `EnableContactEvents` answers "report or not," not "report to whom."
-- **No gameplay dynamics verbs yet (RAD-90)** — nothing can apply forces, impulses, or velocities to a body; kinematic bodies have no mover (`b2Body_SetTargetTransform`); and `Teleport` is keep-velocity only — a teleport during landing carries transient angular velocity into free fall (observed 2026-07-10; `TeleportType::ResetVelocity` arrives with RAD-90).
+- **No character controller.** RAD-90 delivered the alphabet, not the sentence: jumping, coyote time, air control and ground checks are a *system* built on these verbs, and the ground check in particular needs the query API (RAD-76).
+- **Kinematic bodies never auto-stop.** One that stops receiving `MoveKinematic` keeps moving at its last computed velocity; gameplay must drive it every fixed step or stop it explicitly. UE's `EKinematicTargetMode::Reset` is the fix, and it needs the per-body bookkeeping that arrives with RAD-30's side tables.
+- **Pushing a static body fails silently.** Box2D ignores it (a static body is never in the awake set) and so do we. A `WARN` would fire sixty times a second from a per-step force loop; UE's answer is `WarnInvalidPhysicsOperations`, which is **editor-only** — so the right version of this diagnostic arrives with the Phase 5 editor.
+- **Forces cannot be cancelled.** v3.1 exposes no `ClearForces`, so `TeleportType::ResetVelocity` zeroes velocity but leaves a force applied earlier in the same step to land on the next one.
+- **No body-state accessors.** `GetMass`, `IsAwake`, `GetBodyType`, gravity scale and damping are all one-liners on `PhysicsBody` when a customer appears; none has one yet.
 - **IsActive does not disable bodies** — an inactive entity's body keeps simulating and colliding; only its ECS transform stops following (pre-existing behavior, preserved by the RAD-28 drain). A real disable would use `b2Body_Disable` when a customer appears.
+- **Resolved 2026-08-01 (RAD-90):** gameplay could not push a body at all — no forces, no impulses, no velocity access, and no kinematic mover, so the engine had no way to move a player or carry a rider on a platform; and `Teleport` was keep-velocity only, so a teleport during a landing carried transient angular velocity into free fall (observed 2026-07-10).
 - **Resolved 2026-08-01 (RAD-29):** no collision notifications at all (gameplay could not detect a landing, a hit, or a pickup); the v2 design's mid-step callbacks that made world mutation from a handler undefined behaviour; and per-component `std::function` callbacks that blocked `Level::Copy` and could never serialize.
 - **Resolved 2026-07-10 (RAD-28):** per-step transform push + shape destroy/recreate (killed contact persistence, sleeping, warm-starting); collider double-rotation quirk (shape local rotation repeated the body's world rotation); teleports smearing across one rendered frame (snapshot now stamped by `Level::Teleport`); missing `on_destroy` for colliders (removing the component left the shape colliding forever).
 - **Resolved 2026-07-09 (RAD-27):** process-singleton world (leak + cross-world corruption + scratch-level teardown landmine) and dangling `b2Body*` runtime pointers (now checkable generation handles).
