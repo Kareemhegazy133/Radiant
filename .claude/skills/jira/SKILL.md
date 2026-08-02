@@ -66,6 +66,7 @@ An engine story whose AC mentions `ReaperContext` or a Reaper asset is misplaced
 - [ ] `file:line` references included where the work touches existing code.
 - [ ] Dependencies identified and linked; blockers are `Done` or sequenced.
 - [ ] Correct issue type, phase-epic parent, labels (`mentorship`/`chore` at minimum), and priority set.
+- [ ] **Assignee set to Kareem** — he is the only engineer on this project and owns every card, including `chore` ones Claude implements on his behalf. Unassigned is never correct; an unassigned backlog reads as unowned work. (Added 2026-08-01 after four cards were filed unassigned in one session.)
 - [ ] Performance implications stated for anything on a hot path (per-frame, per-entity, per-draw).
 
 ## Definition of Done (mirrors CLAUDE.md)
@@ -140,7 +141,7 @@ The invariant: **a story is never less precise than its approved plan.**
 3. **If a match exists:** show it (key, summary, status, preview); ask whether to UPDATE it (incorporate the new requirement, or realign per the convention above) rather than create a duplicate.
 4. **If no match:** determine the issue type, the phase-epic parent (apply Engine-vs-Game placement), the labels, the priority, and the dependencies.
 5. **Draft** the item in the format below and **show it to the user for approval** before writing.
-6. **Create/Update** via `createJiraIssue` / `editJiraIssue` (cloudId `hndredgames.atlassian.net`, projectKey `RAD`). Set `parent` to the epic. Set labels/priority via `additional_fields`.
+6. **Create/Update** via `createJiraIssue` / `editJiraIssue` (cloudId `hndredgames.atlassian.net`, projectKey `RAD`). Set `parent` to the epic. Set labels, priority **and assignee** via `additional_fields` — Kareem's accountId is `712020:3cfe00e9-aac5-4509-8efc-3fbb030c971b`, or resolve it with `lookupJiraAccountId`.
 7. **Link** dependencies via `createIssueLink`.
 8. **Return** the issue key + URL.
 
