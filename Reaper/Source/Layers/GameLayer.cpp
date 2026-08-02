@@ -5,6 +5,7 @@
 
 #include "CameraController.h"
 #include "CollisionLogger.h"
+#include "KinematicPlatform.h"
 
 GameLayer::GameLayer()
 	: Layer("GameLayer")
@@ -66,6 +67,33 @@ void GameLayer::OnAttach()
 					collision.A ? collision.A.Name() : "<destroyed>",
 					collision.B ? collision.B.Name() : "<destroyed>");
 			});
+	}
+
+	// RAD-90 verification scaffolding (retires with RAD-92). A KINEMATIC
+	// platform plus a crate resting on it: the pair proves that a body moved
+	// by target transform carries its rider, which per-step SetTransform
+	// cannot do. Spawned separately from the existing static "Platform" rather
+	// than converting it — that one is the landing surface for the RAD-28 and
+	// RAD-29 cheats, and making it move would quietly change what they test.
+	{
+		Entity movingPlatform = m_Level->CreateEntity("KinematicPlatform");
+		movingPlatform.AddComponent<SpriteComponent>(glm::vec4{ 0.9f, 0.3f, 0.9f, 1.0f });
+		auto& platformTransform = movingPlatform.GetComponent<TransformComponent>();
+		platformTransform.Translation = { 0.0f, 0.5f, 0.0f };
+		platformTransform.Scale = { 4.0f, 0.5f, 1.0f };
+		movingPlatform.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Kinematic);
+		movingPlatform.AddComponent<BoxCollider2DComponent>();
+		movingPlatform.AddComponent<NativeScriptComponent>().Bind<KinematicPlatform>();
+
+		// Spawned just ABOVE the platform, not exactly on it: a body created
+		// already overlapping starts the simulation resolving a penetration,
+		// which looks like a bug and is not what this is here to show. It
+		// falls the last fraction of a unit and settles.
+		Entity rider = m_Level->CreateEntity("PlatformRider");
+		rider.AddComponent<SpriteComponent>(glm::vec4{ 1.0f, 1.0f, 0.4f, 1.0f });
+		rider.GetComponent<TransformComponent>().Translation = { 0.0f, 1.5f, 0.0f };
+		rider.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
+		rider.AddComponent<BoxCollider2DComponent>();
 	}
 
 	FramebufferSpecification fbSpec;
@@ -198,6 +226,57 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 		{
 			GAME_WARN("Collider cheat: no 'Green Square' entity with a collider in the level");
 		}
+		return true;
+	}
+
+	// RAD-90 verification cheats — the dynamics verbs' first customers
+	// (all retire with RAD-92)
+
+	if (e.GetKeyCode() == Key::Space)
+	{
+		// Impulse at the CENTRE of mass: the Reaper hops straight up and
+		// gravity brings it back — one instantaneous change in momentum, not a
+		// sustained push. Press it again after the "fell asleep" TRACE appears
+		// to prove the verb wakes a sleeping body.
+		Entity reaper = m_Level->FindEntityByName("Reaper");
+		if (PhysicsBody body = reaper.GetPhysicsBody())
+			body.ApplyLinearImpulse({ 0.0f, 5.0f });
+		else
+			GAME_WARN("Impulse cheat: no 'Reaper' entity with a rigidbody in the level");
+		return true;
+	}
+
+	if (e.GetKeyCode() == Key::V)
+	{
+		// The SAME impulse, applied at the entity's lower-left corner instead
+		// of its centre. Off the centre of mass Box2D derives a torque from
+		// it, so the body hops AND spins — the difference between the two
+		// cheats is the entire reason the at-point variants exist.
+		Entity reaper = m_Level->FindEntityByName("Reaper");
+		if (PhysicsBody body = reaper.GetPhysicsBody())
+		{
+			const glm::vec3& position = reaper.GetComponent<TransformComponent>().Translation;
+			body.ApplyLinearImpulseAtPoint({ 0.0f, 5.0f }, { position.x - 0.5f, position.y - 0.5f });
+		}
+		else
+		{
+			GAME_WARN("At-point impulse cheat: no 'Reaper' entity with a rigidbody in the level");
+		}
+		return true;
+	}
+
+	if (e.GetKeyCode() == Key::R)
+	{
+		// The T cheat's twin, and the reason TeleportType exists. Spam T while
+		// the Reaper is landing and it arrives still spinning — correct
+		// physics, wrong tool for a respawn. Spam R at the same moment and it
+		// arrives motionless, every time. Both keys exist so the difference is
+		// observed rather than asserted.
+		Entity reaper = m_Level->FindEntityByName("Reaper");
+		if (reaper)
+			reaper.Teleport({ 4.0f, 2.0f, 0.0f }, TeleportType::ResetVelocity);
+		else
+			GAME_WARN("Reset-teleport cheat: no 'Reaper' entity in the level");
 		return true;
 	}
 
