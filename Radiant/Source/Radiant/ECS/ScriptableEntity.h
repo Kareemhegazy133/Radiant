@@ -51,12 +51,15 @@ namespace Radiant {
 		 * kinematic targets (see PhysicsBody). Test it before use; it is false
 		 * when the entity has no rigidbody.
 		 *
-		 * Forwarded because a script cannot otherwise reach its own Entity
-		 * (m_Entity is private), which would leave RAD-90's verbs unreachable
-		 * from the only gameplay code the engine has. The wider question — what
-		 * else a script should be able to reach, including its Level — is
-		 * RAD-95; this forwarder answers the physics case only and deliberately
-		 * does not pre-empt it.
+		 * TEMPORARY, and RAD-95 REMOVES IT. Forwarded because a script cannot
+		 * otherwise reach its own Entity (m_Entity is private), which would
+		 * leave RAD-90's verbs unreachable from the only gameplay code the
+		 * engine has. But one forwarder per subsystem is the wrong shape: GAS
+		 * would want GetAbilitySystem(), animation GetAnimation(), and this
+		 * class would grow a method per subsystem forever — the O(N)-edits-per-
+		 * feature pattern RAD-94 exists to prevent. RAD-95 exposes the entity
+		 * handle once, after which every facade comes free and this goes away.
+		 * Do not add a second forwarder of this kind; extend RAD-95 instead.
 		 *
 		 * Called from OnUpdate, the effect lands in the step about to run;
 		 * called from a collision hook, in the next one.
