@@ -6,6 +6,7 @@
 #include "CameraController.h"
 #include "CollisionLogger.h"
 #include "KinematicPlatform.h"
+#include "SpawnProbe.h"
 
 GameLayer::GameLayer()
 	: Layer("GameLayer")
@@ -94,6 +95,15 @@ void GameLayer::OnAttach()
 		rider.GetComponent<TransformComponent>().Translation = { 0.0f, 1.5f, 0.0f };
 		rider.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Dynamic);
 		rider.AddComponent<BoxCollider2DComponent>();
+	}
+
+	// RAD-95 verification scaffolding (retires with RAD-92). A host entity for
+	// the spawn probe: no sprite and no body, because the only thing it does is
+	// run a script that spawns and destroys another entity from inside the
+	// script pass. See SpawnProbe.h for why that is the only way to test it.
+	{
+		Entity probe = m_Level->CreateEntity("SpawnProbe");
+		probe.AddComponent<NativeScriptComponent>().Bind<SpawnProbe>();
 	}
 
 	FramebufferSpecification fbSpec;
@@ -303,6 +313,29 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 			// The instance is created lazily on the first fixed update, so this
 			// only fires if the entity or its binding is missing
 			GAME_WARN("Collision cheat: no 'Platform' entity with a live CollisionLogger");
+		}
+		return true;
+	}
+
+	// RAD-95 verification cheat (retires with RAD-92)
+
+	if (e.GetKeyCode() == Key::N)
+	{
+		// This ONLY raises a flag. The spawn itself must happen inside the
+		// script pass — doing it here would run outside the iteration it
+		// exists to test, and would prove nothing about it.
+		Entity probe = m_Level->FindEntityByName("SpawnProbe");
+		auto* nsc = probe ? probe.TryGetComponent<NativeScriptComponent>() : nullptr;
+		if (nsc && nsc->Instance)
+		{
+			// The unchecked cast RAD-100 exists to replace
+			static_cast<SpawnProbe*>(nsc->Instance)->RequestToggle();
+		}
+		else
+		{
+			// The instance is created lazily on the first fixed update, so this
+			// only fires if the entity or its binding is missing
+			GAME_WARN("Spawn cheat: no 'SpawnProbe' entity with a live script");
 		}
 		return true;
 	}
