@@ -148,7 +148,7 @@ Level::OnFixedUpdate (0..N times per frame, fixed delta)
  │    ├─ drain b2World_GetBodyEvents    → m_MoveEvents    (engine-typed copies)
  │    └─ drain b2World_GetContactEvents → m_ContactEvents (engine-typed copies)
  ├─ move-event drain: for each BodyMoveEvent, UUID → entity → Translation.xy/Rotation.z
- └─ contact dispatch: for each ContactEvent → observers, then per-side script hooks
+ └─ contact dispatch: for each ContactEvent → level-wide callbacks, then per-side hooks
 Level::OnRender(alpha) — draw-only: interpolates via snapshots, never mutates simulation
 ```
 
@@ -186,18 +186,18 @@ Note the asymmetry with the move drain: there, a missing entity is an **asserted
 
 **Two dispatch channels**, in this order:
 
-- **Observers** — `Level::AddCollisionObserver` / `RemoveCollisionObserver`, called once per event with **both** participants. The channel for level-wide systems (abilities, damage, audio, VFX) belonging to no single entity. Keyed by a `{Index, Generation}` handle over a slot pool with a free list — the `TimerHandle` idiom (playbook §2), so a stale handle is a no-op rather than a removal of whoever inherited the slot.
+- **Level-wide callbacks** — `Level::AddCollisionCallback` / `RemoveCollisionCallback`, called once per event with **both** participants. The channel for level-wide systems (abilities, damage, audio, VFX) belonging to no single entity. Keyed by a `{Index, Generation}` handle over a slot pool with a free list — the `TimerHandle` idiom (playbook §2), so a stale handle is a no-op rather than a removal of whoever inherited the slot.
 - **Script hooks** — `ScriptableEntity::OnCollisionBegin/OnCollisionEnd(Entity other)`, called once per **live side**, because "something hit me" is inherently one-sided. `other` may be invalid; the hook is skipped for inactive entities, matching `OnUpdate`.
 
-Observers run first, matching UE's world-handler-before-per-actor order: global systems see the fullest picture before per-entity gameplay starts destroying things. Deliberately rejected: UE's *batch* signature (`HandlePhysicsCollisions_AssumesLocked(TArray<…>&)`) — it hands subscribers a list that goes stale as they walk it, making re-validation everyone's problem.
+Level-wide callbacks run first, matching UE's world-handler-before-per-actor order: global systems see the fullest picture before per-entity gameplay starts destroying things. Deliberately rejected: UE's *batch* signature (`HandlePhysicsCollisions_AssumesLocked(TArray<…>&)`) — it hands subscribers a list that goes stale as they walk it, making re-validation everyone's problem.
 
-Two re-entrancy hazards, both closed: an observer that **removes itself** mid-callback would free the `std::function` currently executing, so removal during dispatch defers the release to the end of the batch; an observer that **registers another** mid-dispatch could reallocate the vector, so iteration is index-based with the count captured at entry, and the newcomer joins the next batch (the rule `EventQueue` already uses).
+Two re-entrancy hazards, both closed: a callback that **removes itself** mid-callback would free the `std::function` currently executing, so removal during dispatch defers the release to the end of the batch; a callback that **registers another** mid-dispatch could reallocate the vector, so iteration is index-based with the count captured at entry, and the newcomer joins the next batch (the rule `EventQueue` already uses).
 
-The observer callback lifetime contract is `TimerManager`'s, word for word: **the Level owns the callback by value, and therefore its captures.** A subscriber that dies without removing its handle leaves the Level calling into a dead object, and the Level cannot detect that.
+The callback lifetime contract is `TimerManager`'s, word for word: **the Level owns the callback by value, and therefore its captures.** A subscriber that dies without removing its handle leaves the Level calling into a dead object, and the Level cannot detect that.
 
 **Opting in.** `b2DefaultShapeDef()` leaves `enableContactEvents` **false**, so `BoxCollider2DComponent::EnableContactEvents` surfaces it — defaulting to `true`. Events are *transitions, not states*: a settled stack emits nothing per step, so defaulting off buys no measurable performance while recreating UE's classic "why isn't my hit event firing" trap. Box2D ORs the flag — a contact reports if **either** shape opted in (`src/contact.c:253`) — and a contact caches the flag when it is **created**, so toggling mid-touch yields an unpaired event. Treat it as spawn-time configuration.
 
-**Cost.** One `b2World_GetContactEvents` (three pointers, no copy), one pass over begin+end counts, and per dispatched event `2 × (observers + 2)` entity-map lookups from the re-resolution. No steady-state allocation — `clear()` keeps capacity, `reserve()` precedes the fill. Everything scales with how much the world is *changing*, not how much is in it.
+**Cost.** One `b2World_GetContactEvents` (three pointers, no copy), one pass over begin+end counts, and per dispatched event `2 × (callbacks + 2)` entity-map lookups from the re-resolution. No steady-state allocation — `clear()` keeps capacity, `reserve()` precedes the fill. Everything scales with how much the world is *changing*, not how much is in it.
 
 ### Diagnostics
 
@@ -210,7 +210,7 @@ The observer callback lifetime contract is `TimerManager`'s, word for word: **th
 - **Fixed timestep — landed (RAD-25).** Simulation steps at a fixed rate from an accumulator; rendering interpolates.
 - **Physics owns dynamic transforms — landed (RAD-28).** Push ECS→Box2D only at spawn and through the explicit verbs (`Teleport`/`RefreshCollider`); readback drains v3 move events; shapes mutate in place and are never destroyed per step. Rejected alternative: implicit change detection (dirty flags or per-step compares) — the per-step push this replaced *was* the implicit design, and it cost contact persistence, sleeping, and warm-starting.
 - **Gameplay pushes bodies through a per-entity handle — landed (RAD-90).** The four push kinds (force, impulse, velocity, kinematic target) live on `PhysicsBody`, obtained from `Entity::GetPhysicsBody()`; `Level` keeps only the verbs that touch ECS state. Rejected alternatives: a verb on `Level` plus an `Entity` forwarder for each operation (22 trivial functions on the two most-included headers, for no boundary benefit); and a data-driven `ApplyPhysicsCommand(CommandType, vec2, float)` behind a switch, which discards compile-time argument checking, makes units ambiguous at the call site — is that scalar a torque or an angular impulse? — and grows just as fast. The general convention this instantiates is RAD-94.
-- **Collision events are queued, not called back — landed (RAD-29).** v3 enforces the queue shape at the API level; RAD-29 added the three entity-validity checks and two dispatch channels (Level-wide observers, then per-side script hooks — never `std::function`s on components). The move-event drain (RAD-28) was the rehearsal of exactly this idiom. Rejected alternatives: reusing `EventQueue` (frame-scoped, closed variant list, propagation semantics that mean nothing for a physics fact); dispatching inside `PhysicsWorld2D` (needs the `Level*` back-pointer RAD-27 deleted); and a batch observer signature (exports re-validation to every subscriber).
+- **Collision events are queued, not called back — landed (RAD-29).** v3 enforces the queue shape at the API level; RAD-29 added the three entity-validity checks and two dispatch channels (Level-wide callbacks, then per-side script hooks — never `std::function`s on components). The move-event drain (RAD-28) was the rehearsal of exactly this idiom. Rejected alternatives: reusing `EventQueue` (frame-scoped, closed variant list, propagation semantics that mean nothing for a physics fact); dispatching inside `PhysicsWorld2D` (needs the `Level*` back-pointer RAD-27 deleted); and a batch callback signature (exports re-validation to every subscriber).
 
 ## Known Issues & Evolution
 

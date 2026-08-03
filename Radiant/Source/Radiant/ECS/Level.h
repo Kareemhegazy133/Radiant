@@ -54,14 +54,14 @@ namespace Radiant {
 		};
 
 		/**
-		 * Opaque, copyable identity for a registered collision observer. Index
+		 * Opaque, copyable identity for a registered collision callback. Index
 		 * says which slot, Generation says which lifetime of that slot — so a
-		 * handle to a removed observer is always safe, even after its slot has
-		 * been reused: RemoveCollisionObserver on it is a no-op instead of
+		 * handle to a removed callback is always safe, even after its slot has
+		 * been reused: RemoveCollisionCallback on it is a no-op instead of
 		 * unregistering whoever inherited the slot. Same shape and reasoning as
 		 * TimerHandle (playbook §2).
 		 */
-		struct CollisionObserverHandle
+		struct CollisionCallbackHandle
 		{
 			static constexpr uint32_t InvalidIndex = 0xFFFFFFFF;
 
@@ -133,26 +133,26 @@ namespace Radiant {
 		/**
 		 * Registers a callback invoked once per collision with BOTH
 		 * participants — the channel for level-wide systems (damage, audio,
-		 * VFX, abilities) that belong to no single entity's script. Observers
-		 * run BEFORE per-entity script hooks, so they see the collision before
+		 * VFX, abilities) that belong to no single entity's script. These run
+		 * BEFORE per-entity script hooks, so they see the collision before
 		 * gameplay starts reacting to it. An empty callable is a programmer
 		 * error (asserted; returns an invalid handle).
 		 *
 		 * CALLBACK LIFETIME CONTRACT: the Level owns the callback by value, and
 		 * therefore owns whatever it captured. A callback capturing an object
 		 * (an Entity, a system pointer, `this`) outlives its target unless the
-		 * owner removes the handle in its teardown path — RemoveCollisionObserver
+		 * owner removes the handle in its teardown path — RemoveCollisionCallback
 		 * releases the callback and its captures immediately. The Level cannot
 		 * detect a subscriber that died without unregistering.
 		 *
 		 * Registering from inside a collision callback is legal: the new
-		 * observer starts receiving events with the NEXT batch, never the one
+		 * callback starts receiving events with the NEXT batch, never the one
 		 * being dispatched.
 		 */
-		CollisionObserverHandle AddCollisionObserver(std::function<void(const CollisionEvent&)> observer);
+		CollisionCallbackHandle AddCollisionCallback(std::function<void(const CollisionEvent&)> callback);
 
 		/**
-		 * Unregisters the observer, releases its callback (and captures), and
+		 * Unregisters the callback, releases it (and its captures), and
 		 * resets the handle. Stale, invalid, and already-removed handles are
 		 * benign no-ops by design — this is the correct idiom for "remove if
 		 * still registered". Safe to call from inside a collision callback,
@@ -160,7 +160,7 @@ namespace Radiant {
 		 * since freeing a std::function that is currently executing would
 		 * destroy the running lambda's own captures.
 		 */
-		void RemoveCollisionObserver(CollisionObserverHandle& handle);
+		void RemoveCollisionCallback(CollisionCallbackHandle& handle);
 
 		/**
 		 * Advances the simulation one FIXED step: runs native scripts (lazily
@@ -244,8 +244,9 @@ namespace Radiant {
 		PhysicsWorld2D* ResolvePhysics(Entity entity, const char* verb);
 
 		/**
-		 * Hands the physics world's contact batch to gameplay: observers first
-		 * (whole event), then each live side's script hook. Both participants
+		 * Hands the physics world's contact batch to gameplay: level-wide
+		 * callbacks first (whole event), then each live side's script hook.
+		 * Both participants
 		 * are re-resolved from their UUIDs immediately before every call, because
 		 * an earlier callback in the same batch may have destroyed them.
 		 * Called from OnFixedUpdate after the move drain, so handlers read this
@@ -256,8 +257,8 @@ namespace Radiant {
 		/** Delivers one side's collision hook, if it has a live, active script. */
 		void NotifyScript(Entity entity, Entity other, ContactPhase phase);
 
-		/** Frees an observer slot's callback and retires every handle to it. */
-		void ReleaseObserverSlot(uint32_t index);
+		/** Frees a callback slot's function and retires every handle to it. */
+		void ReleaseCallbackSlot(uint32_t index);
 
 		void OnRigidBody2DComponentConstruct(entt::registry& registry, entt::entity entity);
 		void OnRigidBody2DComponentDestroy(entt::registry& registry, entt::entity entity);
@@ -286,29 +287,31 @@ namespace Radiant {
 
 		std::unordered_map<UUID, Entity> m_EntityMap;
 
-		// Level-wide collision observers. Slot storage plus a free list, the
+		// Level-wide collision callbacks. Slot storage plus a free list, the
 		// same pool shape TimerManager uses: slots never shrink, so an index
 		// stays meaningful forever and the generation counter retires handles
 		// to a recycled slot.
-		struct CollisionObserver
+		struct CollisionCallback
 		{
-			std::function<void(const CollisionEvent&)> Callback;
+			// Named Function, not Callback: this struct IS the callback, and a
+			// CollisionCallback::Callback reads as though it held another one
+			std::function<void(const CollisionEvent&)> Function;
 			uint32_t Generation = 0;
 			bool Active = false;
 		};
 
-		// deque, NOT vector, and this is load-bearing: registering an observer
+		// deque, NOT vector, and this is load-bearing: registering a callback
 		// from inside a collision callback is documented as legal, and a vector
 		// growing past capacity would free the buffer holding the std::function
 		// that is mid-call — a use-after-free on return. Deque insertion
 		// invalidates iterators but never references to existing elements, and
 		// indexing stays O(1).
-		std::deque<CollisionObserver> m_CollisionObservers;
-		std::vector<uint32_t> m_FreeObserverSlots;       // released slots awaiting reuse
-		std::vector<uint32_t> m_PendingObserverReleases; // removals deferred until dispatch ends
+		std::deque<CollisionCallback> m_CollisionCallbacks;
+		std::vector<uint32_t> m_FreeCallbackSlots;       // released slots awaiting reuse
+		std::vector<uint32_t> m_PendingCallbackReleases; // removals deferred until dispatch ends
 
 		// True only while DispatchContactEvents is walking a batch. Two jobs:
-		// it defers observer releases (a callback may be removing itself), and
+		// it defers callback releases (a callback may be removing itself), and
 		// it is the tripwire for a handler re-entering the fixed update — which
 		// would Step the world again and clear the buffer being walked.
 		bool m_DispatchingContacts = false;

@@ -47,7 +47,7 @@ void GameLayer::OnAttach()
 
 	// RAD-29 verification scaffolding (retires with RAD-92). Both channels are
 	// exercised: per-entity script hooks on two entities — proving each side of
-	// a contact is notified independently — and one level-wide observer.
+	// a contact is notified independently — and one level-wide callback.
 	{
 		for (const char* name : { "Green Square", "Platform" })
 		{
@@ -57,12 +57,12 @@ void GameLayer::OnAttach()
 				GAME_WARN("CollisionLogger: no '{0}' entity in the level", name);
 		}
 
-		// Observer lines must appear BEFORE the script lines for the same event
+		// Level-wide callback lines must appear BEFORE the script lines for the same event
 		// — that ordering is a guarantee gameplay may rely on, so it is part of
 		// what this run verifies
-		m_CollisionObserver = m_Level->AddCollisionObserver([](const Level::CollisionEvent& collision)
+		m_CollisionCallback = m_Level->AddCollisionCallback([](const Level::CollisionEvent& collision)
 			{
-				GAME_TRACE("[collision] {0} observer: {1} <-> {2}",
+				GAME_TRACE("[collision] {0} level: {1} <-> {2}",
 					collision.Phase == ContactPhase::Begin ? "BEGIN" : "END  ",
 					collision.A ? collision.A.Name() : "<destroyed>",
 					collision.B ? collision.B.Name() : "<destroyed>");
@@ -113,8 +113,8 @@ void GameLayer::OnDetach()
 	// at end of frame, after the next state's OnEnter has already loaded its assets.
 	// Before the Level goes: the Level owns this callback by value and has no
 	// way to learn its subscriber died. Removing it here is the contract from
-	// Level::AddCollisionObserver, and the worked example of it (RAD-29).
-	m_Level->RemoveCollisionObserver(m_CollisionObserver);
+	// Level::AddCollisionCallback, and the worked example of it (RAD-29).
+	m_Level->RemoveCollisionCallback(m_CollisionCallback);
 
 	m_Framebuffer.Reset();
 	m_Level.Reset();

@@ -212,28 +212,28 @@ namespace Radiant {
 		return m_PhysicsWorld.get();
 	}
 
-	Level::CollisionObserverHandle Level::AddCollisionObserver(std::function<void(const CollisionEvent&)> observer)
+	Level::CollisionCallbackHandle Level::AddCollisionCallback(std::function<void(const CollisionEvent&)> callback)
 	{
 		// An empty callable would throw std::bad_function_call on the first
 		// collision, far from the wiring mistake that caused it
-		RADIANT_ASSERT(observer, "AddCollisionObserver called with an empty callable");
-		if (!observer)
+		RADIANT_ASSERT(callback, "AddCollisionCallback called with an empty callable");
+		if (!callback)
 			return {};
 
 		uint32_t index;
-		if (!m_FreeObserverSlots.empty())
+		if (!m_FreeCallbackSlots.empty())
 		{
-			index = m_FreeObserverSlots.back();
-			m_FreeObserverSlots.pop_back();
+			index = m_FreeCallbackSlots.back();
+			m_FreeCallbackSlots.pop_back();
 		}
 		else
 		{
-			index = static_cast<uint32_t>(m_CollisionObservers.size());
-			m_CollisionObservers.emplace_back();
+			index = static_cast<uint32_t>(m_CollisionCallbacks.size());
+			m_CollisionCallbacks.emplace_back();
 		}
 
-		CollisionObserver& slot = m_CollisionObservers[index];
-		slot.Callback = std::move(observer);
+		CollisionCallback& slot = m_CollisionCallbacks[index];
+		slot.Function = std::move(callback);
 		slot.Active = true;
 
 		// The slot's CURRENT generation — bumped on release, which is what
@@ -241,13 +241,13 @@ namespace Radiant {
 		return { index, slot.Generation };
 	}
 
-	void Level::RemoveCollisionObserver(CollisionObserverHandle& handle)
+	void Level::RemoveCollisionCallback(CollisionCallbackHandle& handle)
 	{
 		// Out-of-range covers the default-constructed InvalidIndex too
-		if (handle.Index >= m_CollisionObservers.size())
+		if (handle.Index >= m_CollisionCallbacks.size())
 			return;
 
-		CollisionObserver& slot = m_CollisionObservers[handle.Index];
+		CollisionCallback& slot = m_CollisionCallbacks[handle.Index];
 
 		// Already removed, or a handle from an earlier occupant of this slot:
 		// the "remove if still registered" case, not an error
@@ -262,28 +262,28 @@ namespace Radiant {
 
 		if (m_DispatchingContacts)
 		{
-			// This may be the callback currently executing (an observer
-			// removing itself). Freeing it here would destroy the running
-			// lambda's captures underneath it — defer to the end of the batch.
-			m_PendingObserverReleases.push_back(handle.Index);
+			// This may be the callback currently executing (one removing
+			// itself). Freeing it here would destroy the running lambda's
+			// captures underneath it — defer to the end of the batch.
+			m_PendingCallbackReleases.push_back(handle.Index);
 		}
 		else
 		{
-			ReleaseObserverSlot(handle.Index);
+			ReleaseCallbackSlot(handle.Index);
 		}
 
 		handle = {};
 	}
 
-	void Level::ReleaseObserverSlot(uint32_t index)
+	void Level::ReleaseCallbackSlot(uint32_t index)
 	{
-		CollisionObserver& slot = m_CollisionObservers[index];
+		CollisionCallback& slot = m_CollisionCallbacks[index];
 		// Frees the captures now rather than at Level teardown — they may hold
 		// Refs or own resources
-		slot.Callback = nullptr;
+		slot.Function = nullptr;
 		// Every handle naming this slot is now stale
 		++slot.Generation;
-		m_FreeObserverSlots.push_back(index);
+		m_FreeCallbackSlots.push_back(index);
 	}
 
 	void Level::NotifyScript(Entity entity, Entity other, ContactPhase phase)
@@ -331,9 +331,9 @@ namespace Radiant {
 
 				// Removals that arrived during the batch: safe now that no
 				// callback is on the stack
-				for (uint32_t index : Owner.m_PendingObserverReleases)
-					Owner.ReleaseObserverSlot(index);
-				Owner.m_PendingObserverReleases.clear();
+				for (uint32_t index : Owner.m_PendingCallbackReleases)
+					Owner.ReleaseCallbackSlot(index);
+				Owner.m_PendingCallbackReleases.clear();
 			}
 		} dispatchScope(*this);
 
@@ -346,29 +346,29 @@ namespace Radiant {
 			if (!GetEntityByUUID(contact.EntityA) && !GetEntityByUUID(contact.EntityB))
 				continue; // both gone — nobody left to tell
 
-			// Observers first: level-wide systems see the collision before
+			// Level-wide callbacks first: they see the collision before
 			// per-entity gameplay starts changing the world. (UE dispatches its
 			// world-level handler ahead of per-actor notifies for the same
 			// reason — PhysScene_Chaos.cpp:1154.)
 			//
-			// Indexed with the count captured now, so an observer registered by
-			// another observer joins the NEXT batch rather than this one —
+			// Indexed with the count captured now, so a callback registered by
+			// another callback joins the NEXT batch rather than this one —
 			// EventQueue's rule. The container is a deque precisely so that
 			// such a registration cannot invalidate the callback executing
-			// below (see m_CollisionObservers' declaration).
-			const size_t observerCount = m_CollisionObservers.size();
-			for (size_t i = 0; i < observerCount; ++i)
+			// below (see m_CollisionCallbacks' declaration).
+			const size_t callbackCount = m_CollisionCallbacks.size();
+			for (size_t i = 0; i < callbackCount; ++i)
 			{
-				// Checked per iteration, not cached: a previous observer may
+				// Checked per iteration, not cached: an earlier callback may
 				// have removed this one
-				if (!m_CollisionObservers[i].Active)
+				if (!m_CollisionCallbacks[i].Active)
 					continue;
 
 				CollisionEvent collision{ GetEntityByUUID(contact.EntityA), GetEntityByUUID(contact.EntityB), contact.Phase };
 				if (!collision.A && !collision.B)
-					break; // a previous observer destroyed both participants
+					break; // an earlier callback destroyed both participants
 
-				m_CollisionObservers[i].Callback(collision);
+				m_CollisionCallbacks[i].Function(collision);
 			}
 
 			// Then each side's script hook, with the other side resolved at the
