@@ -391,6 +391,12 @@ namespace Radiant {
 		// walking
 		RADIANT_ASSERT(!m_DispatchingContacts, "Level::OnFixedUpdate re-entered from a collision callback");
 
+		// Re-entering from the script pass is a different failure: it would
+		// clear() and refill m_ScriptUpdateList while the outer walk holds
+		// iterators into it (RAD-95). Separate assert from the one above so the
+		// message names which of the two paths did it.
+		RADIANT_ASSERT(!m_RunningScripts, "Level::OnFixedUpdate re-entered from a script");
+
 		// Snapshot movable entities BEFORE anything moves: rendering interpolates
 		// between this (where the entity was) and the post-step transform (where
 		// it is). "Movable" today = has physics, a camera, or a script — iterated
@@ -434,9 +440,25 @@ namespace Radiant {
 		// mutation is at worst a stale id, which the checks below detect.
 		// Rebuilt per step; RAD-30's side table replaces the rebuild with a
 		// maintained list, which is the shape UE's tick registry already has.
-		m_ScriptUpdateList.clear();
-		for (auto entityHandle : m_Registry.view<NativeScriptComponent>())
-			m_ScriptUpdateList.push_back(entityHandle);
+		// Scoped like DispatchScope above, and for the same reason: a gameplay
+		// callback that throws must not leave the flag set and wedge every
+		// later fixed update.
+		struct ScriptPassScope
+		{
+			Level& Owner;
+			explicit ScriptPassScope(Level& owner) : Owner(owner) { Owner.m_RunningScripts = true; }
+			~ScriptPassScope() { Owner.m_RunningScripts = false; }
+		} scriptPassScope(*this);
+
+		{
+			auto scripts = m_Registry.view<NativeScriptComponent>();
+			m_ScriptUpdateList.clear();
+			// Size is known here, so take it — after the first few steps the
+			// member has settled and this reserves nothing (playbook §7)
+			m_ScriptUpdateList.reserve(scripts.size());
+			for (auto entityHandle : scripts)
+				m_ScriptUpdateList.push_back(entityHandle);
+		}
 
 		for (entt::entity entityHandle : m_ScriptUpdateList)
 		{

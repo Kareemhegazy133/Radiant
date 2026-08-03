@@ -302,7 +302,12 @@ namespace Radiant {
 		// any script runs (see OnFixedUpdate's script-pass contract). A member
 		// rather than a local so the pass never allocates once capacity has
 		// settled — clear() keeps the buffer, a local vector would hit the heap
-		// 60 times a second. Meaningless outside OnFixedUpdate.
+		// 60 times a second.
+		//
+		// Being a member is what makes the pass NON-REENTRANT: re-entering
+		// OnFixedUpdate would clear() the buffer the outer walk is iterating.
+		// m_RunningScripts below is the tripwire, so that contract is enforced
+		// rather than merely written here.
 		std::vector<entt::entity> m_ScriptUpdateList;
 
 		// Level-wide collision callbacks. Slot storage plus a free list, the
@@ -333,6 +338,14 @@ namespace Radiant {
 		// it is the tripwire for a handler re-entering the fixed update — which
 		// would Step the world again and clear the buffer being walked.
 		bool m_DispatchingContacts = false;
+
+		// True only while the script pass is walking m_ScriptUpdateList. The
+		// tripwire for re-entering OnFixedUpdate from gameplay: re-entry would
+		// clear() and refill the buffer the outer walk is iterating, which is
+		// iterator invalidation, not merely surprising ordering. A script
+		// cannot reach OnFixedUpdate (that is what GameplayLevel is for), so
+		// this guards the remaining path — the owner calling it re-entrantly.
+		bool m_RunningScripts = false;
 
 		// For Debugging Purposes
 		bool m_ShowPhysicsColliders = true;
