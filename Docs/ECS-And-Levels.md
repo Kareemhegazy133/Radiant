@@ -57,7 +57,7 @@ Adding a component is a three-site contract: declare in `Components.h`, add to `
 
 ### Lifecycle & loops
 
-Entity creation/destruction is **immediate** (no command buffer). Physics bodies are managed reactively through entt signals: `on_construct<RigidBody2DComponent>` creates the Box2D body, `on_destroy` destroys it — component presence *is* the physics binding.
+Entity creation/destruction is **immediate** (no command buffer — RAD-97 revisits the destruction half). Physics bodies are managed reactively through entt signals: `on_construct<RigidBody2DComponent>` creates the Box2D body, `on_destroy` destroys it — component presence *is* the physics binding.
 
 `Level::OnFixedUpdate(ts)` advances one FIXED simulation step: snapshots movable entities' transforms (for render interpolation), runs scripts (lazy-instantiating on first update), pushes transforms to physics, steps the physics world, and reads stepped body transforms back into the ECS as a dedicated post-step pass. `Level::OnRender(alpha)` finds the first `Primary` camera and draws sprite entities, blending movable entities between the last two simulation states by `alpha` — draw-only, it never mutates simulation state. Reaper's `GameLayer` drives the former from `Layer::OnFixedUpdate` and the latter from `Layer::OnUpdate` (see [Time-And-Simulation](Time-And-Simulation.md)).
 
@@ -76,7 +76,52 @@ Game code never writes these — the registry is private to `Level`, so views ex
 
 ### Native scripts
 
-`ScriptableEntity` (`ECS/ScriptableEntity.h`) is the C++ scripting seam: subclass it, override `OnCreate/OnUpdate/OnDestroy`, and bind with `NativeScriptComponent::Bind<T>()` — the component stores factory/destroy function pointers; the Level instantiates lazily on first update. Scripts access their entity's components through the embedded `Entity`. One script per entity; bindings are code-only (not serialized — they must be re-bound after level load, e.g. Reaper re-binds `CameraController` to its camera entity).
+`ScriptableEntity` (`ECS/ScriptableEntity.h`) is the C++ scripting seam: subclass it, override `OnCreate/OnUpdate/OnDestroy`, and bind with `NativeScriptComponent::Bind<T>()` — the component stores factory/destroy function pointers; the Level instantiates lazily on first update. One script per entity; bindings are code-only (not serialized — they must be re-bound after level load, e.g. Reaper re-binds `CameraController` to its camera entity).
+
+*(The class name is provisional — RAD-99 renames it once RAD-101 decides whether an entity may carry one behaviour or several.)*
+
+#### What a script can reach (RAD-95)
+
+**The problem this solves.** A script used to be handed its entity and then locked out of it: `m_Entity` was private with `friend class Level` as the only key. A script could not spawn a bullet, find another entity, or pass itself to anything — the first non-trivial gameplay line was unwritable. What existed instead was a handful of forwarders mirroring four of `Entity`'s methods, chosen by nobody and never revisited, and growing by one every time a subsystem appeared (RAD-90 added `GetPhysicsBody()` for exactly that reason).
+
+Two accessors replace all of it, and everything chains off them:
+
+```cpp
+GetEntity()                                    // my handle
+GetEntity().GetComponent<TransformComponent>() // my components
+GetEntity().GetPhysicsBody().ApplyForce(...)   // my physics
+GetLevel().CreateEntity("Bullet")              // the world
+```
+
+**Why exactly two, and why that is not the forwarder pattern returning.** These are *relationship navigation* — a **bounded** set, sized by the relationships a script actually has, and it has two: the entity it drives, and the level that entity is in. A third requires a third *relationship* to exist first. What must never be added is a *subsystem* forwarder (`GetPhysicsBody`, a future `GetAbilitySystem`, `GetAnimation`): that set is **unbounded**, one per subsystem forever, and is the O(N)-edits-per-feature pattern RAD-94 exists to forbid. Unreal draws the identical line — `UActorComponent` carries both `GetOwner()` and `GetWorld()`, and no per-subsystem forwarder.
+
+The verbosity is deliberate on the component path: `GetEntity().GetComponent<T>()` says *whose* component and looks like the sparse-set lookup it is, where a bare forwarder read like a member access. Game-side helpers stay Reaper's business (RAD-94); named gameplay verbs on the base class are RAD-99's.
+
+#### The level, narrowed
+
+`GetLevel()` returns a **`GameplayLevel`** (`ECS/GameplayLevel.h`) — an 8-byte value handle over a `Level*` exposing the level-scope verbs gameplay may use: `CreateEntity`, `DestroyEntity`, `FindEntityByName`, `GetEntityByUUID`, `AddCollisionCallback`/`RemoveCollisionCallback`, and level identity. It owns nothing, caches nothing, and has one private `Resolve(verb)` guard, so no verb carries its own preamble (playbook §4).
+
+It exists because `Level` is *also* the frame driver. `OnFixedUpdate`, `OnRender` and `OnViewportResize` belong to whoever drives the loop and to nothing else — a script calling `OnFixedUpdate` would step the physics world from inside the physics step. Handing gameplay a raw `Level*` would make that a one-keystroke mistake. Unreal narrows the same surface by tagging Blueprint-visible functions with `UFUNCTION`; with no reflection system (RAD-72) our version of "the tagged subset" has to be a type. Also withheld: `CreateEntityWithUUID` (a colliding caller-chosen UUID silently replaces a map entry), `GetAssetList` (tooling), `SetName` (authoring). **And never an accessor returning the underlying `Level*`** — that would hand back what the type exists to withhold.
+
+**The dividing rule:** a verb that names one entity lives on `Entity` (`Teleport`, `Destroy`, `RefreshCollider`); a verb about the level as a whole lives on `GameplayLevel`.
+
+**Lifetime.** `script → Entity → GameplayLevel → Level` is three non-owning hops. All are TRANSIENT: obtain, use, drop, never store across a level transition. An `Entity` can detect its own entity dying (the entt handle carries a generation); **nothing can detect the Level dying**, because a raw `Level*` has no generation. None of them holds a `Ref<Level>` — that would let gameplay keep a dead level alive and invert ownership.
+
+#### Spawning and destroying from a script
+
+Legal from any hook, and the script pass is built to survive it. `Level::OnFixedUpdate` snapshots the script set into a reusable buffer before running any of it, then walks plain entity ids, re-validating each and re-fetching the component after anything that hands control to gameplay. Without that, a spawner binding a script to its new entity would reallocate the pool being iterated, and a destroy would swap-and-pop it — undefined behaviour that survives Debug and corrupts under optimization (playbook §8.8).
+
+This is Unreal's mechanism in miniature: its tick loop walks a separately-maintained tick-function list, never the authoritative actor storage, and diverts mid-tick registrations into a side buffer. Ours rebuilds the list per step; RAD-30's side table makes it maintained.
+
+The resulting contract, which gameplay may rely on:
+
+- An entity spawned during a step first runs its own `OnCreate`/`OnUpdate` on the **next** step.
+- An entity destroyed during a step is skipped for the remainder of that step.
+- A spawned entity has no render snapshot for the frame it was born in, so it draws un-interpolated once — correct, since there is no previous pose to blend from.
+
+One caveat, and it is temporary: destroying **this** entity from a hook deletes the script instance whose method is executing, so it must be the last statement. RAD-97 removes that by deferring the reap.
+
+A script registering a level-wide collision callback **must remove it in `OnDestroy`** — the Level owns the callback by value and therefore its captures, and cannot detect that its subscriber died.
 
 ### Serialization
 
@@ -94,3 +139,5 @@ Game code never writes these — the registry is private to `Level`, so views ex
 - **Components must become plain data (RAD-30):** `NativeScriptComponent` holds an owning raw pointer, `RigidBody2DComponent` holds a `void*` body plus two `std::function` callbacks. Shallow copies duplicate raw pointers, which blocks the `Level::Copy()` that play-in-editor requires (RAD-52). Runtime state moves to Level-owned side tables; the rule is *if it can't be memcpy'd and serialized, it doesn't belong in a component* (playbook §3).
 - **Serialization gaps:** `IsActive` and script bindings are lost on round-trip; several nested YAML reads are unguarded against malformed files. Hardened alongside the Phase 4 asset work.
 - **No edit/play separation:** the engine has no `OnRuntimeStart/Stop` — physics and scripts run whenever the Level updates. Restored properly with play-in-editor (RAD-52).
+- **Immediate destruction costs every caller a guard (RAD-97):** `DestroyEntity` tears down inside the call, so contact dispatch re-resolves both participants before every callback, and a script destroying its own entity must make it the last statement. Deferring the reap to a defined point removes all three symptoms — the same discipline the `EventQueue` already applies to input (playbook §1).
+- **The script list is rebuilt each step, not maintained (RAD-30):** correct at today's scale (single-digit script counts) and one extra walk over a tiny set. The side table RAD-30 introduces *is* the maintained list, which is the shape Unreal's tick registry already has.

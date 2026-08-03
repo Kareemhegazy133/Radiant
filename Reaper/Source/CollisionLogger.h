@@ -52,7 +52,7 @@ public:
 private:
 	// Name() is on Entity, not ScriptableEntity — reach it through the
 	// entity this script is attached to
-	const std::string& Name() { return GetComponent<MetadataComponent>().Tag; }
+	const std::string& Name() { return GetEntity().Name(); }
 
 	bool m_DestroyOnContact = false;
 };

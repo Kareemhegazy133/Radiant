@@ -9,11 +9,14 @@
 namespace Radiant {
 
 	class Level;
-	// Returned by value from GetPhysicsBody below, which needs only an
-	// incomplete type to DECLARE — the definition lives in Entity.cpp, which
-	// includes PhysicsBody.h. PhysicsBody.h includes this header (it holds an
-	// Entity by value), so declaring it the other way round would be a cycle.
+	// Both are returned by value from accessors below, which needs only an
+	// incomplete type to DECLARE — the definitions live in Entity.cpp, which
+	// includes their headers. Each of those headers includes this one (
+	// PhysicsBody holds an Entity by value; GameplayLevel reaches Level, which
+	// includes this header), so declaring either the other way round would be
+	// a cycle.
 	class PhysicsBody;
+	class GameplayLevel;
 
 	/**
 	 * Value handle to an entity: {entt handle, Level*}, 16 bytes, copied freely.
@@ -108,6 +111,16 @@ namespace Radiant {
 		 */
 		void Destroy();
 
+		/**
+		 * Re-applies this entity's collider fields and transform Scale to its
+		 * live physics shape — a forwarder to Level::RefreshCollider (see it
+		 * for the full contract). Nothing detects collider or Scale writes
+		 * implicitly, so gameplay that mutates them must call this or the body
+		 * keeps its old shape. The only logic here is warning on a level-less
+		 * handle, which cannot reach the Level to be warned by it.
+		 */
+		void RefreshCollider();
+
 		// The non-const overload hands out a mutable reference to the shared static
 		// fallback when metadata is missing — do not write through it in that case
 		std::string& Name() { return HasComponent<MetadataComponent>() ? GetComponent<MetadataComponent>().Tag : NoName; }
@@ -129,6 +142,24 @@ namespace Radiant {
 		 * nothing else — so prefer calling it again over storing one.
 		 */
 		PhysicsBody GetPhysicsBody() const;
+
+		/**
+		 * The level this entity lives in, as gameplay may use it — how a
+		 * script spawns, finds and destroys entities, and subscribes to the
+		 * level-wide collision channel (see GameplayLevel for what it
+		 * deliberately withholds, and why).
+		 *
+		 * Always returns a handle; test it before use. It is false only when
+		 * this handle has no level at all, so
+		 * `if (GameplayLevel level = entity.GetLevel())` is the idiom. Cheap
+		 * enough to call per use — it copies one pointer — so prefer calling
+		 * it again over storing one.
+		 *
+		 * const returns a handle through which the level CAN be mutated, the
+		 * same latitude GetPhysicsBody takes: const here constrains this
+		 * handle, not the thing it names, exactly as with a pointer.
+		 */
+		GameplayLevel GetLevel() const;
 
 		/** The entity's persistent identity — stable across save/load, unlike this handle. */
 		UUID GetUUID() { return GetComponent<MetadataComponent>().ID; }

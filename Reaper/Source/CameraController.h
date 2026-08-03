@@ -18,16 +18,19 @@ using namespace Radiant;
 class CameraController : public ScriptableEntity
 {
 public:
-	void OnCreate()
+	void OnCreate() override
 	{
-		// Get camera position and rotation from TransformComponent
-		m_CameraPosition = GetComponent<TransformComponent>().Translation;
-		m_CameraRotation = GetComponent<TransformComponent>().Rotation.z;
+		// One lookup, both fields — the transform is fetched once and read
+		// twice rather than fetched twice
+		const auto& transform = GetEntity().GetComponent<TransformComponent>();
+		m_CameraPosition = transform.Translation;
+		m_CameraRotation = transform.Rotation.z;
+
 		m_CameraTranslationSpeed = 5.0f; // Movement speed
 		m_CameraRotationSpeed = glm::radians(45.0f); // Rotation speed (radians per second)
 	}
 
-	void OnUpdate(Timestep ts)
+	void OnUpdate(Timestep ts) override
 	{
 		// Handle rotation (left and right)
 		if (Input::IsKeyPressed(Key::Q)) // Rotate left
@@ -59,7 +62,7 @@ public:
 		}
 
 		// Apply the calculated position to the entity's transform
-		auto& transform = GetComponent<TransformComponent>();
+		auto& transform = GetEntity().GetComponent<TransformComponent>();
 		transform.Translation = m_CameraPosition; // Update the translation
 
 		// You could also apply rotation to the transform if needed:

@@ -1,7 +1,11 @@
 #pragma once
 
 #include "Entity.h"
-#include "PhysicsBody.h"
+
+// OnUpdate/OnCollision* name Timestep. Previously this header only ever
+// compiled inside Level.cpp, which happened to pull it in first; giving
+// ScriptableEntity its own translation unit made the omission visible.
+#include "Radiant/Core/Timestep.h"
 
 namespace Radiant {
 
@@ -10,6 +14,25 @@ namespace Radiant {
 	 * override OnCreate/OnUpdate/OnDestroy, and attach with
 	 * NativeScriptComponent::Bind<T>() (one script per entity; bindings are
 	 * code-only and must be re-bound after level load).
+	 *
+	 * NAME IS PROVISIONAL: RAD-99 renames this class once RAD-101 settles
+	 * whether an entity may carry one behaviour or several — the answer decides
+	 * whether the right name is Actor (the behaviour IS the world-thing) or
+	 * Behaviour (it is one of many attached to it).
+	 *
+	 * WHAT A SCRIPT CAN REACH (RAD-95). Two accessors, and everything chains
+	 * off them:
+	 *
+	 *     GetEntity()                                    // my handle
+	 *     GetEntity().GetComponent<TransformComponent>() // my components
+	 *     GetEntity().GetPhysicsBody().ApplyForce(...)   // my physics
+	 *     GetLevel().CreateEntity("Bullet")              // the world
+	 *
+	 * There are deliberately NO component or subsystem forwarders on this
+	 * class. It previously mirrored four of Entity's methods, chosen by nobody
+	 * and never revisited; every future subsystem facade is now reachable the
+	 * day it is written, at a cost of zero edits here. See GetLevel() for the
+	 * rule that keeps it that way.
 	 *
 	 * Lifecycle contract: the instance is heap-allocated lazily by the Level on
 	 * the first Level::OnFixedUpdate after binding. m_Entity is wired AFTER
@@ -20,51 +43,47 @@ namespace Radiant {
 	 * and OnDestroy run regardless of the active flag).
 	 * OnDestroy runs when the entity is destroyed; the instance is deleted by its
 	 * owning NativeScriptComponent (side-table rework tracked as RAD-30).
+	 *
+	 * Scripts may spawn and destroy entities from any hook. Structural changes
+	 * take effect immediately, but the script set is snapshotted at the start
+	 * of each step — see Level::OnFixedUpdate's script-pass contract for what
+	 * that guarantees.
 	 */
 	class ScriptableEntity
 	{
 	public:
 		virtual ~ScriptableEntity() = default;
 
-		// Component access forwards to the script's entity — valid from OnCreate
-		// onward, never from the constructor (m_Entity is not yet wired there)
-		template<typename T, typename... Args>
-		T& AddComponent(Args&&... args)
-		{
-			return m_Entity.AddComponent<T>(std::forward<Args>(args)...);
-		}
-
-		template<typename T>
-		T& GetComponent()
-		{
-			return m_Entity.GetComponent<T>();
-		}
-
-		template<typename T>
-		void RemoveComponent()
-		{
-			m_Entity.RemoveComponent<T>();
-		}
+		/**
+		 * The entity this script drives. Everything a script can reach hangs
+		 * off it: components, physics (GetPhysicsBody), and every subsystem
+		 * facade added later — none of which costs this class an edit.
+		 *
+		 * Valid from OnCreate onward, never in the constructor: the Level wires
+		 * the handle AFTER construction.
+		 */
+		Entity GetEntity() const { return m_Entity; }
 
 		/**
-		 * This entity's physics handle — forces, impulses, velocities,
-		 * kinematic targets (see PhysicsBody). Test it before use; it is false
-		 * when the entity has no rigidbody.
+		 * The level this script's entity lives in, as gameplay may use it —
+		 * spawn, find and destroy entities, and the level-wide collision
+		 * channel. See GameplayLevel for what it deliberately withholds.
 		 *
-		 * TEMPORARY, and RAD-95 REMOVES IT. Forwarded because a script cannot
-		 * otherwise reach its own Entity (m_Entity is private), which would
-		 * leave RAD-90's verbs unreachable from the only gameplay code the
-		 * engine has. But one forwarder per subsystem is the wrong shape: GAS
-		 * would want GetAbilitySystem(), animation GetAnimation(), and this
-		 * class would grow a method per subsystem forever — the O(N)-edits-per-
-		 * feature pattern RAD-94 exists to prevent. RAD-95 exposes the entity
-		 * handle once, after which every facade comes free and this goes away.
-		 * Do not add a second forwarder of this kind; extend RAD-95 instead.
+		 * WHY THERE ARE EXACTLY TWO ACCESSORS HERE, AND WHY THAT IS NOT THE
+		 * FORWARDER PATTERN RETURNING (RAD-95). These two are *relationship
+		 * navigation* — a bounded set, sized by the relationships a script
+		 * actually has, and a script has two: the entity it drives and the
+		 * level that entity is in. It grows only if a genuinely new
+		 * relationship appears, which RAD-94 forbids fabricating. What must
+		 * never be added is a *subsystem* forwarder (GetPhysicsBody,
+		 * GetAbilitySystem, GetAnimation): that set is unbounded — one per
+		 * subsystem, forever — which is why the RAD-90 stopgap was removed
+		 * rather than joined. Reach subsystems through GetEntity().
 		 *
-		 * Called from OnUpdate, the effect lands in the step about to run;
-		 * called from a collision hook, in the next one.
+		 * Unreal draws the same line: UActorComponent carries both GetOwner()
+		 * and GetWorld(), and no per-subsystem forwarder.
 		 */
-		PhysicsBody GetPhysicsBody() { return m_Entity.GetPhysicsBody(); }
+		GameplayLevel GetLevel() const;
 
 		bool operator==(const ScriptableEntity& other) const
 		{
@@ -87,8 +106,16 @@ namespace Radiant {
 		}
 
 	protected:
-		// Defaults log INFO so an unbound override is visible — note the OnUpdate
-		// default fires every frame for scripts that don't override it
+		/**
+		 * Defaults log INFO so an unbound override is visible — note the
+		 * OnUpdate default fires every step for scripts that don't override it.
+		 *
+		 * Destroying THIS entity from OnCreate or OnUpdate deletes the script
+		 * instance whose method is executing, so it must be the last statement
+		 * (the same caveat OnCollisionBegin carries). RAD-97 removes this wart
+		 * rather than rewording it: once destruction is deferred to a reap
+		 * point, the method finishes normally.
+		 */
 		virtual void OnCreate() { RADIANT_INFO("Scriptable OnCreate"); }
 		virtual void OnUpdate(Timestep ts) { RADIANT_INFO("Scriptable OnUpdate"); }
 		virtual void OnDestroy() { RADIANT_INFO("Scriptable OnDestroy"); }
@@ -109,7 +136,7 @@ namespace Radiant {
 		 * here: destroy entities (including `other`), teleport, spawn, add or
 		 * remove components. One caveat — destroying THIS entity deletes the
 		 * script instance whose method is executing, so it must be the last
-		 * statement.
+		 * statement (a wart RAD-97 removes by deferring the reap).
 		 *
 		 * Requires the collider to opt in (BoxCollider2DComponent::
 		 * EnableContactEvents, on by default; Box2D reports the contact if

@@ -30,7 +30,7 @@ public:
 	{
 		// The oscillation is measured from wherever the entity was placed, so
 		// the script carries no opinion about where the platform lives
-		m_Origin = GetComponent<TransformComponent>().Translation;
+		m_Origin = GetEntity().GetComponent<TransformComponent>().Translation;
 	}
 
 	void OnUpdate(Timestep ts) override
@@ -48,7 +48,7 @@ public:
 		// Every step, deliberately. Stop calling this and the platform sails
 		// away at its last computed velocity — that is Box2D's contract, not
 		// an oversight (see PhysicsBody::MoveKinematic).
-		if (PhysicsBody body = GetPhysicsBody())
+		if (PhysicsBody body = GetEntity().GetPhysicsBody())
 			body.MoveKinematic(target, 0.0f);
 	}
 

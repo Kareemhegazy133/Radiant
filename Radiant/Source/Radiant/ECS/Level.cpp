@@ -426,25 +426,66 @@ namespace Radiant {
 				m_Registry.remove<TransformSnapshotComponent>(entityHandle);
 		}
 
-		m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
+		// Snapshot the script set before running any of it. Gameplay can reach
+		// CreateEntity/DestroyEntity from here (RAD-95), and a live entt view
+		// cannot survive that: binding a script to a spawned entity may
+		// reallocate the very pool being walked, and destroying an entity
+		// swap-and-pops it (playbook §8.8). Walking plain ids instead means a
+		// mutation is at worst a stale id, which the checks below detect.
+		// Rebuilt per step; RAD-30's side table replaces the rebuild with a
+		// maintained list, which is the shape UE's tick registry already has.
+		m_ScriptUpdateList.clear();
+		for (auto entityHandle : m_Registry.view<NativeScriptComponent>())
+			m_ScriptUpdateList.push_back(entityHandle);
+
+		for (entt::entity entityHandle : m_ScriptUpdateList)
+		{
+			// An earlier script in this same pass may have destroyed this one
+			if (!m_Registry.valid(entityHandle))
+				continue;
+
+			auto* nsc = m_Registry.try_get<NativeScriptComponent>(entityHandle);
+			if (!nsc)
+				continue;
+
+			if (!nsc->Instance)
 			{
-				if (!nsc.Instance)
-				{
-					// A component added without Bind<T>() leaves InstantiateScript
-					// empty; calling it throws std::bad_function_call
-					RADIANT_ASSERT(nsc.InstantiateScript, "NativeScriptComponent has no bound script - missing Bind<T>()?");
-					if (!nsc.InstantiateScript)
-						return;
+				// A component added without Bind<T>() leaves InstantiateScript
+				// empty; calling it throws std::bad_function_call
+				RADIANT_ASSERT(nsc->InstantiateScript, "NativeScriptComponent has no bound script - missing Bind<T>()?");
+				if (!nsc->InstantiateScript)
+					continue;
 
-					nsc.Instance = nsc.InstantiateScript();
-					nsc.Instance->m_Entity = Entity{ entity, this };
-					nsc.Instance->OnCreate();
-				}
-				auto& metadata = nsc.Instance->m_Entity.GetComponent<MetadataComponent>();
-				if (!metadata.IsActive) return;
+				ScriptableEntity* instance = nsc->InstantiateScript();
+				instance->m_Entity = Entity{ entityHandle, this };
+				// Stored BEFORE OnCreate runs: a script that destroys its own
+				// entity there must be findable by DestroyEntity, or the
+				// instance leaks and its OnDestroy never runs
+				nsc->Instance = instance;
+				instance->OnCreate();
 
-				nsc.Instance->OnUpdate(ts);
-			});
+				// OnCreate is gameplay, so `nsc` may no longer be usable: this
+				// entity could be gone, and spawning a scripted entity
+				// reallocates the pool nsc points into. That is REFERENCE
+				// invalidation — a different hazard from the iterator
+				// invalidation the snapshot above fixes, and not cured by it.
+				// Re-resolve rather than reuse; this is load-bearing, not
+				// defensive noise.
+				if (!m_Registry.valid(entityHandle))
+					continue;
+
+				nsc = m_Registry.try_get<NativeScriptComponent>(entityHandle);
+				if (!nsc || !nsc->Instance)
+					continue;
+			}
+
+			// Straight from the registry: the handle is already in hand, so
+			// routing this through the script's own Entity would be a detour
+			if (!m_Registry.get<MetadataComponent>(entityHandle).IsActive)
+				continue;
+
+			nsc->Instance->OnUpdate(ts);
+		}
 
 		// A level without a world (scratch levels, or a failed world create)
 		// still runs scripts above — it just has no physics to advance
@@ -463,9 +504,12 @@ namespace Radiant {
 			// transforms.
 			for (const auto& move : m_PhysicsWorld->GetMoveEvents())
 			{
-				// Nothing destroys entities between Step and this drain
-				// (scripts run BEFORE the step, in this same function), so a
-				// miss is a broken invariant, not a content mistake
+				// Nothing destroys entities between Step and this drain, so a
+				// miss is a broken invariant, not a content mistake. Scripts
+				// CAN destroy entities now (RAD-95), but they run BEFORE the
+				// step in this same function — a destroyed entity's body dies
+				// with it, so the step never reports a move for it. That
+				// ordering is what keeps this an assert rather than a guard.
 				auto it = m_EntityMap.find(move.EntityId);
 				RADIANT_ASSERT(it != m_EntityMap.end(), "Move-event drain: entity missing from map - destroyed between Step and drain?");
 				if (it == m_EntityMap.end())

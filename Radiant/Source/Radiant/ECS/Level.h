@@ -172,6 +172,17 @@ namespace Radiant {
 		 * (RAD-28); pushes happen only at spawn and through the explicit
 		 * verbs. Call with the engine's fixed delta (from Layer::OnFixedUpdate)
 		 * — never a variable frame delta.
+		 *
+		 * SCRIPT-PASS CONTRACT (RAD-95). Scripts may create and destroy
+		 * entities, and those changes take effect IMMEDIATELY — but the set of
+		 * scripts to run is snapshotted before the first one executes, so:
+		 * an entity spawned during a step first receives its own OnCreate and
+		 * OnUpdate on the NEXT step, and an entity destroyed during a step is
+		 * skipped for the remainder of this one. Both are guarantees gameplay
+		 * may rely on, not implementation details. A spawned entity also has
+		 * no render snapshot for the frame it was born in (the snapshot pass
+		 * runs before scripts), so it draws un-interpolated once — correct,
+		 * since there is no previous pose to blend from.
 		 */
 		void OnFixedUpdate(Timestep ts);
 
@@ -286,6 +297,13 @@ namespace Radiant {
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
 		std::unordered_map<UUID, Entity> m_EntityMap;
+
+		// The script set for the current fixed step, rebuilt each step before
+		// any script runs (see OnFixedUpdate's script-pass contract). A member
+		// rather than a local so the pass never allocates once capacity has
+		// settled — clear() keeps the buffer, a local vector would hit the heap
+		// 60 times a second. Meaningless outside OnFixedUpdate.
+		std::vector<entt::entity> m_ScriptUpdateList;
 
 		// Level-wide collision callbacks. Slot storage plus a free list, the
 		// same pool shape TimerManager uses: slots never shrink, so an index

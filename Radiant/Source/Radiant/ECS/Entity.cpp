@@ -2,6 +2,7 @@
 #include "Level.h"
 
 #include "PhysicsBody.h"
+#include "GameplayLevel.h"
 
 namespace Radiant {
 
@@ -10,6 +11,15 @@ namespace Radiant {
 	PhysicsBody Entity::GetPhysicsBody() const
 	{
 		return PhysicsBody(*this);
+	}
+
+	// Same reason, one layer up: GameplayLevel.h includes Level.h, which
+	// includes Entity.h. No guard — a null m_Level produces a handle that is
+	// false, and GameplayLevel's own Resolve reports whichever verb is then
+	// called on it. Warning here as well would say it twice.
+	GameplayLevel Entity::GetLevel() const
+	{
+		return GameplayLevel(m_Level);
 	}
 
 	bool Entity::IsValid() const
@@ -50,5 +60,15 @@ namespace Radiant {
 			return;
 		}
 		m_Level->DestroyEntity(*this);
+	}
+
+	void Entity::RefreshCollider()
+	{
+		if (!m_Level)
+		{
+			RADIANT_WARN("Entity: RefreshCollider called on a handle with no level");
+			return;
+		}
+		m_Level->RefreshCollider(*this);
 	}
 }
