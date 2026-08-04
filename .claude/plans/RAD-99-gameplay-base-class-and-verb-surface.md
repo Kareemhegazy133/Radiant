@@ -498,10 +498,10 @@ Small enough that the inclusion rule below is visibly true rather than merely as
 - [x] **Add one cheat key exercising `SetLocation` on a body-backed entity** (commit 5, scaffolding) — the `Reaper` entity, whose body must actually move, unlike the raw transform write. Carries a `retires with RAD-92` comment, and RAD-92 gets a scope amendment **before** this lands (its own rule, applied to itself).
 
 ### Phase 6 — Records
-- [ ] **Create `Docs/Gameplay-Framework.md`** — the object model (`Entity` = the world-thing, the behaviour base = the behaviour unit), the two inclusion rules, the verb table, the `SetLocation`-vs-`Teleport` distinction. The gameplay sections currently in `ECS-And-Levels.md` (native scripts, what a script can reach, the level narrowed) move here; a pointer stays behind.
-- [ ] **Update `Docs/ECS-And-Levels.md`, `Docs/Physics.md`, `Docs/README.md`** in the same change as the code that invalidates them (CLAUDE.md's doc contract).
-- [ ] **Update CLAUDE.md's Architecture Map** — a `Gameplay/` row; the `ECS/` row loses the facades.
-- [ ] **Update the playbook** — §10 gains the verb-home rule and the `Entity`-is-`AActor` mapping; the composition answer is recorded.
+- [x] **Create `Docs/Gameplay-Framework.md`** — the object model (`Entity` = the world-thing, the behaviour base = the behaviour unit), the two inclusion rules, the verb table, the `SetLocation`-vs-`Teleport` distinction. The gameplay sections currently in `ECS-And-Levels.md` (native scripts, what a script can reach, the level narrowed) move here; a pointer stays behind.
+- [x] **Update `Docs/ECS-And-Levels.md`, `Docs/Physics.md`, `Docs/README.md`** in the same change as the code that invalidates them (CLAUDE.md's doc contract).
+- [x] **Update CLAUDE.md's Architecture Map** — a `Gameplay/` row; the `ECS/` row loses the facades.
+- [x] **Update the playbook** — §10 gains the verb-home rule and the `Entity`-is-`AActor` mapping; the composition answer is recorded.
 
 ---
 
