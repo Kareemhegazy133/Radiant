@@ -218,6 +218,33 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 		return true;
 	}
 
+	// RAD-99 verification cheat (retires with RAD-92)
+
+	if (e.GetKeyCode() == Key::M)
+	{
+		// T's twin, and deliberately the same destination — the pair is what
+		// makes RAD-99's SetLocation/Teleport split observable rather than
+		// asserted. Press one, then the other:
+		//
+		//   T (Teleport)    stamps the render snapshot, so the jump does not
+		//                   smear; TRACEs "PhysicsWorld2D: teleport entity ..."
+		//   M (SetLocation) preserves the snapshot, so motion interpolates;
+		//                   engine-silent, because a verb gameplay may call
+		//                   every step must not drown the log
+		//
+		// What this proves is the half a build cannot: the BODY moves, not just
+		// the sprite. A raw TransformComponent write here would be discarded by
+		// the next physics readback (RAD-28) and the Reaper would snap back
+		// within a frame or two; it must instead stay put and carry on falling
+		// from the new position.
+		Entity reaper = m_Level->FindEntityByName("Reaper");
+		if (reaper)
+			reaper.SetLocation({ 4.0f, 2.0f, 0.0f });
+		else
+			GAME_WARN("SetLocation cheat: no 'Reaper' entity in the level");
+		return true;
+	}
+
 	if (e.GetKeyCode() == Key::G)
 	{
 		// Grow the green square's collider, then re-apply it: proves shapes
