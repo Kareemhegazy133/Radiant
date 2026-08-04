@@ -30,6 +30,50 @@ namespace Radiant {
 	 * Component accessors assert on misuse in Debug/Release (asserts compile out
 	 * in Dist): GetComponent on a missing component, AddComponent on a duplicate,
 	 * and every accessor on an invalid handle.
+	 *
+	 * THE NAMED GAMEPLAY VERBS, AND THE RULE FOR ADDING ONE (RAD-99).
+	 * Entity is Radiant's world-thing — Unreal's AActor to EntityBehaviour's
+	 * UActorComponent — so a verb that names ONE entity lives here (playbook
+	 * §10's dividing rule; a verb about the level as a whole lives on
+	 * GameplayLevel). GetLocation/SetLocation/GetRotation/SetRotation are that
+	 * surface today.
+	 *
+	 * A verb is admitted only when BOTH gates pass:
+	 *
+	 *   SEMANTIC GATE — it names exactly one entity, is expressible without the
+	 *     caller naming a component type, and EITHER (a) the equivalent raw
+	 *     component write is *silently wrong*, OR (b) it is the read half of
+	 *     such a write.
+	 *   CUSTOMER GATE — something in the engine or the game needs it now
+	 *     (RAD-94: adopt when the need exists, never before).
+	 *
+	 * That bounds this surface by the number of silent-failure traps in the
+	 * engine — small, and shrinking — rather than by the number of components,
+	 * which grows forever. If it ever passes roughly a dozen verbs, the rule has
+	 * stopped working and the answer is a general mechanism, not a thirteenth
+	 * verb.
+	 *
+	 * Deliberately EXCLUDED, so the next addition meets a decision rather than a
+	 * precedent:
+	 *   - SetScale / GetScale — passes the semantic gate (a scale change leaves
+	 *     the physics shape stale until RefreshCollider) but fails the customer
+	 *     gate: nothing scales anything yet. Admit them by rule the day
+	 *     something does.
+	 *   - SetActive / IsActive — fails the semantic gate. Writing
+	 *     MetadataComponent::IsActive directly is correct, so a verb would be a
+	 *     rename, not a fix.
+	 *   - SetColor, SetTexture, and every other "read/write this field" —
+	 *     fails the semantic gate. GetComponent<T>() is right there, and is the
+	 *     escape hatch by design.
+	 *   - GetVelocity and the rest of the physics surface — those are SUBSYSTEM
+	 *     state and live on the PhysicsBody facade (GetPhysicsBody()), not here.
+	 *     Hoisting them up would restart the unbounded one-accessor-per-
+	 *     subsystem growth RAD-94 exists to prevent.
+	 *
+	 * Note this does NOT reopen RAD-94's rejection of typed component accessors
+	 * (entity.GetSprite()). That rejection is about handing back a COMPONENT,
+	 * which would make Entity.h grow per component type. GetLocation returns a
+	 * glm::vec3 and hides which component stores it: a verb, not an accessor.
 	 */
 	class Entity
 	{
@@ -89,6 +133,43 @@ namespace Radiant {
 		/** As RemoveComponent, but a no-op when the component is absent. */
 		template<typename T>
 		void RemoveComponentIfExists();
+
+		/**
+		 * Where this entity is, in world units. One component lookup — the same
+		 * one GetComponent<TransformComponent>().Translation performs, with the
+		 * storage detail hidden. Returns {0,0,0} after a WARN on an invalid
+		 * handle, because a getter has no lower layer to delegate the check to.
+		 *
+		 * For a body-backed entity this is the pose physics wrote back at the
+		 * end of the last step, which is the current truth when gameplay runs.
+		 */
+		glm::vec3 GetLocation() const;
+
+		/**
+		 * Rotation about Z in RADIANS — the 2D rotation. The transform's X/Y
+		 * Euler terms are authored data this surface does not speak about (the
+		 * same choice Teleport makes). Returns 0 after a WARN on an invalid
+		 * handle.
+		 */
+		float GetRotation() const;
+
+		/**
+		 * Moves this entity CONTINUOUSLY — the everyday "it moved" verb, where
+		 * Teleport below is "it jumped". Forwarders to Level::SetLocation /
+		 * Level::SetRotation (see them for the full contract: ECS write, the
+		 * physics push that stops this being the silent no-op a raw transform
+		 * write is on a body, and the preserved render snapshot that keeps
+		 * motion interpolated). The only logic here is warning on a level-less
+		 * handle, which cannot reach the Level to be warned by it.
+		 *
+		 * translation is world units; radians is about Z. Velocity is kept —
+		 * reach for Teleport(ResetVelocity) to clear it. Never swept: no
+		 * collisions occur along the way. Driving a DYNAMIC body with these
+		 * every step fights the solver — use GetPhysicsBody()'s force and
+		 * velocity verbs, or MoveKinematic for a kinematic body.
+		 */
+		void SetLocation(const glm::vec3& translation);
+		void SetRotation(float radians);
 
 		/**
 		 * Moves this entity discontinuously — forwarders to Level::Teleport

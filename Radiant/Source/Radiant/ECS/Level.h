@@ -122,6 +122,40 @@ namespace Radiant {
 		void Teleport(Entity entity, const glm::vec3& translation, TeleportType teleportType = TeleportType::KeepVelocity);
 
 		/**
+		 * Moves an entity CONTINUOUSLY — the everyday "it moved" verb, where
+		 * Teleport above is "it jumped". Same two halves as Teleport (ECS
+		 * transform write, plus a push into Box2D for body-backed entities, so
+		 * this is never the silent no-op a raw TransformComponent write is on a
+		 * body — RAD-28), and two deliberate differences:
+		 *
+		 *   - The render snapshot is PRESERVED, so motion stays interpolated
+		 *     between simulation steps. Teleport stamps it instead, which is
+		 *     what stops a jump smearing across a frame but would pin
+		 *     continuous motion to fixed-step granularity.
+		 *   - Nothing is logged. Teleport TRACEs because it is a rare,
+		 *     deliberate act; a follow-camera calling this every step would
+		 *     emit 60 lines a second (playbook §4).
+		 *
+		 * translation is world units; rotationZ is RADIANS about Z, and the
+		 * transform's X/Y Euler terms are left untouched — the same choice
+		 * Teleport makes. Velocity is always kept: a continuous move has no
+		 * reason to discard it, and a caller who wants it cleared wants
+		 * Teleport(ResetVelocity). Never a swept move — no collisions occur
+		 * along the way (Radiant has no query API until RAD-76, where UE's
+		 * SetActorLocation offers bSweep). Moving a DYNAMIC body this way every
+		 * step fights the solver, which will correct it: continuous movement of
+		 * a dynamic body belongs to PhysicsBody's force and velocity verbs, and
+		 * of a kinematic body to MoveKinematic. Invalid handles warn and
+		 * recover.
+		 *
+		 * The overloads keep the half you do not name: SetLocation keeps the
+		 * current rotation, SetRotation keeps the current translation.
+		 */
+		void SetTransform(Entity entity, const glm::vec3& translation, float rotationZ);
+		void SetLocation(Entity entity, const glm::vec3& translation);
+		void SetRotation(Entity entity, float rotationZ);
+
+		/**
 		 * Re-applies an entity's BoxCollider2DComponent fields and transform
 		 * Scale to its live Box2D shape, in place — call after mutating
 		 * collider properties or Scale; nothing detects those writes
@@ -239,6 +273,39 @@ namespace Radiant {
 		}
 
 	private:
+		/**
+		 * What a move does to the render snapshot — an enum rather than a bool
+		 * because `WriteTransform(e, p, r, true, …)` says nothing at the call
+		 * site (playbook §4: semantic flags are enums). It is also the ONLY
+		 * axis, deliberately: "stamp the snapshot" and "push through the
+		 * logging, velocity-carrying physics Teleport" both mean *this move was
+		 * discontinuous*, so a second parameter for the physics half would let
+		 * a caller express a state that must never exist.
+		 */
+		enum class SnapshotPolicy
+		{
+			Preserve,             // continuous — rendering interpolates toward the new pose
+			StampToDestination    // discontinuous — no interpolation, so a jump does not smear
+		};
+
+		/**
+		 * The ECS half every move shares: validity guard, transform write, and
+		 * the snapshot policy. Returns false when the handle was invalid (and
+		 * warned), so the caller skips its physics push.
+		 *
+		 * The physics half deliberately stays with each public verb, because
+		 * that is the part that genuinely differs — Teleport needs the logging,
+		 * velocity-policy push and SetTransform needs the quiet one. This
+		 * helper owns what is actually common, which is also the only part that
+		 * MUST live on Level: writing TransformComponent and the snapshot is
+		 * registry-owner work (playbook §4, the RAD-90 split).
+		 *
+		 * Pass __func__ for verb, never a literal — see the physics resolvers
+		 * for the full reasoning; the WARN has to name the verb the caller
+		 * actually invoked, not this helper.
+		 */
+		bool WriteTransform(Entity entity, const glm::vec3& translation, float rotationZ, SnapshotPolicy snapshot, const char* verb);
+
 		/**
 		 * The one place a physics-only verb answers "may I touch this entity's
 		 * physics?" — PhysicsBody's whole guard, so no verb carries its own

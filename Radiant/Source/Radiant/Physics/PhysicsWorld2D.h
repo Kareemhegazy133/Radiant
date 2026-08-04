@@ -102,16 +102,39 @@ namespace Radiant {
 		void DestroyBody(Entity entity, RigidBody2DComponent& component);
 
 		/**
-		 * Explicitly moves the entity's body to a world pose (position in
-		 * world units, rotation in radians) — the ONLY ECS→Box2D transform
-		 * push (RAD-28). A teleport, not a swept move: no collisions occur
-		 * along the way, and the body is woken — SetTransform alone would
-		 * leave a sleeping body teleported into mid-air hanging there until
-		 * touched. teleportType decides what happens to velocity on arrival
-		 * (see TeleportType); ResetVelocity zeroes linear and angular velocity
-		 * but cannot cancel forces already applied this step. Call through
-		 * Level::Teleport, which also writes the ECS transform and render
-		 * snapshot. Zero/stale body ids are survivable skips.
+		 * Places the entity's body at a world pose (position in world units,
+		 * rotation in radians) and wakes it — the placement primitive both
+		 * ECS→Box2D transform pushes are built from (RAD-28 allows only these
+		 * two). Never a swept move: no collisions occur along the way.
+		 *
+		 * The wake is part of the primitive rather than the caller's job, and
+		 * that is load-bearing. Box2D's own SetTransform does not wake, so a
+		 * sleeping body placed in mid-air would hang there until touched (UE's
+		 * SetBodyTransform defaults bAutoWake true for the same reason) — and
+		 * v3 wakes a body from SetLinearVelocity only when the velocity is
+		 * NONZERO, so any caller that wants to zero velocity must have woken
+		 * the body first or the write is silently dropped on exactly the bodies
+		 * that were asleep. Folding the wake in here makes that ordering
+		 * impossible to get wrong instead of merely documented.
+		 *
+		 * SILENT BY DESIGN (playbook §4: routine, continuous verbs do not log).
+		 * This is what Level::SetLocation reaches, and gameplay may call it
+		 * every fixed step; Teleport below adds the TRACE because it is the
+		 * rare, deliberate act. Zero/stale body ids are survivable skips.
+		 */
+		void SetTransform(Entity entity, const glm::vec2& position, float rotation);
+
+		/**
+		 * A discontinuous jump: SetTransform above, plus a velocity policy, plus
+		 * the audit-trail TRACE. teleportType decides what happens to velocity
+		 * on arrival (see TeleportType); ResetVelocity zeroes linear and angular
+		 * velocity but cannot cancel forces already applied this step.
+		 *
+		 * Prefer SetTransform for continuous movement — this one logs on every
+		 * call, deliberately, because "why is it still spinning" is the question
+		 * the log gets read to answer. Call through Level::Teleport, which also
+		 * writes the ECS transform and stamps the render snapshot so the jump
+		 * does not smear across a rendered frame.
 		 */
 		void Teleport(Entity entity, const glm::vec2& position, float rotation, TeleportType teleportType);
 

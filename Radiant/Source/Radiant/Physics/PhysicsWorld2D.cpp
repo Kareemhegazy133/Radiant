@@ -271,7 +271,7 @@ namespace Radiant {
 			bc2d->RuntimeShapeId = 0;
 	}
 
-	void PhysicsWorld2D::Teleport(Entity entity, const glm::vec2& position, float rotation, TeleportType teleportType)
+	void PhysicsWorld2D::SetTransform(Entity entity, const glm::vec2& position, float rotation)
 	{
 		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
 
@@ -282,37 +282,57 @@ namespace Radiant {
 		if (B2_IS_NULL(body))
 			return;
 
-		// Teleports are rare, deliberate acts — this line is the audit trail
-		// of every explicit ECS→Box2D push. The mode is named because the two
-		// are indistinguishable in the log otherwise, and "why is it still
-		// spinning" is exactly the question this log gets read to answer.
+		b2Body_SetTransform(body, { position.x, position.y }, b2MakeRot(rotation));
+
+		// Box2D's own SetTransform does not wake: a sleeping body placed in
+		// mid-air would hang there until touched (UE's SetBodyTransform
+		// defaults bAutoWake true for the same reason). Waking HERE rather than
+		// leaving it to each caller is also what makes Teleport's velocity
+		// policy correct by construction — see the header.
+		b2Body_SetAwake(body, true);
+	}
+
+	void PhysicsWorld2D::Teleport(Entity entity, const glm::vec2& position, float rotation, TeleportType teleportType)
+	{
+		// Placement and the wake both live in SetTransform, so this verb is the
+		// policy and the log and nothing else.
+		SetTransform(entity, position, rotation);
+
+		// Teleports are rare, deliberate acts — this line is the audit trail of
+		// every explicit ECS→Box2D push, and is exactly what SetTransform omits
+		// so a per-step caller does not drown the log (playbook §4). The mode is
+		// named because the two are indistinguishable in the log otherwise, and
+		// "why is it still spinning" is the question this log gets read to
+		// answer.
 		RADIANT_TRACE("PhysicsWorld2D: teleport entity {0} to ({1}, {2}) [{3}]",
 			entity.GetUUID(), position.x, position.y,
 			teleportType == TeleportType::ResetVelocity ? "reset velocity" : "keep velocity");
 
-		b2Body_SetTransform(body, { position.x, position.y }, b2MakeRot(rotation));
-		// SetTransform does not wake: a sleeping body teleported into mid-air
-		// would hang there until touched (UE's SetBodyTransform defaults
-		// bAutoWake true for the same reason)
-		b2Body_SetAwake(body, true);
+		if (teleportType != TeleportType::ResetVelocity)
+			return;
 
-		// AFTER the wake, and that order is load-bearing. v3 wakes a body from
-		// SetLinearVelocity only when the velocity is NONZERO (body.c), and a
-		// sleeping body has no b2BodyState to write into — so zeroing first
-		// would be dropped silently on exactly the bodies that were asleep.
-		// Harmless today (a sleeping body is already stopped), but it would
-		// stop being harmless the moment anything else moves between these
-		// lines.
+		// Necessarily AFTER SetTransform's wake, which is now structural rather
+		// than a comment to obey: v3 wakes a body from SetLinearVelocity only
+		// when the velocity is NONZERO (body.c), and a sleeping body has no
+		// b2BodyState to write into — so zeroing a sleeping body would be
+		// dropped silently, on exactly the bodies that were asleep.
 		//
+		// Re-resolved rather than threaded out of SetTransform: handing a raw
+		// b2BodyId back to a caller would put a vendor type in its hands to
+		// save one array read, and this is the cold path (ResetVelocity only).
+		// If SetTransform skipped on a zero/stale id, this skips identically
+		// and the WARN was already issued there.
+		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+		b2BodyId body = ResolveBodyId(entity, rb2d.RuntimeBodyId, __func__);
+		if (B2_IS_NULL(body))
+			return;
+
 		// Velocity only: Box2D v3.1 has no ClearForces, so a force applied
 		// earlier in this same fixed update still lands on the next step. The
 		// caller asked for two contradictory things; we do not silently pick a
 		// winner (see TeleportType).
-		if (teleportType == TeleportType::ResetVelocity)
-		{
-			b2Body_SetLinearVelocity(body, b2Vec2_zero);
-			b2Body_SetAngularVelocity(body, 0.0f);
-		}
+		b2Body_SetLinearVelocity(body, b2Vec2_zero);
+		b2Body_SetAngularVelocity(body, 0.0f);
 	}
 
 	void PhysicsWorld2D::CreateBoxShape(Entity entity, BoxCollider2DComponent& component)

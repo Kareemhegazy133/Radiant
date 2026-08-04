@@ -140,28 +140,57 @@ namespace Radiant {
 		DestroyEntity(it->second);
 	}
 
-	void Level::Teleport(Entity entity, const glm::vec3& translation, float rotationZ, TeleportType teleportType)
+	bool Level::WriteTransform(Entity entity, const glm::vec3& translation, float rotationZ, SnapshotPolicy snapshot, const char* verb)
 	{
 		// Stale/null handles reach here from gameplay — a content-level
-		// mistake (same contract as DestroyEntity), not grounds for UB
+		// mistake (same contract as DestroyEntity), not grounds for UB. Living
+		// here rather than in each verb is what keeps the guard from drifting
+		// as verbs are added (playbook §4, one resolver per layer).
 		if (!entity.IsValid())
 		{
-			RADIANT_WARN("Level: Teleport called with an invalid entity handle");
-			return;
+			RADIANT_WARN("Level: {0} called with an invalid entity handle", verb);
+			return false;
 		}
 
 		auto& transform = entity.GetComponent<TransformComponent>();
 		transform.Translation = translation;
 		transform.Rotation.z = rotationZ;
 
-		// Reset the render snapshot to the destination: OnRender draws
-		// lerp(snapshot, current, alpha), and a stale snapshot would smear the
-		// jump across one rendered frame
-		m_Registry.emplace_or_replace<TransformSnapshotComponent>(entity.m_EntityHandle, transform.Translation, transform.Rotation);
+		// THE WHOLE REASON THIS HELPER TAKES A POLICY. OnRender draws
+		// lerp(snapshot, current, alpha), so the snapshot decides whether the
+		// move is interpolated across the rendered frames between two
+		// simulation steps:
+		//
+		//   StampToDestination — snapshot == current, so the lerp is a no-op
+		//     and the entity simply appears at the destination. Correct for a
+		//     jump, which must not smear across a frame.
+		//   Preserve — the snapshot still holds where the entity was at the
+		//     start of this step, so rendering blends toward the new pose.
+		//     Correct for continuous movement; stamping here instead would
+		//     pin the entity to fixed-step granularity and it would visibly
+		//     judder at any display rate above the simulation rate.
+		//
+		// A caller that wants Preserve on an entity with no snapshot gets no
+		// interpolation, because the snapshot pass only tracks entities it
+		// classifies as movers (see OnFixedUpdate) — stamping one here to
+		// compensate would fight that pass, which strips snapshots from
+		// non-movers every step. RAD-30's explicit mover marker is the fix.
+		if (snapshot == SnapshotPolicy::StampToDestination)
+			m_Registry.emplace_or_replace<TransformSnapshotComponent>(entity.m_EntityHandle, transform.Translation, transform.Rotation);
 
-		// The one legitimate ECS→Box2D transform push (RAD-28). A body-less
-		// entity has already been fully moved by the two writes above —
-		// teleportType is simply meaningless without a velocity to act on.
+		return true;
+	}
+
+	void Level::Teleport(Entity entity, const glm::vec3& translation, float rotationZ, TeleportType teleportType)
+	{
+		if (!WriteTransform(entity, translation, rotationZ, SnapshotPolicy::StampToDestination, __func__))
+			return;
+
+		// The one legitimate ECS→Box2D transform push for a JUMP (RAD-28) — it
+		// logs and carries the velocity policy, which is what separates it from
+		// SetTransform's quiet push below. A body-less entity has already been
+		// fully moved by WriteTransform; teleportType is simply meaningless
+		// without a velocity to act on.
 		if (m_PhysicsWorld && entity.HasComponent<RigidBody2DComponent>())
 			m_PhysicsWorld->Teleport(entity, { translation.x, translation.y }, rotationZ, teleportType);
 	}
@@ -170,11 +199,47 @@ namespace Radiant {
 	{
 		if (!entity.IsValid())
 		{
-			RADIANT_WARN("Level: Teleport called with an invalid entity handle");
+			RADIANT_WARN("Level: {0} called with an invalid entity handle", __func__);
 			return;
 		}
 
 		Teleport(entity, translation, entity.GetComponent<TransformComponent>().Rotation.z, teleportType);
+	}
+
+	void Level::SetTransform(Entity entity, const glm::vec3& translation, float rotationZ)
+	{
+		if (!WriteTransform(entity, translation, rotationZ, SnapshotPolicy::Preserve, __func__))
+			return;
+
+		// The quiet counterpart to Teleport's push: same placement, no velocity
+		// policy and no TRACE, because gameplay may call this every fixed step
+		// (playbook §4). Without it, this verb would be the RAD-28 trap it
+		// exists to close — a transform write that a body-backed entity
+		// silently discards on the next readback.
+		if (m_PhysicsWorld && entity.HasComponent<RigidBody2DComponent>())
+			m_PhysicsWorld->SetTransform(entity, { translation.x, translation.y }, rotationZ);
+	}
+
+	void Level::SetLocation(Entity entity, const glm::vec3& translation)
+	{
+		if (!entity.IsValid())
+		{
+			RADIANT_WARN("Level: {0} called with an invalid entity handle", __func__);
+			return;
+		}
+
+		SetTransform(entity, translation, entity.GetComponent<TransformComponent>().Rotation.z);
+	}
+
+	void Level::SetRotation(Entity entity, float rotationZ)
+	{
+		if (!entity.IsValid())
+		{
+			RADIANT_WARN("Level: {0} called with an invalid entity handle", __func__);
+			return;
+		}
+
+		SetTransform(entity, entity.GetComponent<TransformComponent>().Translation, rotationZ);
 	}
 
 	void Level::RefreshCollider(Entity entity)

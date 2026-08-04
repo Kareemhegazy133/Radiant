@@ -29,14 +29,63 @@ namespace Radiant {
 
 	Entity::operator bool() const { return IsValid(); }
 
+	// The GETTERS carry a full IsValid() check, unlike the forwarders below,
+	// and the difference is the same principle rather than an inconsistency:
+	// one guard per layer. A forwarder can delegate everything but the
+	// level-less handle to Level, which reports it; a getter reads the
+	// component itself, so it IS the only layer — and GetComponent asserts on a
+	// dead handle, which is not the recover-and-warn contract gameplay gets
+	// everywhere else on this surface.
+	glm::vec3 Entity::GetLocation() const
+	{
+		if (!IsValid())
+		{
+			RADIANT_WARN("Entity: {0} called on an invalid handle", __func__);
+			return glm::vec3(0.0f);
+		}
+		return GetComponent<TransformComponent>().Translation;
+	}
+
+	float Entity::GetRotation() const
+	{
+		if (!IsValid())
+		{
+			RADIANT_WARN("Entity: {0} called on an invalid handle", __func__);
+			return 0.0f;
+		}
+		return GetComponent<TransformComponent>().Rotation.z;
+	}
+
 	// Zero-logic forwarders — the one implementation (and its validity
-	// contract) lives in Level::Teleport; only the null-level handle must be
-	// caught here, since it cannot reach the Level to be warned about
+	// contract) lives in Level; only the null-level handle must be caught here,
+	// since it cannot reach the Level to be warned about. __func__ rather than
+	// a literal for the same reason as the physics resolvers: the name is the
+	// whole value of the line, and a literal drifts silently on a rename.
+	void Entity::SetLocation(const glm::vec3& translation)
+	{
+		if (!m_Level)
+		{
+			RADIANT_WARN("Entity: {0} called on a handle with no level", __func__);
+			return;
+		}
+		m_Level->SetLocation(*this, translation);
+	}
+
+	void Entity::SetRotation(float radians)
+	{
+		if (!m_Level)
+		{
+			RADIANT_WARN("Entity: {0} called on a handle with no level", __func__);
+			return;
+		}
+		m_Level->SetRotation(*this, radians);
+	}
+
 	void Entity::Teleport(const glm::vec3& translation, float rotationZ, TeleportType teleportType)
 	{
 		if (!m_Level)
 		{
-			RADIANT_WARN("Entity: Teleport called on a handle with no level");
+			RADIANT_WARN("Entity: {0} called on a handle with no level", __func__);
 			return;
 		}
 		m_Level->Teleport(*this, translation, rotationZ, teleportType);
@@ -46,7 +95,7 @@ namespace Radiant {
 	{
 		if (!m_Level)
 		{
-			RADIANT_WARN("Entity: Teleport called on a handle with no level");
+			RADIANT_WARN("Entity: {0} called on a handle with no level", __func__);
 			return;
 		}
 		m_Level->Teleport(*this, translation, teleportType);
@@ -56,7 +105,7 @@ namespace Radiant {
 	{
 		if (!m_Level)
 		{
-			RADIANT_WARN("Entity: Destroy called on a handle with no level");
+			RADIANT_WARN("Entity: {0} called on a handle with no level", __func__);
 			return;
 		}
 		m_Level->DestroyEntity(*this);
@@ -66,7 +115,7 @@ namespace Radiant {
 	{
 		if (!m_Level)
 		{
-			RADIANT_WARN("Entity: RefreshCollider called on a handle with no level");
+			RADIANT_WARN("Entity: {0} called on a handle with no level", __func__);
 			return;
 		}
 		m_Level->RefreshCollider(*this);

@@ -481,17 +481,17 @@ Small enough that the inclusion rule below is visibly true rather than merely as
 - [x] **Verify:** `grep -r ScriptableEntity` returns nothing outside `.claude/plans/` history; three configs build; Reaper runs.
 
 ### Phase 3 — The `Gameplay/` module (commit 2, mechanical)
-- [ ] **Create `Radiant/Source/Radiant/Gameplay/`** and move the three pairs into it. No premake edit — the glob is recursive (§1 F).
-- [ ] **Fix include paths** — moved headers now say `Radiant/ECS/Entity.h` / `Radiant/ECS/Level.h`; `Radiant.h`, `Level.cpp` and `Entity.cpp` point at `Radiant/Gameplay/…`.
-- [ ] **Verify the boundary holds:** no `Physics/` header includes an `ECS/` or `Gameplay/` header; no `ECS/` header includes a `Gameplay/` header (the dependency runs one way).
-- [ ] **Verify:** three configs; Reaper runs.
+- [x] **Create `Radiant/Source/Radiant/Gameplay/`** and move the three pairs into it. No premake edit — the glob is recursive (§1 F).
+- [x] **Fix include paths** — moved headers now say `Radiant/ECS/Entity.h` / `Radiant/ECS/Level.h`; `Radiant.h`, `Level.cpp` and `Entity.cpp` point at `Radiant/Gameplay/…`.
+- [x] **Verify the boundary holds:** no `Physics/` header includes an `ECS/` or `Gameplay/` header; no `ECS/` header includes a `Gameplay/` header (the dependency runs one way).
+- [x] **Verify:** three configs; Reaper runs. *(Headless run covers launch → frame loop → clean teardown only; gameplay needs the Play button — Kareem's half.)*
 
 ### Phase 4 — The verb surface (commit 3, the design change)
-- [ ] **Add `PhysicsWorld2D::SetTransform`** — place + wake, no logging — and refactor `Teleport` onto it so the two share one placement path and differ only in policy and logging.
-- [ ] **Add `Level`'s shared move core** and rebuild `Teleport` on it; add `Level::SetLocation` / `Level::SetRotation`. Snapshot policy is an enum parameter of the private core, never a public bool.
-- [ ] **Add the four `Entity` verbs** — zero-logic forwarders, matching `Entity::Teleport`'s existing shape exactly: catch the level-less handle (the one case that cannot be delegated downward), then forward.
-- [ ] **Write the inclusion rule into `Entity.h`** — the two gates, plus the exclusion table (`SetScale`/`GetScale`: passes the semantic gate, no customer; `SetActive`, `SetColor`: fails the semantic gate). The next addition must meet a decision, not a precedent.
-- [ ] **Document the physics semantics on every setter** — units (world units; radians about Z), that the pose is pushed to Box2D, that motion stays interpolated, that there is no sweep (§2), and when to reach for `Teleport` or `PhysicsBody::MoveKinematic` instead.
+- [x] **Add `PhysicsWorld2D::SetTransform`** — place + wake, no logging — and refactor `Teleport` onto it so the two share one placement path and differ only in policy and logging.
+- [x] **Add `Level`'s shared move core** and rebuild `Teleport` on it; add `Level::SetLocation` / `Level::SetRotation`. Snapshot policy is an enum parameter of the private core, never a public bool.
+- [x] **Add the four `Entity` verbs** — zero-logic forwarders, matching `Entity::Teleport`'s existing shape exactly: catch the level-less handle (the one case that cannot be delegated downward), then forward.
+- [x] **Write the inclusion rule into `Entity.h`** — the two gates, plus the exclusion table (`SetScale`/`GetScale`: passes the semantic gate, no customer; `SetActive`, `SetColor`: fails the semantic gate). The next addition must meet a decision, not a precedent.
+- [x] **Document the physics semantics on every setter** — units (world units; radians about Z), that the pose is pushed to Box2D, that motion stays interpolated, that there is no sweep (§2), and when to reach for `Teleport` or `PhysicsBody::MoveKinematic` instead.
 
 ### Phase 5 — Reaper: the real customer, and the proof (commits 4 and 5)
 - [ ] **Migrate `CameraController` onto the verbs** (commit 4, production code, not scaffolding) — `GetOwner().SetLocation(...)` / `GetOwner().SetRotation(...)` replacing the two direct transform writes. Behaviour-identical (no rigidbody → no physics push, no snapshot stamp), and it proves the interpolation half: the camera must stay as smooth as it is today.
