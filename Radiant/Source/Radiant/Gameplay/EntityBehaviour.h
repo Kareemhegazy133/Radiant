@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Entity.h"
+#include "Radiant/ECS/Entity.h"
 
 // OnUpdate/OnCollision* name Timestep. Previously this header only ever
 // compiled inside Level.cpp, which happened to pull it in first; giving

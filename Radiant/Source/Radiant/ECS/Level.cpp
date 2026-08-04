@@ -8,7 +8,7 @@
 #include "Entity.h"
 #include "Components.h"
 //#include "Radiant/GAS/AbilitySystemComponent.h"
-#include "EntityBehaviour.h"
+#include "Radiant/Gameplay/EntityBehaviour.h"
 
 #include "Radiant/Physics/PhysicsWorld2D.h"
 

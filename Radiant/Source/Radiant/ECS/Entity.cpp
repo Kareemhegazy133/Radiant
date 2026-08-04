@@ -1,8 +1,8 @@
 #include "Radiant/rdpch.h"
 #include "Level.h"
 
-#include "PhysicsBody.h"
-#include "GameplayLevel.h"
+#include "Radiant/Gameplay/PhysicsBody.h"
+#include "Radiant/Gameplay/GameplayLevel.h"
 
 namespace Radiant {
 

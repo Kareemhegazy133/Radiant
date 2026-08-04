@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Entity.h"
+#include "Radiant/ECS/Entity.h"
 
 #include <glm/glm.hpp>
 

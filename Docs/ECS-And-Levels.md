@@ -33,7 +33,7 @@ Every entity carries `MetadataComponent` (UUID, tag string, `IsActive`) and `Tra
 **Reaching a subsystem from an entity (RAD-90).** Beyond component access, `Entity` exposes *subsystem facades* — value handles that gather one subsystem's verbs for one entity:
 
 ```cpp
-// ECS/PhysicsBody.h — 16 bytes, owns nothing, re-resolves per call
+// Gameplay/PhysicsBody.h — 16 bytes, owns nothing, re-resolves per call
 if (PhysicsBody body = entity.GetPhysicsBody())
     body.ApplyLinearImpulse({ 0.0f, 5.0f });
 ```
@@ -76,7 +76,7 @@ Game code never writes these — the registry is private to `Level`, so views ex
 
 ### Native scripts
 
-`EntityBehaviour` (`ECS/EntityBehaviour.h`) is the C++ scripting seam: subclass it, override `OnCreate/OnUpdate/OnDestroy`, and bind with `NativeScriptComponent::Bind<T>()` — the component stores factory/destroy function pointers; the Level instantiates lazily on first update. One behaviour per entity today (RAD-101 makes it several); bindings are code-only (not serialized — they must be re-bound after level load, e.g. Reaper re-binds `CameraController` to its camera entity).
+`EntityBehaviour` (`Gameplay/EntityBehaviour.h`) is the C++ scripting seam: subclass it, override `OnCreate/OnUpdate/OnDestroy`, and bind with `NativeScriptComponent::Bind<T>()` — the component stores factory/destroy function pointers; the Level instantiates lazily on first update. One behaviour per entity today (RAD-101 makes it several); bindings are code-only (not serialized — they must be re-bound after level load, e.g. Reaper re-binds `CameraController` to its camera entity).
 
 **The name says what the class is (RAD-99).** `Entity` is Radiant's world-thing and `EntityBehaviour` is Radiant's behaviour unit — the same split Unreal draws between `AActor` and `UActorComponent`. It is deliberately *not* called `Actor`: the entity exists whether or not a behaviour is attached, and most entities have none, so a type that is optional on the things it would claim to be cannot be those things. The predecessor name, `ScriptableEntity`, was inherited from Hazel and described a mechanism rather than a role.
 
@@ -101,7 +101,7 @@ The verbosity is deliberate on the component path: `GetOwner().GetComponent<T>()
 
 #### The level, narrowed
 
-`GetLevel()` returns a **`GameplayLevel`** (`ECS/GameplayLevel.h`) — an 8-byte value handle over a `Level*` exposing the level-scope verbs gameplay may use: `CreateEntity`, `DestroyEntity`, `FindEntityByName`, `GetEntityByUUID`, `AddCollisionCallback`/`RemoveCollisionCallback`, and level identity. It owns nothing, caches nothing, and has one private `Resolve(verb)` guard, so no verb carries its own preamble (playbook §4).
+`GetLevel()` returns a **`GameplayLevel`** (`Gameplay/GameplayLevel.h`) — an 8-byte value handle over a `Level*` exposing the level-scope verbs gameplay may use: `CreateEntity`, `DestroyEntity`, `FindEntityByName`, `GetEntityByUUID`, `AddCollisionCallback`/`RemoveCollisionCallback`, and level identity. It owns nothing, caches nothing, and has one private `Resolve(verb)` guard, so no verb carries its own preamble (playbook §4).
 
 It exists because `Level` is *also* the frame driver. `OnFixedUpdate`, `OnRender` and `OnViewportResize` belong to whoever drives the loop and to nothing else — a script calling `OnFixedUpdate` would step the physics world from inside the physics step. Handing gameplay a raw `Level*` would make that a one-keystroke mistake. Unreal narrows the same surface by tagging Blueprint-visible functions with `UFUNCTION`; with no reflection system (RAD-72) our version of "the tagged subset" has to be a type. Also withheld: `CreateEntityWithUUID` (a colliding caller-chosen UUID silently replaces a map entry), `GetAssetList` (tooling), `SetName` (authoring). **And never an accessor returning the underlying `Level*`** — that would hand back what the type exists to withhold.
 

@@ -88,7 +88,7 @@ A **force** is spread over time, so its effect depends on how long you push and 
 **Where they live, and the rule it establishes.** Not on `Level`, and not on `Entity`. They hang off a `PhysicsBody` handle:
 
 ```cpp
-// ECS/PhysicsBody.h — a 16-byte value handle over an Entity, owning nothing
+// Gameplay/PhysicsBody.h — a 16-byte value handle over an Entity, owning nothing
 PhysicsBody body = entity.GetPhysicsBody();
 if (body)
     body.ApplyLinearImpulse({ 0.0f, 5.0f });

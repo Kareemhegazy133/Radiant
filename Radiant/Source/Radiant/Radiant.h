@@ -26,17 +26,20 @@
 // physics through components; Level.h forward-declares the world) — keeping
 // it out of the umbrella keeps Box2D headers out of every game TU (RAD-27)
 
+// ECS — storage and the entity handle
 #include "Radiant/ECS/Level.h"
 #include "Radiant/ECS/Components.h"
 #include "Radiant/ECS/Entity.h"
-#include "Radiant/ECS/GameplayLevel.h"
-// The entity-scoped facades. Games reach them through Entity accessors, so the
-// umbrella is what must supply the complete types — before RAD-95 gameplay got
-// PhysicsBody transitively via the behaviour base header, which had no business
-// providing it. Neither header pulls in Box2D (see the note above).
-#include "Radiant/ECS/PhysicsBody.h"
-#include "Radiant/ECS/EntityBehaviour.h"
 #include "Radiant/ECS/LevelSerializer.h"
+
+// Gameplay — the framework games subclass and the entity-scoped facades
+// (RAD-99). Games reach the facades through Entity accessors, so the umbrella
+// is what must supply the complete types — before RAD-95 gameplay got
+// PhysicsBody transitively via the behaviour base header, which had no business
+// providing it. None of these pull in Box2D (see the note above).
+#include "Radiant/Gameplay/EntityBehaviour.h"
+#include "Radiant/Gameplay/GameplayLevel.h"
+#include "Radiant/Gameplay/PhysicsBody.h"
 
 #include "Radiant/Asset/AssetManager.h"
 
