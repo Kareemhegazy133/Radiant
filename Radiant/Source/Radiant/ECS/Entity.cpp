@@ -61,6 +61,16 @@ namespace Radiant {
 	// since it cannot reach the Level to be warned about. __func__ rather than
 	// a literal for the same reason as the physics resolvers: the name is the
 	// whole value of the line, and a literal drifts silently on a rename.
+	void Entity::SetTransform(const glm::vec3& translation, float radians)
+	{
+		if (!m_Level)
+		{
+			RADIANT_WARN("Entity: {0} called on a handle with no level", __func__);
+			return;
+		}
+		m_Level->SetTransform(*this, translation, radians);
+	}
+
 	void Entity::SetLocation(const glm::vec3& translation)
 	{
 		if (!m_Level)

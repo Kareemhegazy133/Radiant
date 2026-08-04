@@ -35,8 +35,17 @@ namespace Radiant {
 	 * Entity is Radiant's world-thing — Unreal's AActor to EntityBehaviour's
 	 * UActorComponent — so a verb that names ONE entity lives here (playbook
 	 * §10's dividing rule; a verb about the level as a whole lives on
-	 * GameplayLevel). GetLocation/SetLocation/GetRotation/SetRotation are that
-	 * surface today.
+	 * GameplayLevel). GetLocation/SetLocation/GetRotation/SetRotation and the
+	 * paired SetTransform are that surface today.
+	 *
+	 * SetTransform is worth reading as the rule working rather than as an
+	 * exception to it. The set was designed as four verbs; the FIRST real
+	 * customer — Reaper's CameraController, which sets both halves every fixed
+	 * step — showed that calling the pair costs roughly four transform lookups
+	 * where one would do, in exactly the position a redundant double lookup
+	 * once hid for a year (playbook §10). It passes the semantic gate like its
+	 * siblings and passes the customer gate on that evidence, so it was
+	 * admitted BY the rule below rather than argued in around it.
 	 *
 	 * A verb is admitted only when BOTH gates pass:
 	 *
@@ -167,7 +176,16 @@ namespace Radiant {
 		 * collisions occur along the way. Driving a DYNAMIC body with these
 		 * every step fights the solver — use GetPhysicsBody()'s force and
 		 * velocity verbs, or MoveKinematic for a kinematic body.
+		 *
+		 * PREFER SetTransform WHEN SETTING BOTH. SetLocation must read the
+		 * current rotation to preserve it (and SetRotation the translation), so
+		 * calling the pair costs roughly four transform lookups where
+		 * SetTransform costs one. That is not a micro-optimisation here: these
+		 * run every fixed step for anything that moves under its own power, and
+		 * a redundant double lookup in exactly this position went unnoticed in
+		 * Reaper's CameraController for a year (playbook §10).
 		 */
+		void SetTransform(const glm::vec3& translation, float radians);
 		void SetLocation(const glm::vec3& translation);
 		void SetRotation(float radians);
 

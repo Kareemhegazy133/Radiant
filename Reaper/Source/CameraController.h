@@ -20,11 +20,11 @@ class CameraController : public EntityBehaviour
 public:
 	void OnCreate() override
 	{
-		// One lookup, both fields — the transform is fetched once and read
-		// twice rather than fetched twice
-		const auto& transform = GetOwner().GetComponent<TransformComponent>();
-		m_CameraPosition = transform.Translation;
-		m_CameraRotation = transform.Rotation.z;
+		// Named verbs rather than reaching through TransformComponent: the
+		// storage detail is not this script's business, and asking "where am I"
+		// should not require knowing which component answers (RAD-99)
+		m_CameraPosition = GetOwner().GetLocation();
+		m_CameraRotation = GetOwner().GetRotation();
 
 		m_CameraTranslationSpeed = 5.0f; // Movement speed
 		m_CameraRotationSpeed = glm::radians(45.0f); // Rotation speed (radians per second)
@@ -61,12 +61,18 @@ public:
 			m_CameraPosition.y -= cos(m_CameraRotation) * m_CameraTranslationSpeed * ts;
 		}
 
-		// Apply the calculated position to the entity's transform
-		auto& transform = GetOwner().GetComponent<TransformComponent>();
-		transform.Translation = m_CameraPosition; // Update the translation
-
-		// You could also apply rotation to the transform if needed:
-		transform.Rotation.z = m_CameraRotation;
+		// SetTransform, not SetLocation + SetRotation: this runs every fixed
+		// step, and each of the single-axis verbs has to read the half it is
+		// preserving, so the pair would cost four transform lookups where this
+		// costs one (Entity.h states the rule).
+		//
+		// SetLocation-family verbs preserve the render snapshot, which is what
+		// keeps this camera smooth: OnRender draws lerp(snapshot, current,
+		// alpha), so the motion is interpolated across the frames between two
+		// simulation steps. Routing this through Teleport instead would stamp
+		// the snapshot every step and pin the camera to fixed-step granularity
+		// — visible judder at any display rate above the sim rate.
+		GetOwner().SetTransform(m_CameraPosition, m_CameraRotation);
 	}
 
 private:
