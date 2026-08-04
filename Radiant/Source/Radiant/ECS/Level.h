@@ -289,9 +289,24 @@ namespace Radiant {
 		};
 
 		/**
-		 * The ECS half every move shares: validity guard, transform write, and
-		 * the snapshot policy. Returns false when the handle was invalid (and
-		 * warned), so the caller skips its physics push.
+		 * This layer's ONE guard (playbook §4, one resolver per layer): an
+		 * invalid handle warns, naming the verb, and returns null. Everything
+		 * that touches an entity's transform comes through here, so no verb
+		 * carries a guard of its own and adding one cannot get it subtly wrong.
+		 *
+		 * Returns a pointer INTO the component pool — use it and drop it. It is
+		 * invalidated by anything that emplaces into the TransformComponent
+		 * pool, so never hold it across a call that can run gameplay.
+		 *
+		 * Pass __func__ for verb, never a literal — see the physics resolvers
+		 * for the reasoning.
+		 */
+		TransformComponent* ResolveTransform(Entity entity, const char* verb);
+
+		/**
+		 * The ECS half every move shares: the transform write and the snapshot
+		 * policy, guarded by ResolveTransform above. Returns false when the
+		 * handle was invalid (and warned), so the caller skips its physics push.
 		 *
 		 * The physics half deliberately stays with each public verb, because
 		 * that is the part that genuinely differs — Teleport needs the logging,

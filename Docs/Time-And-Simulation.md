@@ -75,6 +75,13 @@ This is the Unity `FixedUpdate`/`Update` (and Godot `_physics_process`/`_process
 
 The snapshot is a **runtime-only POD component**: the serializer never writes it, it costs one sparse-set write per movable entity per step and one lerp per movable entity per frame — no maps, no allocations. Interpolation displays the world up to one fixed step in the past; that latency (≤ 16.7 ms at 60 Hz) is the standard price of never extrapolating into states the simulation hasn't computed.
 
+**An explicit transform push chooses its snapshot policy, and the two choices are opposite** (RAD-28 formalized the first, RAD-99 added the second):
+
+- **Discontinuous** — `Teleport` **stamps** the snapshot to the destination, making `snapshot == current` so the lerp is a no-op and the jump renders instantly. Without it, interpolation draws a one-frame streak from wherever the entity used to be.
+- **Continuous** — `SetLocation` / `SetTransform` / `SetRotation` **preserve** the snapshot, so rendering blends from where the entity was at the start of the step toward its new pose. Stamping here instead would make `snapshot == current` every step, collapsing the lerp permanently and pinning the entity to fixed-step granularity — visible judder at any display rate above the simulation rate, which is the whole failure this system exists to prevent.
+
+The rule in one line: **stamp when the motion did not happen, preserve when it did.** See [Gameplay-Framework](Gameplay-Framework.md) for the gameplay-facing verbs and the caveat that "preserve" only buys interpolation for entities the mover heuristic above already tracks.
+
 ### The `Time` facade
 
 `Core/Time.{h,cpp}` is the public face of the clock: stateless statics (`Time::SetTimeScale`, `GetTimeScale`, `GetAlpha`, `GetFixedDeltaTime`, `GetSimulationTime`, `GetRealTime`) forwarding to the application's `FrameClock`. The loop-driving methods (`BeginFrame`/`ConsumeStep`) are deliberately unreachable from game code — `Time` is a friend of `GameApplication`, so game code can observe and scale time but never advance it. The header is include-free so gameplay code can ask the time without paying for the application's headers. A negative time scale is treated as a configuration mistake: clamped to 0 with a `RADIANT_WARN`, never asserted.
@@ -115,4 +122,3 @@ Boot logs the simulation rate (`"Simulation: 60 Hz (16.67 ms fixed step)"`); the
 - **Engine-global TimerManager (flagged at design time).** Gameplay timers capturing Level entities couple a global container to Level-lifetime objects — fine while exactly one Level exists, wrong the moment play-in-editor does. The UE answer (per-world manager) becomes per-Level here when RAD-52 lands; the API shape is identical, so the migration is mechanical.
 - **Movable-entity heuristic is implicit.** "Has rigidbody/camera/script" is correct and cheap today, but a future animation or tween system (RAD-64, RAD-70) adds movers this list doesn't know about. The end-state is an explicit opt-in marker or the component-hygiene rework (RAD-30) deciding movability.
 - **The clock is not reset across level loads:** a load hitch triggers the clamp WARN (observed: ~651 ms dropped at the MainMenu→Gameplay transition — the valve working as designed). A future loading-screen system should reset the clock across loads.
-- **Teleports must snap, not smear:** an explicit transform push should also refresh the snapshot or interpolation draws a one-frame streak. RAD-28's explicit-teleport path formalizes this.

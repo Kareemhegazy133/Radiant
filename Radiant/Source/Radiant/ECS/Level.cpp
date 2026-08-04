@@ -140,7 +140,7 @@ namespace Radiant {
 		DestroyEntity(it->second);
 	}
 
-	bool Level::WriteTransform(Entity entity, const glm::vec3& translation, float rotationZ, SnapshotPolicy snapshot, const char* verb)
+	TransformComponent* Level::ResolveTransform(Entity entity, const char* verb)
 	{
 		// Stale/null handles reach here from gameplay — a content-level
 		// mistake (same contract as DestroyEntity), not grounds for UB. Living
@@ -149,10 +149,19 @@ namespace Radiant {
 		if (!entity.IsValid())
 		{
 			RADIANT_WARN("Level: {0} called with an invalid entity handle", verb);
-			return false;
+			return nullptr;
 		}
 
-		auto& transform = entity.GetComponent<TransformComponent>();
+		return &entity.GetComponent<TransformComponent>();
+	}
+
+	bool Level::WriteTransform(Entity entity, const glm::vec3& translation, float rotationZ, SnapshotPolicy snapshot, const char* verb)
+	{
+		TransformComponent* resolved = ResolveTransform(entity, verb);
+		if (!resolved)
+			return false;
+
+		TransformComponent& transform = *resolved;
 		transform.Translation = translation;
 		transform.Rotation.z = rotationZ;
 
@@ -197,13 +206,10 @@ namespace Radiant {
 
 	void Level::Teleport(Entity entity, const glm::vec3& translation, TeleportType teleportType)
 	{
-		if (!entity.IsValid())
-		{
-			RADIANT_WARN("Level: {0} called with an invalid entity handle", __func__);
-			return;
-		}
-
-		Teleport(entity, translation, entity.GetComponent<TransformComponent>().Rotation.z, teleportType);
+		// Rotation is read by value, so the primary overload's own resolve
+		// cannot invalidate it
+		if (const TransformComponent* transform = ResolveTransform(entity, __func__))
+			Teleport(entity, translation, transform->Rotation.z, teleportType);
 	}
 
 	void Level::SetTransform(Entity entity, const glm::vec3& translation, float rotationZ)
@@ -222,24 +228,28 @@ namespace Radiant {
 
 	void Level::SetLocation(Entity entity, const glm::vec3& translation)
 	{
-		if (!entity.IsValid())
-		{
-			RADIANT_WARN("Level: {0} called with an invalid entity handle", __func__);
-			return;
-		}
-
-		SetTransform(entity, translation, entity.GetComponent<TransformComponent>().Rotation.z);
+		// Rotation is read by value, so the resolve inside SetTransform cannot
+		// invalidate it
+		if (const TransformComponent* transform = ResolveTransform(entity, __func__))
+			SetTransform(entity, translation, transform->Rotation.z);
 	}
 
 	void Level::SetRotation(Entity entity, float rotationZ)
 	{
-		if (!entity.IsValid())
-		{
-			RADIANT_WARN("Level: {0} called with an invalid entity handle", __func__);
+		const TransformComponent* transform = ResolveTransform(entity, __func__);
+		if (!transform)
 			return;
-		}
 
-		SetTransform(entity, entity.GetComponent<TransformComponent>().Translation, rotationZ);
+		// COPIED, not passed by reference into the component it is about to
+		// overwrite. SetTransform's write would otherwise self-assign through
+		// an alias, and its physics push would then read x/y through a pointer
+		// into a pool a preceding call may have touched. Both are benign today
+		// — glm::vec3 is trivially copyable, and the snapshot stamp emplaces
+		// into a DIFFERENT pool — but the benignness depends on facts about
+		// other functions, which is not a property worth relying on for twelve
+		// bytes.
+		const glm::vec3 translation = transform->Translation;
+		SetTransform(entity, translation, rotationZ);
 	}
 
 	void Level::RefreshCollider(Entity entity)
