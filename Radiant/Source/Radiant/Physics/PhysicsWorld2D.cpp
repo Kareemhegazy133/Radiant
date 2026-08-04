@@ -63,6 +63,33 @@ namespace Radiant {
 		// survives Dist (Core/Log.h), so its arguments are evaluated in every
 		// config; hoisting that lookup to the call site would put it on the
 		// hot path of every verb.
+		//
+		// ALWAYS PASS __func__ FOR verb, never a string literal. A literal
+		// duplicates the enclosing function's name, so it can be mistyped and it
+		// silently stops matching the moment a verb is renamed - and a log line
+		// naming the wrong verb is worse than no log line, because it sends the
+		// reader to the wrong call site. __func__ makes both impossible rather
+		// than unlikely, at a cost of one token. (Audited 2026-08-03 before the
+		// switch: all 16 literals still matched, so this is preventive.)
+		//
+		// Unreal does the same thing, unwrapped, at the call site:
+		//   UE_LOG(LogNavigation, Warning, TEXT("%hs Unhandled world type..."),
+		//          __FUNCTION__);            // NavigationSystemBase.cpp:68
+		// It uses __FUNCTION__ (qualified: "PhysicsWorld2D::SetTransform")
+		// because its log lines do not already name the class; ours do, so the
+		// qualified form would stutter and __func__ - also standard C++ rather
+		// than a compiler extension - is the right half.
+		//
+		// Rejected: an enum of verb names. Type-safe but not correct-safe -
+		// nothing stops one verb passing another's enumerator - and it costs an
+		// enum entry plus a ToString case per verb to hand-maintain a table the
+		// compiler already has, the O(N)-edits-per-feature pattern RAD-94
+		// forbids. Also rejected: std::source_location as a defaulted parameter,
+		// which would remove the argument entirely, but whose function_name() on
+		// MSVC is the full decorated signature - "void __cdecl
+		// Radiant::PhysicsWorld2D::SetTransform(class Radiant::Entity,const
+		// struct glm::vec<2,float,0> &,float)" - where __func__ gives exactly
+		// "SetTransform" (measured 2026-08-03).
 		b2BodyId ResolveBodyId(Entity entity, uint64_t& packedId, const char* verb)
 		{
 			if (packedId == 0)
@@ -230,7 +257,7 @@ namespace Radiant {
 		if (component.RuntimeBodyId == 0)
 			return;
 
-		b2BodyId body = ResolveBodyId(entity, component.RuntimeBodyId, "DestroyBody");
+		b2BodyId body = ResolveBodyId(entity, component.RuntimeBodyId, __func__);
 		if (B2_IS_NON_NULL(body))
 			b2DestroyBody(body);
 
@@ -251,7 +278,7 @@ namespace Radiant {
 		// Zero and stale body ids are both survivable skips here rather than a
 		// null body handed to Box2D — see ResolveBodyId for which of them
 		// warns
-		b2BodyId body = ResolveBodyId(entity, rb2d.RuntimeBodyId, "Teleport");
+		b2BodyId body = ResolveBodyId(entity, rb2d.RuntimeBodyId, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -303,7 +330,7 @@ namespace Radiant {
 		// ERROR-logged there). A STALE id now warns and clears like every
 		// other verb — before RAD-91 this one path failed silently and left
 		// the dead id in place, which is how a policy starts drifting.
-		b2BodyId body = ResolveBodyId(entity, rb2d->RuntimeBodyId, "CreateBoxShape");
+		b2BodyId body = ResolveBodyId(entity, rb2d->RuntimeBodyId, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -337,7 +364,7 @@ namespace Radiant {
 		// already died and took the shape with it (DestroyBody zeroes the
 		// id): destroying nothing is a no-op, not a crash. A stale id is the
 		// separate case the resolver warns about.
-		b2ShapeId shape = ResolveShapeId(entity, component.RuntimeShapeId, "DestroyBoxShape");
+		b2ShapeId shape = ResolveShapeId(entity, component.RuntimeShapeId, __func__);
 		if (B2_IS_NULL(shape))
 			return;
 
@@ -362,7 +389,7 @@ namespace Radiant {
 			return;
 		}
 
-		b2ShapeId shape = ResolveShapeId(entity, component.RuntimeShapeId, "UpdateBoxShape");
+		b2ShapeId shape = ResolveShapeId(entity, component.RuntimeShapeId, __func__);
 		if (B2_IS_NULL(shape))
 			return;
 
@@ -411,7 +438,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::ApplyForce(Entity entity, const glm::vec2& force)
 	{
-		b2BodyId body = ResolveBody(entity, "ApplyForce");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -420,7 +447,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::ApplyForceAtPoint(Entity entity, const glm::vec2& force, const glm::vec2& worldPoint)
 	{
-		b2BodyId body = ResolveBody(entity, "ApplyForceAtPoint");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -430,7 +457,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::ApplyTorque(Entity entity, float torque)
 	{
-		b2BodyId body = ResolveBody(entity, "ApplyTorque");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -439,7 +466,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::ApplyLinearImpulse(Entity entity, const glm::vec2& impulse)
 	{
-		b2BodyId body = ResolveBody(entity, "ApplyLinearImpulse");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -448,7 +475,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::ApplyLinearImpulseAtPoint(Entity entity, const glm::vec2& impulse, const glm::vec2& worldPoint)
 	{
-		b2BodyId body = ResolveBody(entity, "ApplyLinearImpulseAtPoint");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -457,7 +484,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::ApplyAngularImpulse(Entity entity, float impulse)
 	{
-		b2BodyId body = ResolveBody(entity, "ApplyAngularImpulse");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -466,7 +493,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::SetLinearVelocity(Entity entity, const glm::vec2& velocity)
 	{
-		b2BodyId body = ResolveBody(entity, "SetLinearVelocity");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -479,7 +506,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::SetAngularVelocity(Entity entity, float angularVelocity)
 	{
-		b2BodyId body = ResolveBody(entity, "SetAngularVelocity");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
@@ -489,7 +516,7 @@ namespace Radiant {
 	glm::vec2 PhysicsWorld2D::GetLinearVelocity(Entity entity)
 	{
 		// Non-const because this line can CLEAR a stale id — see the header
-		b2BodyId body = ResolveBody(entity, "GetLinearVelocity");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return { 0.0f, 0.0f };
 
@@ -499,7 +526,7 @@ namespace Radiant {
 
 	float PhysicsWorld2D::GetAngularVelocity(Entity entity)
 	{
-		b2BodyId body = ResolveBody(entity, "GetAngularVelocity");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return 0.0f;
 
@@ -508,7 +535,7 @@ namespace Radiant {
 
 	void PhysicsWorld2D::MoveKinematic(Entity entity, const glm::vec2& position, float rotation, float fixedDelta)
 	{
-		b2BodyId body = ResolveBody(entity, "MoveKinematic");
+		b2BodyId body = ResolveBody(entity, __func__);
 		if (B2_IS_NULL(body))
 			return;
 
