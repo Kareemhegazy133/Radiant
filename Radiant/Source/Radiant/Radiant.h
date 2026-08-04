@@ -32,10 +32,10 @@
 #include "Radiant/ECS/GameplayLevel.h"
 // The entity-scoped facades. Games reach them through Entity accessors, so the
 // umbrella is what must supply the complete types — before RAD-95 gameplay got
-// PhysicsBody transitively via ScriptableEntity.h, which had no business
+// PhysicsBody transitively via the behaviour base header, which had no business
 // providing it. Neither header pulls in Box2D (see the note above).
 #include "Radiant/ECS/PhysicsBody.h"
-#include "Radiant/ECS/ScriptableEntity.h"
+#include "Radiant/ECS/EntityBehaviour.h"
 #include "Radiant/ECS/LevelSerializer.h"
 
 #include "Radiant/Asset/AssetManager.h"

@@ -15,14 +15,14 @@ using namespace Radiant;
  * afterwards get overwritten each frame. Bindings are code-only: GameLayer
  * re-binds this to the "Camera" entity after level load.
  */
-class CameraController : public ScriptableEntity
+class CameraController : public EntityBehaviour
 {
 public:
 	void OnCreate() override
 	{
 		// One lookup, both fields — the transform is fetched once and read
 		// twice rather than fetched twice
-		const auto& transform = GetEntity().GetComponent<TransformComponent>();
+		const auto& transform = GetOwner().GetComponent<TransformComponent>();
 		m_CameraPosition = transform.Translation;
 		m_CameraRotation = transform.Rotation.z;
 
@@ -62,7 +62,7 @@ public:
 		}
 
 		// Apply the calculated position to the entity's transform
-		auto& transform = GetEntity().GetComponent<TransformComponent>();
+		auto& transform = GetOwner().GetComponent<TransformComponent>();
 		transform.Translation = m_CameraPosition; // Update the translation
 
 		// You could also apply rotation to the transform if needed:

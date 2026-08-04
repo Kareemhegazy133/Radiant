@@ -164,7 +164,7 @@ namespace Radiant {
 
 		/**
 		 * Advances the simulation one FIXED step: runs native scripts (lazily
-		 * instantiating unconstructed instances — see ScriptableEntity), steps
+		 * instantiating unconstructed instances — see EntityBehaviour), steps
 		 * the physics world, then drains the world's move events — only the
 		 * bodies that actually moved — back into ECS transforms as a dedicated
 		 * post-step pass. Physics owns the transform of

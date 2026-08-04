@@ -7,7 +7,7 @@ namespace Radiant {
 	/**
 	 * The Level as gameplay is allowed to see it: spawn, find and destroy
 	 * entities, and subscribe to the level-wide collision channel. Obtained
-	 * from Entity::GetLevel() or ScriptableEntity::GetLevel(), never
+	 * from Entity::GetLevel() or EntityBehaviour::GetLevel(), never
 	 * constructed by gameplay.
 	 *
 	 * WHY THIS TYPE EXISTS (RAD-95). Level is also the frame driver — it owns

@@ -23,14 +23,14 @@ using namespace Radiant;
  *
  * Bindings are code-only, so GameLayer binds this after spawning the entity.
  */
-class KinematicPlatform : public ScriptableEntity
+class KinematicPlatform : public EntityBehaviour
 {
 public:
 	void OnCreate() override
 	{
 		// The oscillation is measured from wherever the entity was placed, so
 		// the script carries no opinion about where the platform lives
-		m_Origin = GetEntity().GetComponent<TransformComponent>().Translation;
+		m_Origin = GetOwner().GetComponent<TransformComponent>().Translation;
 	}
 
 	void OnUpdate(Timestep ts) override
@@ -48,7 +48,7 @@ public:
 		// Every step, deliberately. Stop calling this and the platform sails
 		// away at its last computed velocity — that is Box2D's contract, not
 		// an oversight (see PhysicsBody::MoveKinematic).
-		if (PhysicsBody body = GetEntity().GetPhysicsBody())
+		if (PhysicsBody body = GetOwner().GetPhysicsBody())
 			body.MoveKinematic(target, 0.0f);
 	}
 

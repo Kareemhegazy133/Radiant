@@ -128,27 +128,28 @@ namespace Radiant {
 	};
 
 	// Forward declaration
-	class ScriptableEntity;
+	class EntityBehaviour;
 
 	/**
-	 * Binds a native C++ script (a ScriptableEntity subclass) to the entity.
+	 * Binds a native C++ behaviour (an EntityBehaviour subclass) to the entity.
 	 * Bind<T>() stores factory/destroy callables; the Level instantiates the
-	 * script lazily on the first update after binding (see ScriptableEntity for
-	 * the lifecycle contract). One script per entity. Bindings are code-only —
-	 * never serialized — so they must be re-bound after level load.
+	 * behaviour lazily on the first update after binding (see EntityBehaviour
+	 * for the lifecycle contract). One behaviour per entity — RAD-101 makes it
+	 * several. Bindings are code-only — never serialized — so they must be
+	 * re-bound after level load.
 	 */
 	struct NativeScriptComponent
 	{
 		// Owning raw pointer — known plain-data violation; moves to a Level-owned side table (RAD-30)
-		ScriptableEntity* Instance = nullptr;
+		EntityBehaviour* Instance = nullptr;
 
-		std::function<ScriptableEntity* ()> InstantiateScript;
+		std::function<EntityBehaviour* ()> InstantiateScript;
 		std::function<void(NativeScriptComponent*)> DestroyScript;
 
 		template<typename T>
 		void Bind()
 		{
-			InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
+			InstantiateScript = []() { return static_cast<EntityBehaviour*>(new T()); };
 			DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
 		}
 	};

@@ -8,7 +8,7 @@
 #include "Entity.h"
 #include "Components.h"
 //#include "Radiant/GAS/AbilitySystemComponent.h"
-#include "ScriptableEntity.h"
+#include "EntityBehaviour.h"
 
 #include "Radiant/Physics/PhysicsWorld2D.h"
 
@@ -303,7 +303,7 @@ namespace Radiant {
 		// Instance is read BEFORE the call and never touched after it — the
 		// handler is allowed to destroy this very entity, which deletes the
 		// instance whose method is running
-		ScriptableEntity* instance = nsc->Instance;
+		EntityBehaviour* instance = nsc->Instance;
 		if (phase == ContactPhase::Begin)
 			instance->OnCollisionBegin(other);
 		else
@@ -478,7 +478,7 @@ namespace Radiant {
 				if (!nsc->InstantiateScript)
 					continue;
 
-				ScriptableEntity* instance = nsc->InstantiateScript();
+				EntityBehaviour* instance = nsc->InstantiateScript();
 				instance->m_Entity = Entity{ entityHandle, this };
 				// Stored BEFORE OnCreate runs: a script that destroys its own
 				// entity there must be findable by DestroyEntity, or the

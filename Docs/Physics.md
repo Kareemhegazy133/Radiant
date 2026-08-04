@@ -187,7 +187,7 @@ Note the asymmetry with the move drain: there, a missing entity is an **asserted
 **Two dispatch channels**, in this order:
 
 - **Level-wide callbacks** — `Level::AddCollisionCallback` / `RemoveCollisionCallback`, called once per event with **both** participants. The channel for level-wide systems (abilities, damage, audio, VFX) belonging to no single entity. Keyed by a `{Index, Generation}` handle over a slot pool with a free list — the `TimerHandle` idiom (playbook §2), so a stale handle is a no-op rather than a removal of whoever inherited the slot.
-- **Script hooks** — `ScriptableEntity::OnCollisionBegin/OnCollisionEnd(Entity other)`, called once per **live side**, because "something hit me" is inherently one-sided. `other` may be invalid; the hook is skipped for inactive entities, matching `OnUpdate`.
+- **Script hooks** — `EntityBehaviour::OnCollisionBegin/OnCollisionEnd(Entity other)`, called once per **live side**, because "something hit me" is inherently one-sided. `other` may be invalid; the hook is skipped for inactive entities, matching `OnUpdate`.
 
 Level-wide callbacks run first, matching UE's world-handler-before-per-actor order: global systems see the fullest picture before per-entity gameplay starts destroying things. Deliberately rejected: UE's *batch* signature (`HandlePhysicsCollisions_AssumesLocked(TArray<…>&)`) — it hands subscribers a list that goes stale as they walk it, making re-validation everyone's problem.
 

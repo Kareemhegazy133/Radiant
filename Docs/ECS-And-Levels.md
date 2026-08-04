@@ -76,9 +76,9 @@ Game code never writes these — the registry is private to `Level`, so views ex
 
 ### Native scripts
 
-`ScriptableEntity` (`ECS/ScriptableEntity.h`) is the C++ scripting seam: subclass it, override `OnCreate/OnUpdate/OnDestroy`, and bind with `NativeScriptComponent::Bind<T>()` — the component stores factory/destroy function pointers; the Level instantiates lazily on first update. One script per entity; bindings are code-only (not serialized — they must be re-bound after level load, e.g. Reaper re-binds `CameraController` to its camera entity).
+`EntityBehaviour` (`ECS/EntityBehaviour.h`) is the C++ scripting seam: subclass it, override `OnCreate/OnUpdate/OnDestroy`, and bind with `NativeScriptComponent::Bind<T>()` — the component stores factory/destroy function pointers; the Level instantiates lazily on first update. One behaviour per entity today (RAD-101 makes it several); bindings are code-only (not serialized — they must be re-bound after level load, e.g. Reaper re-binds `CameraController` to its camera entity).
 
-*(The class name is provisional — RAD-99 renames it once RAD-101 decides whether an entity may carry one behaviour or several.)*
+**The name says what the class is (RAD-99).** `Entity` is Radiant's world-thing and `EntityBehaviour` is Radiant's behaviour unit — the same split Unreal draws between `AActor` and `UActorComponent`. It is deliberately *not* called `Actor`: the entity exists whether or not a behaviour is attached, and most entities have none, so a type that is optional on the things it would claim to be cannot be those things. The predecessor name, `ScriptableEntity`, was inherited from Hazel and described a mechanism rather than a role.
 
 #### What a script can reach (RAD-95)
 
@@ -87,15 +87,17 @@ Game code never writes these — the registry is private to `Level`, so views ex
 Two accessors replace all of it, and everything chains off them:
 
 ```cpp
-GetEntity()                                    // my handle
-GetEntity().GetComponent<TransformComponent>() // my components
-GetEntity().GetPhysicsBody().ApplyForce(...)   // my physics
-GetLevel().CreateEntity("Bullet")              // the world
+GetOwner()                                    // my entity
+GetOwner().GetComponent<TransformComponent>() // my components
+GetOwner().GetPhysicsBody().ApplyForce(...)   // my physics
+GetLevel().CreateEntity("Bullet")             // the world
 ```
+
+`GetOwner()` is named for a fact rather than for UE parity: the entity's `NativeScriptComponent` holds the behaviour instance by an owning pointer and deletes it, so the entity genuinely *owns* the behaviour in the sense playbook §2 uses the word. UE's `UActorComponent::GetOwner()` happens to agree.
 
 **Why exactly two, and why that is not the forwarder pattern returning.** These are *relationship navigation* — a **bounded** set, sized by the relationships a script actually has, and it has two: the entity it drives, and the level that entity is in. A third requires a third *relationship* to exist first. What must never be added is a *subsystem* forwarder (`GetPhysicsBody`, a future `GetAbilitySystem`, `GetAnimation`): that set is **unbounded**, one per subsystem forever, and is the O(N)-edits-per-feature pattern RAD-94 exists to forbid. Unreal draws the identical line — `UActorComponent` carries both `GetOwner()` and `GetWorld()`, and no per-subsystem forwarder.
 
-The verbosity is deliberate on the component path: `GetEntity().GetComponent<T>()` says *whose* component and looks like the sparse-set lookup it is, where a bare forwarder read like a member access. Game-side helpers stay Reaper's business (RAD-94); named gameplay verbs on the base class are RAD-99's.
+The verbosity is deliberate on the component path: `GetOwner().GetComponent<T>()` says *whose* component and looks like the sparse-set lookup it is, where a bare forwarder read like a member access. Game-side helpers stay Reaper's business (RAD-94); named gameplay verbs live on **`Entity`**, not on the behaviour base (RAD-99) — so `other.GetLocation()` in a collision handler and `GetOwner().GetLocation()` in a behaviour are the same API.
 
 #### The level, narrowed
 

@@ -20,7 +20,7 @@ using namespace Radiant;
  *
  * Bindings are code-only, so GameLayer re-binds this after level load.
  */
-class CollisionLogger : public ScriptableEntity
+class CollisionLogger : public EntityBehaviour
 {
 public:
 	/** Destroy whatever this entity first touches, from inside the handler. */
@@ -50,9 +50,9 @@ public:
 	}
 
 private:
-	// Name() is on Entity, not ScriptableEntity — reach it through the
+	// Name() is on Entity, not EntityBehaviour — reach it through the
 	// entity this script is attached to
-	const std::string& Name() { return GetEntity().Name(); }
+	const std::string& Name() { return GetOwner().Name(); }
 
 	bool m_DestroyOnContact = false;
 };

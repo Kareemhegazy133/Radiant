@@ -35,7 +35,7 @@ using namespace Radiant;
  * passenger OnCreate per spawn and one OnDestroy per destroy, and no crash in
  * Dist (where the undefined behaviour this guards against would actually bite).
  */
-class ProbePassenger : public ScriptableEntity
+class ProbePassenger : public EntityBehaviour
 {
 public:
 	void OnCreate() override { GAME_TRACE("[spawn-probe] passenger OnCreate"); }
@@ -46,7 +46,7 @@ public:
 	void OnDestroy() override { GAME_TRACE("[spawn-probe] passenger OnDestroy"); }
 };
 
-class SpawnProbe : public ScriptableEntity
+class SpawnProbe : public EntityBehaviour
 {
 public:
 	/** Called from GameLayer's cheat key; the work happens on the next step. */
