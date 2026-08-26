@@ -366,6 +366,32 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 		return true;
 	}
 
+	// RAD-97 verification cheat (retires with RAD-92)
+
+	if (e.GetKeyCode() == Key::K)
+	{
+		// Like N, this ONLY raises a flag: the destroy has to happen inside the
+		// script pass, from the passenger's own OnUpdate. Destroying from here
+		// would run outside the iteration and prove nothing about the case that
+		// used to be a use-after-free.
+		//
+		// Requires a live 'ProbeSpawn' — press N first, or wait for SpawnProbe's
+		// 2s auto-toggle to spawn one.
+		Entity spawned = m_Level->FindEntityByName("ProbeSpawn");
+		if (ProbePassenger* passenger = spawned.GetBehaviour<ProbePassenger>())
+		{
+			passenger->RequestSelfDestruct();
+			GAME_WARN("Self-destruct cheat: 'ProbeSpawn' will destroy itself from inside its own OnUpdate next step");
+		}
+		else
+		{
+			// Covers the missing entity (nothing spawned yet), the missing
+			// binding, and an instance not built until the first fixed update
+			GAME_WARN("Self-destruct cheat: no live 'ProbeSpawn' - press N first to spawn one");
+		}
+		return true;
+	}
+
 	// RAD-100 verification cheat (retires with RAD-92)
 
 	if (e.GetKeyCode() == Key::B)

@@ -35,15 +35,70 @@ using namespace Radiant;
  * passenger OnCreate per spawn and one OnDestroy per destroy, and no crash in
  * Dist (where the undefined behaviour this guards against would actually bite).
  */
+/**
+ * RAD-97 verification scaffolding lives on this class too (retires with
+ * RAD-92): RequestSelfDestruct makes the passenger destroy its OWN entity from
+ * inside its own OnUpdate and then keep running.
+ *
+ * THE WORK AFTER THE DESTROY IS THE ENTIRE TEST. Before RAD-97, destroying your
+ * own entity deleted the EntityBehaviour instance whose method was executing, so
+ * the destroy had to be the last statement (EntityBehaviour.h carried the
+ * caveat). A probe that self-destructs and returns immediately would pass just
+ * as happily against that broken code. So this one deliberately does three
+ * things afterwards — logs, reads its own member, and reports its entity's
+ * validity — and only then returns.
+ *
+ * Watch for, in order, on one press: the pre-destroy line, the OnDestroy line
+ * (it fires at the MARK, inside Destroy(), not at the reap), then the two
+ * post-destroy lines with IsValid=false. And no crash in Dist, which is where
+ * the old use-after-free would actually bite.
+ */
 class ProbePassenger : public EntityBehaviour
 {
 public:
 	void OnCreate() override { GAME_TRACE("[spawn-probe] passenger OnCreate"); }
 
-	// Silent: this runs every fixed step, and the point is only that it runs
-	void OnUpdate(Timestep ts) override {}
+	/** Called from GameLayer's K cheat; the destroy happens on the next step. */
+	void RequestSelfDestruct() { m_SelfDestructRequested = true; }
+
+	void OnUpdate(Timestep ts) override
+	{
+		// Silent otherwise: this runs every fixed step, and the point is only
+		// that it runs
+		if (!m_SelfDestructRequested)
+			return;
+		m_SelfDestructRequested = false;
+
+		++m_Ticks;
+
+		// Captured on the stack BEFORE the destroy, so the check afterwards
+		// compares this object's member against a value the destroy could not
+		// have touched
+		const int expectedTicks = m_Ticks;
+
+		GAME_TRACE("[self-destruct] about to destroy my own entity from my own OnUpdate (tick {0})", m_Ticks);
+
+		GetOwner().Destroy();
+
+		// Everything below would have been a use-after-free before RAD-97
+		GAME_TRACE("[self-destruct] still running after Destroy(); my entity IsValid={0} (expected false)", GetOwner().IsValid());
+		GAME_TRACE("[self-destruct] and my own members are still readable: tick {0} — method completing normally", m_Ticks);
+
+		// The two lines above compile out in Dist (GAME_TRACE, see Log.h), which
+		// is the build where the bug this probe exists for would actually bite.
+		// So the invariants are CHECKED here rather than merely narrated: silence
+		// is the pass, a violation shouts at a level Dist keeps.
+		if (GetOwner().IsValid())
+			GAME_WARN("[self-destruct] FAIL: my entity still reports valid after Destroy() - deferred destruction is broken");
+		if (m_Ticks != expectedTicks)
+			GAME_WARN("[self-destruct] FAIL: my own members were corrupted across Destroy() - expected tick {0}, read {1}", expectedTicks, m_Ticks);
+	}
 
 	void OnDestroy() override { GAME_TRACE("[spawn-probe] passenger OnDestroy"); }
+
+private:
+	int m_Ticks = 0;
+	bool m_SelfDestructRequested = false;
 };
 
 class SpawnProbe : public EntityBehaviour
