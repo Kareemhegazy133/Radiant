@@ -326,10 +326,9 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 		// crash, the square vanishing, and the platform receiving an
 		// OnCollisionEnd with <destroyed> one step later.
 		Entity platform = m_Level->FindEntityByName("Platform");
-		auto* nsc = platform ? platform.TryGetComponent<NativeScriptComponent>() : nullptr;
-		if (nsc && nsc->Instance)
+		if (CollisionLogger* logger = platform.GetBehaviour<CollisionLogger>())
 		{
-			static_cast<CollisionLogger*>(nsc->Instance)->SetDestroyOnContact(true);
+			logger->SetDestroyOnContact(true);
 			GAME_WARN("Collision cheat: platform will destroy the next thing that touches it");
 
 			if (Entity square = m_Level->FindEntityByName("Green Square"))
@@ -337,8 +336,10 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 		}
 		else
 		{
-			// The instance is created lazily on the first fixed update, so this
-			// only fires if the entity or its binding is missing
+			// One branch covers every way the query comes back empty now: no
+			// 'Platform' entity at all, no behaviour bound to it, an instance
+			// not yet built (they are created lazily on the first fixed
+			// update), or a behaviour that is not a CollisionLogger
 			GAME_WARN("Collision cheat: no 'Platform' entity with a live CollisionLogger");
 		}
 		return true;
@@ -352,18 +353,49 @@ bool GameLayer::OnKeyPressed(KeyPressedEvent& e)
 		// script pass — doing it here would run outside the iteration it
 		// exists to test, and would prove nothing about it.
 		Entity probe = m_Level->FindEntityByName("SpawnProbe");
-		auto* nsc = probe ? probe.TryGetComponent<NativeScriptComponent>() : nullptr;
-		if (nsc && nsc->Instance)
+		if (SpawnProbe* spawnProbe = probe.GetBehaviour<SpawnProbe>())
 		{
-			// The unchecked cast RAD-100 exists to replace
-			static_cast<SpawnProbe*>(nsc->Instance)->RequestToggle();
+			spawnProbe->RequestToggle();
 		}
 		else
 		{
-			// The instance is created lazily on the first fixed update, so this
-			// only fires if the entity or its binding is missing
+			// Covers the missing entity, the missing binding, and the instance
+			// not yet built on the first fixed update
 			GAME_WARN("Spawn cheat: no 'SpawnProbe' entity with a live script");
 		}
+		return true;
+	}
+
+	// RAD-100 verification cheat (retires with RAD-92)
+
+	if (e.GetKeyCode() == Key::B)
+	{
+		// Every answer Entity::GetBehaviour<T>() can give, in one press. It
+		// spawns NOTHING: all three questions are asked of entities the level
+		// already carries, which is why this costs RAD-92's ledger one key
+		// instead of an entity plus a script file.
+		//
+		// The EXPECTED answer is logged beside the actual one deliberately.
+		// The wrong-type line below is null only because 'Platform' happens to
+		// be bound to CollisionLogger; rebind that fixture and a probe that
+		// printed only the actual answer would go on looking healthy while
+		// testing nothing.
+		Entity platform = m_Level->FindEntityByName("Platform");
+		Entity reaper = m_Level->FindEntityByName("Reaper");
+
+		GAME_TRACE("[behaviour-query] Platform -> CollisionLogger   : {0} (expected non-null)",
+			platform.GetBehaviour<CollisionLogger>() ? "ok  " : "null");
+
+		// Same live instance, different type — the case the unchecked
+		// static_cast used to answer with a reinterpreted object rather than a
+		// null, and the whole reason this story exists
+		GAME_TRACE("[behaviour-query] Platform -> KinematicPlatform : {0} (expected null)",
+			platform.GetBehaviour<KinematicPlatform>() ? "ok  " : "null");
+
+		// An entity with a sprite and a body but no behaviour bound at all
+		GAME_TRACE("[behaviour-query] Reaper   -> CollisionLogger   : {0} (expected null)",
+			reaper.GetBehaviour<CollisionLogger>() ? "ok  " : "null");
+
 		return true;
 	}
 
