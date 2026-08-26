@@ -83,6 +83,16 @@ namespace Radiant {
 	 * (entity.GetSprite()). That rejection is about handing back a COMPONENT,
 	 * which would make Entity.h grow per component type. GetLocation returns a
 	 * glm::vec3 and hides which component stores it: a verb, not an accessor.
+	 *
+	 * THE GATES GOVERN NAMED VERBS ONLY (RAD-100). They do not apply to the
+	 * generic template queries — GetComponent/TryGetComponent/HasComponent, and
+	 * GetBehaviour below. Those are parameterised by type, so each costs this
+	 * header exactly one declaration however many component or behaviour types
+	 * exist: they are bounded by CONSTRUCTION, where the gates bound by
+	 * discipline. Filing one under the gates would mean widening a rule that
+	 * nothing needed widened, and a vaguer rule is a weaker one. A new member
+	 * belongs to whichever family it is: templated over the type it returns, or
+	 * named for a specific thing it does.
 	 */
 	class Entity
 	{
@@ -142,6 +152,53 @@ namespace Radiant {
 		/** As RemoveComponent, but a no-op when the component is absent. */
 		template<typename T>
 		void RemoveComponentIfExists();
+
+		/**
+		 * The behaviour of type T driving this entity, or nullptr — the checked
+		 * way to recover a concrete EntityBehaviour subclass from a handle
+		 * (RAD-100). Gameplay names neither the component the instance lives in
+		 * nor a cast the compiler cannot verify:
+		 *
+		 *     if (Door* door = other.GetBehaviour<Door>())
+		 *         door->Open();
+		 *
+		 * A QUERY, SO IT NEVER ASSERTS. "It isn't that" is an answer, not a
+		 * programmer error, so all four ways to get nothing back are silent:
+		 *
+		 *   1. this handle is invalid — the DOCUMENTED NORMAL case, not a
+		 *      mistake: a collision partner may already be dead by the time you
+		 *      ask (EntityBehaviour::OnCollisionEnd's contract), so a warning
+		 *      here would fire during correct gameplay;
+		 *   2. the entity has no NativeScriptComponent — it has no behaviour at
+		 *      all, which is true of most entities;
+		 *   3. it has one, but the instance is not built yet — behaviours are
+		 *      created lazily on the first fixed step after Bind<T>(), so this
+		 *      is timing, not error;
+		 *   4. the instance exists and is not a T.
+		 *
+		 * The only check that fires is compile-time: T must derive from
+		 * EntityBehaviour.
+		 *
+		 * THE POINTER IS TRANSIENT, exactly like the handle it came from. It
+		 * dangles when the entity dies, when the Level dies, and when the
+		 * behaviour is rebound — AddOrReplaceComponent<NativeScriptComponent>
+		 * deletes the instance the old pointer names. Never store one across a
+		 * fixed step: keep the Entity (or its UUID) and ask again, which is
+		 * cheap enough to do per use. Once an entity may carry SEVERAL
+		 * behaviours (RAD-101) a sibling's actions can invalidate a stored
+		 * pointer too, so this contract only gets more load-bearing.
+		 *
+		 * const here constrains this handle, not the behaviour it names — the
+		 * same latitude GetPhysicsBody and GetLevel take, and for the same
+		 * reason: a handle is a pointer, and const on a pointer is not const on
+		 * its pointee.
+		 *
+		 * Asking for the base type is legal and deliberate:
+		 * GetBehaviour<EntityBehaviour>() returns whatever is bound, because
+		 * the underlying question is "is it a T, or derived from T".
+		 */
+		template<typename T>
+		T* GetBehaviour() const;
 
 		/**
 		 * Where this entity is, in world units. One component lookup — the same

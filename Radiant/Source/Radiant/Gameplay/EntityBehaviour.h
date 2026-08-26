@@ -64,6 +64,14 @@ namespace Radiant {
 	 * (ActorComponent.h contains zero occurrences of "Location"), and no
 	 * per-subsystem forwarder.
 	 *
+	 * HOW ANYONE FINDS A CONCRETE BEHAVIOUR (RAD-100). The engine stores every
+	 * instance as an EntityBehaviour*, so recovering the subclass is a query on
+	 * the entity: Entity::GetBehaviour<T>(), returning nullptr when the answer
+	 * is "not that". Unreal's equivalent is AActor::FindComponentByClass<T>(),
+	 * which returns null the same way; ours reaches the answer with
+	 * dynamic_cast where UE uses its reflection system's IsA, because RAD-72 is
+	 * not built yet.
+	 *
 	 * Lifecycle contract: the instance is heap-allocated lazily by the Level on
 	 * the first Level::OnFixedUpdate after binding. m_Entity is wired AFTER
 	 * construction, so constructors must not touch components — do first-time
@@ -82,6 +90,15 @@ namespace Radiant {
 	class EntityBehaviour
 	{
 	public:
+		/**
+		 * LOAD-BEARING TWICE, so do not "tidy it away" if the virtual hooks
+		 * below ever move. It makes deletion through this base correct — the
+		 * owning NativeScriptComponent deletes an EntityBehaviour* that really
+		 * points at a subclass — AND it is what makes this class polymorphic,
+		 * which is the precondition for the RTTI that Entity::GetBehaviour<T>()
+		 * reads. Remove it and typed retrieval stops compiling somewhere far
+		 * from here.
+		 */
 		virtual ~EntityBehaviour() = default;
 
 		/**

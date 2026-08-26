@@ -137,10 +137,18 @@ namespace Radiant {
 	 * for the lifecycle contract). One behaviour per entity — RAD-101 makes it
 	 * several. Bindings are code-only — never serialized — so they must be
 	 * re-bound after level load.
+	 *
+	 * THIS COMPONENT IS PLUMBING; THE QUERY IS THE API (RAD-100). Gameplay
+	 * recovers a concrete behaviour with Entity::GetBehaviour<T>(), which is
+	 * checked and returns nullptr on a mismatch. Reaching Instance directly
+	 * means writing a static_cast the compiler does not verify: get the type
+	 * wrong and it reinterprets a live object rather than failing, corrupting
+	 * whatever sits at the assumed member offsets.
 	 */
 	struct NativeScriptComponent
 	{
-		// Owning raw pointer — known plain-data violation; moves to a Level-owned side table (RAD-30)
+		// Owning raw pointer — known plain-data violation; moves to a Level-owned side table (RAD-30).
+		// Read it through Entity::GetBehaviour<T>(), never by casting it yourself (see above).
 		EntityBehaviour* Instance = nullptr;
 
 		std::function<EntityBehaviour* ()> InstantiateScript;
