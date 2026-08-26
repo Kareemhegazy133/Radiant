@@ -68,9 +68,14 @@ namespace Radiant {
 
 		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
-		// Sort entities by UUID so output order is deterministic — stable file diffs
+		// Sort entities by UUID so output order is deterministic — stable file diffs.
+		// GetLiveEntitiesWith, not a raw registry view: a save issued between a
+		// mark and the reap would otherwise write entities that are already dead
+		// into the .rdlvl (RAD-97). Being a friend of Level is permission to reach
+		// the registry, not a reason to bypass the seam that keeps passes off
+		// corpses.
 		std::map<UUID, entt::entity> sortedEntityMap;
-		auto view = m_Level->m_Registry.view<MetadataComponent>();
+		auto view = m_Level->GetLiveEntitiesWith<MetadataComponent>();
 		for (auto entity : view)
 			sortedEntityMap[view.get<MetadataComponent>(entity).ID] = entity;
 

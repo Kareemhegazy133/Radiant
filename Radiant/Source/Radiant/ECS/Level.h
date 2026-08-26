@@ -327,10 +327,17 @@ namespace Radiant {
 
 		/**
 		 * As GetLiveEntitiesWith, but INCLUDING entities already marked for
-		 * destruction. The deliberate exception, and there are only two callers
-		 * by design: the reap, which exists to walk corpses, and ~Level, which
-		 * marks everything including what is already marked. Anything
-		 * gameplay-visible wants the other one.
+		 * destruction. The deliberate exception, and anything gameplay-visible
+		 * wants the other one.
+		 *
+		 * THIS HAS EXACTLY TWO CALLERS BY DESIGN — the reap, which exists to walk
+		 * corpses, and ~Level, which marks everything including what is already
+		 * marked. That is a greppable invariant, and it is written down because
+		 * the seam was nearly lost the day it was built: RAD-97 migrated every
+		 * pass in Level.cpp and missed LevelSerializer, which is a `friend` and
+		 * had been reaching m_Registry directly. Being a friend of Level is
+		 * permission to reach the registry, not a reason to bypass this. When
+		 * auditing, check the friend list — not just this file.
 		 */
 		template<typename... Components>
 		auto GetAllEntitiesWith()

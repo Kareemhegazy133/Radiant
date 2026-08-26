@@ -70,13 +70,28 @@ namespace Radiant {
 			DestroyEntity({ entity, this });
 		}
 
-		// A loop, unlike the single pass OnFixedUpdate runs: teardown is not a
-		// hot path, and an OnDestroy that destroys something else must not strand
-		// an entity whose own OnDestroy never runs. It terminates because marking
-		// is idempotent — only genuinely new entities can extend it, and nothing
-		// here creates any.
+		// A loop, unlike the single pass OnFixedUpdate runs: teardown is not a hot
+		// path, and an OnDestroy that destroys something else must not strand an
+		// entity whose own OnDestroy never runs. Normally it converges in one or
+		// two passes, because marking is idempotent and the loop above already
+		// marked everything.
+		//
+		// CAPPED anyway. The convergence argument assumes gameplay creates nothing
+		// during teardown, which is an assumption about game code rather than
+		// something the engine enforces — a behaviour destructor that spawns and
+		// destroys would spin here forever. A cap turns an unkillable hang into a
+		// diagnosable line, and anything still pending is released by the registry
+		// itself when it is destroyed moments later.
+		constexpr int maxReapPasses = 8;
+		int passes = 0;
 		while (ReapDestroyedEntities() > 0)
-			;
+		{
+			if (++passes >= maxReapPasses)
+			{
+				RADIANT_WARN("Level: teardown reap did not converge after {0} passes - something is creating entities during ~Level", maxReapPasses);
+				break;
+			}
+		}
 
 		RADIANT_TRACE("Level Destructed: {0}", (void*)this);
 	}
@@ -217,6 +232,13 @@ namespace Radiant {
 		if (m_ReapList.empty())
 			return 0;
 
+		// Counted rather than taken from m_ReapList.size(), and that difference is
+		// load-bearing: ~Level loops `while (ReapDestroyedEntities() > 0)`, so an
+		// entity that the guard below SKIPS would keep its tag, be re-listed next
+		// pass, and spin forever. Reporting work actually done makes the loop
+		// terminate on its own terms instead of on an invariant argument.
+		size_t reaped = 0;
+
 		for (entt::entity handle : m_ReapList)
 		{
 			// Only the reap frees rows, and it cannot run re-entrantly, so a
@@ -249,9 +271,9 @@ namespace Radiant {
 			}
 
 			m_Registry.destroy(handle);
+			++reaped;
 		}
 
-		const size_t reaped = m_ReapList.size();
 		m_ReapList.clear();
 
 		// ONCE per reap rather than once per destroyed entity, which is the
