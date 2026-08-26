@@ -25,7 +25,9 @@ You are performing a two-pass review of Radiant engine C++ code: a **Standards C
 
 ## Playbook Reference
 
-!cat .claude/references/radiant-playbook.md
+**Read `.claude/references/radiant-playbook.md` (with the Read tool) before reviewing — this is a required step, not optional.** This skill's rules cite playbook sections by number and instruct you to enforce §8's Known Bug Patterns strictly; a review performed without the playbook in context cannot do either and is invalid.
+
+(This was previously a `!cat` inline include, which silently failed to expand — it arrived as literal text, so reviews ran with no playbook at all and nothing announced it. Caught during RAD-97's review, 2026-08-26; the same failure and the same fix as the `plan-feature` skill.)
 
 ## Changes to Review
 
