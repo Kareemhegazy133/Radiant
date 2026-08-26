@@ -22,9 +22,19 @@ namespace Radiant {
 		return GameplayLevel(m_Level);
 	}
 
+	// Two questions, deliberately separate. The registry answers whether the row
+	// still exists; IsPendingDestroy answers whether it has been condemned and is
+	// merely awaiting the reap (RAD-97). Composing them HERE, in the one place
+	// every consumer already asks, is what makes the whole engine and every game
+	// pending-aware without a single call site changing: Entity is a value handle
+	// that re-asks at each use rather than caching an answer, so validity is a
+	// property of the world, not of the moment somebody looked it up. That is
+	// also what lets DispatchContactEvents resolve each participant once per
+	// event instead of once per callback.
 	bool Entity::IsValid() const
 	{
-		return (m_EntityHandle != entt::null) && m_Level && m_Level->m_Registry.valid(m_EntityHandle);
+		return (m_EntityHandle != entt::null) && m_Level && m_Level->m_Registry.valid(m_EntityHandle)
+			&& !m_Level->IsPendingDestroy(m_EntityHandle);
 	}
 
 	Entity::operator bool() const { return IsValid(); }

@@ -54,16 +54,29 @@ namespace Radiant {
 	{
 		RADIANT_TRACE("Level Destructor");
 
-		// Destroy all entities one by one rather than calling m_Registry.clear()
-		// This ensures component on_destroy signals are fired in the correct order.
-		// Bodies die here, via the signals, while m_PhysicsWorld is still alive;
-		// the Scope then destroys the world itself after this destructor body.
-		// Scratch levels hold a null Scope — their destruction touches no other
-		// Level's physics (the RAD-27 fix).
+		// Mark every entity, then reap. Marking one by one rather than calling
+		// m_Registry.clear() ensures component on_destroy signals fire in the
+		// correct order. Bodies die here, via the signals, while m_PhysicsWorld
+		// is still alive; the Scope then destroys the world itself after this
+		// destructor body. Scratch levels hold a null Scope — their destruction
+		// touches no other Level's physics (the RAD-27 fix).
+		//
+		// This loop is now SAFE BY CONSTRUCTION, where before RAD-97 it destroyed
+		// and re-sorted the very MetadataComponent pool it was iterating (half of
+		// RAD-81's finding). The mark touches the collider pool, the rigidbody
+		// pool, the tag pool and a hash map — never the pool being walked.
 		for (auto entity : GetAllEntitiesWith<MetadataComponent>())
 		{
 			DestroyEntity({ entity, this });
 		}
+
+		// A loop, unlike the single pass OnFixedUpdate runs: teardown is not a
+		// hot path, and an OnDestroy that destroys something else must not strand
+		// an entity whose own OnDestroy never runs. It terminates because marking
+		// is idempotent — only genuinely new entities can extend it, and nothing
+		// here creates any.
+		while (ReapDestroyedEntities() > 0)
+			;
 
 		RADIANT_TRACE("Level Destructed: {0}", (void*)this);
 	}
@@ -92,43 +105,164 @@ namespace Radiant {
 		return entity;
 	}
 
+	// THE MARK (RAD-97). Nothing here frees anything: the entt row and the
+	// behaviour instance both die at the reap, which is what makes this callable
+	// from a collision handler, from a script's OnUpdate, or by an entity on
+	// itself, with no "last statement" discipline anywhere.
 	void Level::DestroyEntity(Entity entity)
 	{
-		// Stale/null handles reach here from gameplay code (e.g. double-destroy);
-		// a config-level mistake, not grounds for UB in Dist
-		if (!entity.IsValid())
+		const entt::entity handle = entity.m_EntityHandle;
+
+		// The old IsValid() body, spelled out, because IsValid() now folds in the
+		// pending check and the two cases want opposite answers below: a handle
+		// naming no row is a caller mistake, an already-condemned one is not.
+		if (handle == entt::null || !entity.m_Level || !m_Registry.valid(handle))
 		{
 			RADIANT_WARN("Level: DestroyEntity called with an invalid entity handle");
 			return;
 		}
 
-		if (auto* nsc = entity.TryGetComponent<NativeScriptComponent>())
+		// Already condemned. SILENT, deliberately: the caller is asking for a
+		// state that already holds, and two systems independently concluding the
+		// same enemy is dead in one step is ordinary gameplay, not a bug — a
+		// warning here would fire during correct behaviour, which is how a log
+		// gets tuned out. UE takes the identical early-out, and says so: "If
+		// already on list to be deleted, pretend the call was successful"
+		// (LevelActor.cpp:856).
+		if (IsPendingDestroy(handle))
+			return;
+
+		// Same answer, different question — see IsMarkInProgress in Level.h for
+		// why these are two states and not one. This is the arm that catches
+		// GetOwner().Destroy() called from inside this entity's own OnDestroy.
+		if (IsMarkInProgress(handle))
+			return;
+
 		{
-			// Instance is created lazily on first update — it may not exist yet
-			if (nsc->Instance)
+			// Scoped like DispatchScope and ScriptPassScope below, and for the
+			// same reason: OnDestroy is gameplay, and gameplay that throws must
+			// not leave this entity permanently unmarkable.
+			struct MarkScope
 			{
-				nsc->Instance->OnDestroy();
-				if (nsc->DestroyScript)
-					nsc->DestroyScript(nsc);
-				else
-					delete nsc->Instance;
+				Level& Owner;
+
+				MarkScope(Level& owner, entt::entity handle) : Owner(owner) { Owner.m_MarksInProgress.push_back(handle); }
+				~MarkScope() { Owner.m_MarksInProgress.pop_back(); }
+			} markScope(*this, handle);
+
+			if (auto* nsc = entity.TryGetComponent<NativeScriptComponent>())
+			{
+				// Instance is created lazily on first update — it may not exist yet.
+				// The instance is NOT deleted here: that delete was the entire
+				// "last statement" wart, and it moves to the reap. What the
+				// behaviour sees is otherwise exactly what it saw before — its
+				// entity valid, its components readable, its body still alive —
+				// which is what keeps "spawn an effect where I died" working.
+				if (nsc->Instance)
+					nsc->Instance->OnDestroy();
 			}
 		}
 
-		UUID id = entity.GetUUID();
+		// OnDestroy is gameplay, so it may have spawned (reallocating the pool
+		// `nsc` pointed into) or destroyed other entities. Nothing below reuses
+		// nsc, and `handle` itself stays meaningful because no row is freed until
+		// the reap.
 
-		// Remove components for which there exist on_destroy handlers
-		// This ensures that if the handlers rely on other entity components (in particular
-		// the MetadataComponent and the TransformComponent), they can still access them.
+		const UUID id = entity.GetUUID();
+
+		// Remove components for which there exist on_destroy handlers. This
+		// ensures that if the handlers rely on other entity components (in
+		// particular the MetadataComponent and the TransformComponent), they can
+		// still access them — which is also why this runs BEFORE the tag: the
+		// handlers reach the entity through checked accessors, and the tag is
+		// what would make those assert.
 		// Collider before rigidbody: destroying a body destroys its shapes inside
 		// Box2D, so body-first would leave the collider handler a stale ticket.
 		entity.RemoveComponentIfExists<BoxCollider2DComponent>();
 		entity.RemoveComponentIfExists<RigidBody2DComponent>();
 
-		m_Registry.destroy(entity.m_EntityHandle);
+		// The level's directory entry goes now, so GetEntityByUUID and the UUID
+		// overload of this function stop finding it without either needing a
+		// pending check of its own. UE strikes its actor-list entry inside
+		// DestroyActor for the same reason (RemoveActor, LevelActor.cpp:1033).
 		m_EntityMap.erase(id);
 
+		// LAST. From here the entity is dead to everything: IsValid() is false,
+		// every gameplay view excludes it, every lookup misses it. Everything
+		// above needed it alive, and the recursion guard is what covered that gap.
+		m_Registry.emplace<PendingDestroyComponent>(handle);
+
+		// No SortEntities here: it moves to the reap, where it runs once per step
+		// instead of once per destroyed entity. Its comparator also resolves
+		// metadata IDs through m_EntityMap, which no longer holds this one.
+	}
+
+	// THE REAP (RAD-97): the one defined point at which entity storage is freed.
+	// Called from the tail of OnFixedUpdate — see Level.h's lifecycle contract
+	// for why end-of-step rather than end-of-frame.
+	size_t Level::ReapDestroyedEntities()
+	{
+		RADIANT_PROFILE_FUNCTION();
+
+		// Snapshot to plain ids before destroying any of them: m_Registry.destroy
+		// swap-and-pops the very pool this list came from, so the reap has to obey
+		// the rule it exists to relieve every other caller of (playbook §8.8).
+		// GetAllEntitiesWith, not GetLiveEntitiesWith — this is one of the two
+		// places that deliberately walks corpses.
+		m_ReapList.clear();
+		for (entt::entity handle : GetAllEntitiesWith<PendingDestroyComponent>())
+			m_ReapList.push_back(handle);
+
+		// The common case: nothing died this step
+		if (m_ReapList.empty())
+			return 0;
+
+		for (entt::entity handle : m_ReapList)
+		{
+			// Only the reap frees rows, and it cannot run re-entrantly, so a
+			// missing row means something freed an entity behind the registry's
+			// back — a programmer error, not content
+			RADIANT_ASSERT(m_Registry.valid(handle), "Reap: entity already freed outside DestroyEntity");
+			if (!m_Registry.valid(handle))
+				continue;
+
+			// The deferred half of the mark, and the whole fix for the "last
+			// statement" wart: by the time this runs, every method that was
+			// executing when Destroy() was called has returned. Uses m_Registry
+			// directly — these entities are, by construction, invalid, and
+			// Entity's accessors assert on that.
+			//
+			// One bespoke delete per kind of runtime side state; there is exactly
+			// one kind today. RAD-30's Level-owned side tables collapse this into
+			// a loop over registered tables, so the next kind meets that decision
+			// rather than a second copy of these lines.
+			if (auto* nsc = m_Registry.try_get<NativeScriptComponent>(handle))
+			{
+				if (nsc->Instance)
+				{
+					if (nsc->DestroyScript)
+						nsc->DestroyScript(nsc);   // nulls Instance itself (see Bind)
+					else
+						delete nsc->Instance;
+					nsc->Instance = nullptr;
+				}
+			}
+
+			m_Registry.destroy(handle);
+		}
+
+		const size_t reaped = m_ReapList.size();
+		m_ReapList.clear();
+
+		// ONCE per reap rather than once per destroyed entity, which is the
+		// single largest cost this story removes: fifty projectiles dying in one
+		// step was fifty O(n log n) sorts. Safe here and nowhere else in the
+		// window, because the comparator resolves every metadata ID through
+		// m_EntityMap and asserts on a miss — by this line no pending entity
+		// remains to be missing.
 		SortEntities();
+
+		return reaped;
 	}
 
 	void Level::DestroyEntity(UUID entityID)
@@ -375,14 +509,20 @@ namespace Radiant {
 		if (!entity.GetComponent<MetadataComponent>().IsActive)
 			return;
 
-		// Instance is read BEFORE the call and never touched after it — the
-		// handler is allowed to destroy this very entity, which deletes the
-		// instance whose method is running
-		EntityBehaviour* instance = nsc->Instance;
+		// The handler is allowed to destroy this very entity, and that is now
+		// simply safe: a destroy MARKS, and only the reap deletes the instance,
+		// so the object whose method is running outlives the call (RAD-97). The
+		// local this used to need — read the instance before calling, never
+		// touch it after — is gone with the hazard it dodged.
+		//
+		// What survives is a different, unrelated hazard: `nsc` is a pointer INTO
+		// the component pool, and a handler that spawns a scripted entity can
+		// reallocate that pool. Nothing below touches nsc, which is why the calls
+		// are the last statements here.
 		if (phase == ContactPhase::Begin)
-			instance->OnCollisionBegin(other);
+			nsc->Instance->OnCollisionBegin(other);
 		else
-			instance->OnCollisionEnd(other);
+			nsc->Instance->OnCollisionEnd(other);
 	}
 
 	void Level::DispatchContactEvents()
@@ -414,11 +554,27 @@ namespace Radiant {
 
 		for (const ContactEvent& contact : m_PhysicsWorld->GetContactEvents())
 		{
-			// Every resolution below happens at the moment of use, never
-			// hoisted: a callback for an EARLIER event in this batch may have
-			// destroyed either participant. An unresolvable side arrives as
-			// UUID(0), which is never in the map, so it needs no special case.
-			if (!GetEntityByUUID(contact.EntityA) && !GetEntityByUUID(contact.EntityB))
+			// ONE resolution per event, hoisted out of the callback loop below —
+			// and this hoist is the change RAD-97 buys here. Before deferral, a
+			// callback that destroyed a participant FREED its row, so any handle
+			// resolved earlier became a dangling ticket and every callback had to
+			// re-resolve both sides from their UUIDs; with 5 callbacks and 12
+			// events that was 120 map lookups a step spent defending against a
+			// free that had already happened.
+			//
+			// Now a destroy only MARKS. The Entity values below are value handles
+			// that re-ask at every use rather than caching an answer, so a
+			// callback destroying `A` does not invalidate the handle the next
+			// callback holds — it changes what that handle ANSWERS. Resolve once,
+			// hand the same event to everyone, and let each `if (collision.A)`
+			// tell the truth at the moment it is asked.
+			//
+			// An unresolvable side arrives as UUID(0), which is never in the map,
+			// so it needs no special case — and neither does an entity marked
+			// earlier in this batch, since the mark erases its map entry.
+			CollisionEvent collision{ GetEntityByUUID(contact.EntityA), GetEntityByUUID(contact.EntityB), contact.Phase };
+
+			if (!collision.A && !collision.B)
 				continue; // both gone — nobody left to tell
 
 			// Level-wide callbacks first: they see the collision before
@@ -439,21 +595,26 @@ namespace Radiant {
 				if (!m_CollisionCallbacks[i].Active)
 					continue;
 
-				CollisionEvent collision{ GetEntityByUUID(contact.EntityA), GetEntityByUUID(contact.EntityB), contact.Phase };
+				// An earlier callback destroyed both participants, so there is
+				// nobody left to tell. Re-checked per iteration because it can
+				// become true mid-loop — but note this is a re-CHECK of the same
+				// two handles, not a re-RESOLUTION of them: two tag lookups
+				// rather than two hash lookups, and no chance of the answer and
+				// the handle disagreeing.
 				if (!collision.A && !collision.B)
-					break; // an earlier callback destroyed both participants
+					break;
 
 				m_CollisionCallbacks[i].Function(collision);
 			}
 
-			// Then each side's script hook, with the other side resolved at the
-			// moment of the call
-			if (Entity a = GetEntityByUUID(contact.EntityA))
-				NotifyScript(a, GetEntityByUUID(contact.EntityB), contact.Phase);
+			// Then each side's script hook. The same handles, asked again: A's
+			// handler may have destroyed B, and `collision.B` reports that
+			// without anything being re-resolved.
+			if (collision.A)
+				NotifyScript(collision.A, collision.B, contact.Phase);
 
-			// Re-resolved rather than reused: A's handler may have destroyed B
-			if (Entity b = GetEntityByUUID(contact.EntityB))
-				NotifyScript(b, GetEntityByUUID(contact.EntityA), contact.Phase);
+			if (collision.B)
+				NotifyScript(collision.B, collision.A, contact.Phase);
 		}
 
 		// Flag clearing and the deferred-release flush happen in ~DispatchScope
@@ -485,11 +646,11 @@ namespace Radiant {
 				m_Registry.emplace_or_replace<TransformSnapshotComponent>(entityHandle, transform.Translation, transform.Rotation);
 			};
 			// Entities matching several mover views are written twice — idempotent
-			for (auto entityHandle : m_Registry.view<RigidBody2DComponent, TransformComponent>())
+			for (auto entityHandle : GetLiveEntitiesWith<RigidBody2DComponent, TransformComponent>())
 				snapshot(entityHandle);
-			for (auto entityHandle : m_Registry.view<CameraComponent, TransformComponent>())
+			for (auto entityHandle : GetLiveEntitiesWith<CameraComponent, TransformComponent>())
 				snapshot(entityHandle);
-			for (auto entityHandle : m_Registry.view<NativeScriptComponent, TransformComponent>())
+			for (auto entityHandle : GetLiveEntitiesWith<NativeScriptComponent, TransformComponent>())
 				snapshot(entityHandle);
 
 			// An entity that STOPPED being movable must lose its snapshot, or
@@ -498,7 +659,7 @@ namespace Radiant {
 			// the rules (Level.h); the vector only allocates on the rare frame
 			// a mover component was actually removed.
 			std::vector<entt::entity> staleSnapshots;
-			for (auto entityHandle : m_Registry.view<TransformSnapshotComponent>())
+			for (auto entityHandle : GetLiveEntitiesWith<TransformSnapshotComponent>())
 			{
 				if (!m_Registry.any_of<RigidBody2DComponent, CameraComponent, NativeScriptComponent>(entityHandle))
 					staleSnapshots.push_back(entityHandle);
@@ -526,19 +687,26 @@ namespace Radiant {
 		} scriptPassScope(*this);
 
 		{
-			auto scripts = m_Registry.view<NativeScriptComponent>();
+			auto scripts = GetLiveEntitiesWith<NativeScriptComponent>();
 			m_ScriptUpdateList.clear();
-			// Size is known here, so take it — after the first few steps the
-			// member has settled and this reserves nothing (playbook §7)
-			m_ScriptUpdateList.reserve(scripts.size());
+			// size_hint, not size: an EXCLUDING view cannot know its exact count
+			// without walking it, so entt only offers an upper bound (the
+			// unfiltered pool). That is exactly what a reserve wants, and after
+			// the first few steps the member has settled and this reserves
+			// nothing anyway (playbook §7).
+			m_ScriptUpdateList.reserve(scripts.size_hint());
 			for (auto entityHandle : scripts)
 				m_ScriptUpdateList.push_back(entityHandle);
 		}
 
 		for (entt::entity entityHandle : m_ScriptUpdateList)
 		{
-			// An earlier script in this same pass may have destroyed this one
-			if (!m_Registry.valid(entityHandle))
+			// An earlier script in this same pass may have destroyed this one.
+			// A LIVE check, not merely registry validity: the row survives until
+			// the reap now, so "still exists" and "still alive" have come apart,
+			// and the snapshot above cannot know about a mark made after it was
+			// taken. This is the half an entt::exclude cannot cover.
+			if (!m_Registry.valid(entityHandle) || IsPendingDestroy(entityHandle))
 				continue;
 
 			auto* nsc = m_Registry.try_get<NativeScriptComponent>(entityHandle);
@@ -567,8 +735,11 @@ namespace Radiant {
 				// invalidation — a different hazard from the iterator
 				// invalidation the snapshot above fixes, and not cured by it.
 				// Re-resolve rather than reuse; this is load-bearing, not
-				// defensive noise.
-				if (!m_Registry.valid(entityHandle))
+				// defensive noise. The live check, not bare registry validity,
+				// for the same reason as the one at the top of this loop: a
+				// script may destroy its own entity from OnCreate, and the row
+				// survives that until the reap.
+				if (!m_Registry.valid(entityHandle) || IsPendingDestroy(entityHandle))
 					continue;
 
 				nsc = m_Registry.try_get<NativeScriptComponent>(entityHandle);
@@ -603,10 +774,15 @@ namespace Radiant {
 			{
 				// Nothing destroys entities between Step and this drain, so a
 				// miss is a broken invariant, not a content mistake. Scripts
-				// CAN destroy entities now (RAD-95), but they run BEFORE the
-				// step in this same function — a destroyed entity's body dies
-				// with it, so the step never reports a move for it. That
-				// ordering is what keeps this an assert rather than a guard.
+				// CAN destroy entities (RAD-95), but they run BEFORE the step in
+				// this same function, and the assert survives deferred
+				// destruction (RAD-97) BECAUSE physics teardown stayed eager: a
+				// marked entity's body dies inside the mark, so the step that
+				// follows cannot report a move for it. Had the body waited for
+				// the reap, this would have had to become a guard — and a
+				// destroyed bullet would have gone on colliding for the rest of
+				// the step. The map lookup is also why the mark erases the entry
+				// itself: a pending entity is absent here, not merely dead.
 				auto it = m_EntityMap.find(move.EntityId);
 				RADIANT_ASSERT(it != m_EntityMap.end(), "Move-event drain: entity missing from map - destroyed between Step and drain?");
 				if (it == m_EntityMap.end())
@@ -633,6 +809,13 @@ namespace Radiant {
 			// (RAD-29).
 			DispatchContactEvents();
 		}
+
+		// 6pm: everything marked during this step is freed here, and nowhere
+		// else. Last, so it catches marks made by contact handlers as well as by
+		// scripts; and OUTSIDE the physics guard above, because a scratch level
+		// runs scripts, can therefore destroy, and would otherwise accumulate
+		// corpses nothing ever collects (RAD-97).
+		ReapDestroyedEntities();
 	}
 
 	// lerp(snapshot, current, alpha) for entities that have a snapshot; entities
@@ -656,7 +839,7 @@ namespace Radiant {
 		Camera* mainCamera = nullptr;
 		glm::mat4 cameraTransform;
 		{
-			auto view = m_Registry.view<TransformComponent, CameraComponent>();
+			auto view = GetLiveEntitiesWith<TransformComponent, CameraComponent>();
 			for (auto entity : view)
 			{
 				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
@@ -676,7 +859,7 @@ namespace Radiant {
 		{
 			Renderer2D::BeginScene(*mainCamera, cameraTransform);
 
-			auto view = GetAllEntitiesWith<MetadataComponent, TransformComponent, SpriteComponent>();
+			auto view = GetLiveEntitiesWith<MetadataComponent, TransformComponent, SpriteComponent>();
 			for (auto entityHandle : view)
 			{
 				auto [metadata, transform, sprite] = view.get<MetadataComponent, TransformComponent, SpriteComponent>(entityHandle);
@@ -720,7 +903,7 @@ namespace Radiant {
 		m_ViewportHeight = height;
 
 		// Resize the non-FixedAspectRatio cameras
-		auto view = m_Registry.view<CameraComponent>();
+		auto view = GetLiveEntitiesWith<CameraComponent>();
 		for (auto entity : view)
 		{
 			auto& cameraComponent = view.get<CameraComponent>(entity);
@@ -731,7 +914,7 @@ namespace Radiant {
 
 	Entity Level::FindEntityByName(std::string_view name)
 	{
-		auto view = m_Registry.view<MetadataComponent>();
+		auto view = GetLiveEntitiesWith<MetadataComponent>();
 		for (auto entity : view)
 		{
 			const MetadataComponent& metadata = view.get<MetadataComponent>(entity);
@@ -759,7 +942,7 @@ namespace Radiant {
 
 		// SpriteComponent
 		{
-			auto view = m_Registry.view<SpriteComponent>();
+			auto view = GetLiveEntitiesWith<SpriteComponent>();
 			for (auto entity : view)
 			{
 				const auto& src = m_Registry.get<SpriteComponent>(entity);
@@ -779,7 +962,7 @@ namespace Radiant {
 
 		// TextComponent
 		{
-			auto view = m_Registry.view<TextComponent>();
+			auto view = GetLiveEntitiesWith<TextComponent>();
 			for (auto entity : view)
 			{
 				const auto& tc = m_Registry.get<TextComponent>(entity);

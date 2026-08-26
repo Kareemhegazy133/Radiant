@@ -52,14 +52,32 @@ The shape is Unreal's `GetPhysicsActor()` idiom adapted to an ECS, and the disti
 | `NativeScriptComponent` | native script binding (below) |
 | `TextComponent` | world text — parked until the MSDF revival (RAD-47) |
 | `TransformSnapshotComponent` | previous-step transform for render interpolation — **runtime-only, never serialized** (see [Time-And-Simulation](Time-And-Simulation.md)) |
+| `PendingDestroyComponent` | empty tag: destroyed, awaiting the reap — **runtime-only, never serialized, engine-private** (above) |
 
-Adding a component is a three-site contract: declare in `Components.h`, add to `LevelSerializer`, and (Phase 5) add to the editor inspector. (Runtime-only components like `TransformSnapshotComponent` are the deliberate exception: the serializer never writes them.)
+Adding a component is a **four-site contract**: declare in `Components.h`, add to `LevelSerializer`, (Phase 5) add to the editor inspector, and **decide whether it is engine-private**. (Runtime-only components like `TransformSnapshotComponent` and `PendingDestroyComponent` are the deliberate exception to the second site: the serializer never writes them.)
+
+The fourth site exists because `Radiant.h` exports `Components.h` wholesale — it must, since games need `SpriteComponent` and friends — while `Entity::AddComponent<T>` is public and unconstrained, so by default *every* component type is writable by game code. Engine-owned runtime state specialises `IsEngineComponent<T>` (bottom of `Components.h`), which makes `Entity`'s three mutating accessors reject it at compile time; reads stay open. Unreal reaches the same guarantee one level down — `AActor::bActorIsBeingDestroyed` is private, readable via `IsPendingKillPending()`, writable only through a struct whose constructor is friended to `UWorld` alone. Forgetting this step is silent, which is why it is on the checklist; RAD-30's Level-owned side tables are the eventual fix, since game code cannot name a side table at all.
 
 ### Lifecycle & loops
 
-Entity creation/destruction is **immediate** (no command buffer — RAD-97 revisits the destruction half). Physics bodies are managed reactively through entt signals: `on_construct<RigidBody2DComponent>` creates the Box2D body, `on_destroy` destroys it — component presence *is* the physics binding.
+Entity creation is **immediate**. Destruction is **deferred**, and the reason is worth understanding rather than memorising.
 
-`Level::OnFixedUpdate(ts)` advances one FIXED simulation step: snapshots movable entities' transforms (for render interpolation), runs scripts (lazy-instantiating on first update), pushes transforms to physics, steps the physics world, and reads stepped body transforms back into the ECS as a dedicated post-step pass. `Level::OnRender(alpha)` finds the first `Primary` camera and draws sprite entities, blending movable entities between the last two simulation states by `alpha` — draw-only, it never mutates simulation state. Reaper's `GameLayer` drives the former from `Layer::OnFixedUpdate` and the latter from `Layer::OnUpdate` (see [Time-And-Simulation](Time-And-Simulation.md)).
+The problem it solves: if destroying an entity freed its storage inside the call, then anything already walking the world — a loop over contact events, a pass over scripts, the very method that asked for the destroy — could be left standing on freed memory. That is not hypothetical; it is the crash Box2D v2's contact listener was famous for, and it is why Unity's `Object.Destroy()` has never destroyed anything at the moment you call it either.
+
+So Radiant nails a **condemned notice** to the door instead (RAD-97). Destruction happens in two halves:
+
+- **The mark** (`Level::DestroyEntity`) runs the behaviour's `OnDestroy`, tears the Box2D body down **eagerly**, erases the UUID map entry, and tags the entity `PendingDestroyComponent`. From that instant it is dead to everything: `IsValid()` is false, lookups miss it, no pass iterates it, nothing draws it.
+- **The reap** (`Level::ReapDestroyedEntities`) frees the behaviour instance and the entt row, at exactly one moment — the end of the fixed step, after contact dispatch.
+
+Physics dies at the mark and not at the reap deliberately: a body surviving to the reap would keep generating contacts for the rest of the step, so a destroyed bullet would hit twice. End of *step* rather than end of *frame* matters too — one frame can run several fixed steps, so reaping per frame would make the pending window depend on frame rate, which is the exact framerate-dependence the fixed timestep exists to remove.
+
+The payoff is that `DestroyEntity` is safe from anywhere — a collision handler, a script's `OnUpdate`, an entity destroying itself — with no positional discipline, and that the defensive code this used to force on callers collapses. Contact dispatch now resolves each participant **once per event** instead of before every callback, because an `Entity` is a value handle that re-asks at each use: a callback destroying a participant changes what the handle *answers*, rather than turning it into a dangling ticket.
+
+What it is **not**: a garbage collector. There is no reference graph and no tracing pass — entt owns the storage, `Ref`/`Scope` state ownership per type, and validity stays a generation-handle question. This is Unreal's `MarkAsGarbage` half without the collector.
+
+Physics bodies are managed reactively through entt signals: `on_construct<RigidBody2DComponent>` creates the Box2D body, `on_destroy` destroys it — component presence *is* the physics binding.
+
+`Level::OnFixedUpdate(ts)` advances one FIXED simulation step: snapshots movable entities' transforms (for render interpolation), runs scripts (lazy-instantiating on first update), steps the physics world, drains the move events back into ECS transforms as a dedicated post-step pass, dispatches the step's contacts to gameplay, and finally **reaps** the entities destroyed during it. Nothing pushes ECS transforms into Box2D here — physics owns the transform of dynamic bodies, and pushes happen only at spawn and through the explicit verbs (RAD-28). `Level::OnRender(alpha)` finds the first `Primary` camera and draws sprite entities, blending movable entities between the last two simulation states by `alpha` — draw-only, it never mutates simulation state. Reaper's `GameLayer` drives the former from `Layer::OnFixedUpdate` and the latter from `Layer::OnUpdate` (see [Time-And-Simulation](Time-And-Simulation.md)).
 
 "Systems" in Radiant are these loops inside `Level` — the spreadsheet walk ("every row with values in BOTH columns") as real code, from `OnRender`:
 
@@ -98,7 +116,9 @@ The resulting contract, which gameplay may rely on:
 - An entity destroyed during a step is skipped for the remainder of that step.
 - A spawned entity has no render snapshot for the frame it was born in, so it draws un-interpolated once — correct, since there is no previous pose to blend from.
 
-One caveat, and it is temporary: destroying **this** entity from a hook deletes the instance whose method is executing, so it must be the last statement. RAD-97 removes that by deferring the reap. A behaviour registering a level-wide collision callback **must remove it in `OnDestroy`** — the Level owns the callback by value and therefore its captures, and cannot detect that its subscriber died.
+Destroying **this** entity from a hook is safe and needs no positional discipline — `GetOwner().Destroy();` may be followed by more statements and the method runs to completion, because only the reap deletes the instance (RAD-97). The entity does report `IsValid() == false` from that line onward, so anything after it reads a dead handle; that is a reason to put the destroy last out of taste, not out of safety.
+
+A behaviour registering a level-wide collision callback **must still remove it in `OnDestroy`** — the Level owns the callback by value and therefore its captures, and cannot detect that its subscriber died. `OnDestroy` fires at the *mark*, not at the reap, precisely so that unregistration takes effect immediately rather than leaving a logically-dead subscriber receiving events for the rest of the batch.
 
 ### Serialization
 
@@ -116,5 +136,5 @@ One caveat, and it is temporary: destroying **this** entity from a hook deletes 
 - **Components must become plain data (RAD-30):** `NativeScriptComponent` holds an owning raw pointer, `RigidBody2DComponent` holds a `void*` body plus two `std::function` callbacks. Shallow copies duplicate raw pointers, which blocks the `Level::Copy()` that play-in-editor requires (RAD-52). Runtime state moves to Level-owned side tables; the rule is *if it can't be memcpy'd and serialized, it doesn't belong in a component* (playbook §3).
 - **Serialization gaps:** `IsActive` and script bindings are lost on round-trip; several nested YAML reads are unguarded against malformed files. Hardened alongside the Phase 4 asset work.
 - **No edit/play separation:** the engine has no `OnRuntimeStart/Stop` — physics and scripts run whenever the Level updates. Restored properly with play-in-editor (RAD-52).
-- **Immediate destruction costs every caller a guard (RAD-97):** `DestroyEntity` tears down inside the call, so contact dispatch re-resolves both participants before every callback, and a script destroying its own entity must make it the last statement. Deferring the reap to a defined point removes all three symptoms — the same discipline the `EventQueue` already applies to input (playbook §1).
+- **Deferred destruction landed (RAD-97, 2026-08-26)** — the three symptoms it was filed for are gone: contact dispatch resolves each participant once per event, the "last statement" caveat is deleted, and the move-drain assert now holds *because* physics teardown stayed eager. Two residual notes. An entity marked **outside** a fixed step (a cheat key, a UI action, a destroy while paused) is not reaped until the next step and never if the level is never stepped again — invalid and invisible throughout, so the cost is memory, and `~Level` collects it. And `Level::Copy()` (RAD-52, play-in-editor) must skip entities carrying the tag rather than copy a corpse into the new level.
 - **The script list is rebuilt each step, not maintained (RAD-30):** correct at today's scale (single-digit script counts) and one extra walk over a tiny set. The side table RAD-30 introduces *is* the maintained list, which is the shape Unreal's tick registry already has.

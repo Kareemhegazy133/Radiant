@@ -9,6 +9,7 @@
 
 #include "Entity.h"
 
+#include <algorithm>
 #include <deque>
 #include <functional>
 
@@ -23,9 +24,32 @@ namespace Radiant {
 	 * the registry is never exposed. A Level is a ref-counted Asset (held via
 	 * Ref<Level>, loadable through the AssetManager). Main-thread only.
 	 *
-	 * Lifecycle contract: entity creation and destruction are IMMEDIATE (no command
-	 * buffer) — never call DestroyEntity while iterating a view containing that
-	 * entity. Physics lifecycle is driven by the entt signals registered in the
+	 * LIFECYCLE CONTRACT. Creation is IMMEDIATE. Destruction is DEFERRED, in two
+	 * halves (RAD-97):
+	 *
+	 *   MARK — DestroyEntity runs OnDestroy, tears the physics body down EAGERLY,
+	 *     erases the UUID map entry, and tags the entity PendingDestroyComponent.
+	 *     From that instant the entity is dead to everything: IsValid() is false,
+	 *     lookups miss it, and every gameplay pass excludes it. Safe to call from
+	 *     anywhere — a collision handler, a script's OnUpdate, an entity on
+	 *     itself — with no "last statement" discipline.
+	 *   REAP — ReapDestroyedEntities frees the behaviour instance and the entt
+	 *     row, at ONE defined point: the end of the fixed step, after contact
+	 *     dispatch. Not end of frame, so a rendered frame never observes a
+	 *     half-destroyed entity, and so the pending window stays exactly one step
+	 *     regardless of how many steps a frame runs (playbook §1).
+	 *
+	 * Physics dies at the mark and not at the reap deliberately: a body surviving
+	 * to the reap would keep generating contacts for the rest of the step, so a
+	 * destroyed bullet would hit twice.
+	 *
+	 * The consequence worth planning around: an entity marked OUTSIDE a fixed
+	 * step — a cheat key, a UI action, a destroy while paused — is not reaped
+	 * until the next step, and never if the level is never stepped again. It is
+	 * invalid and invisible throughout, so the cost is memory rather than
+	 * behaviour, and ~Level collects it.
+	 *
+	 * Physics lifecycle is driven by the entt signals registered in the
 	 * constructor: adding a RigidBody2DComponent creates the Box2D body and
 	 * removing it destroys the body; the same holds for BoxCollider2DComponent
 	 * and its shape — component presence IS the physics binding.
@@ -93,15 +117,31 @@ namespace Radiant {
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 
 		/**
-		 * Destroys the entity IMMEDIATELY: runs the native script's OnDestroy (if an
-		 * instance exists), removes signal-bound components first so their on_destroy
-		 * handlers can still read Metadata/Transform, then frees the entt handle.
-		 * Never call while iterating a registry view. All Entity handles to the
-		 * destroyed entity are dangling afterwards.
+		 * MARKS the entity destroyed — see the lifecycle contract above for the
+		 * mark/reap split. Runs the behaviour's OnDestroy (if an instance
+		 * exists), removes the signal-bound physics components first so their
+		 * on_destroy handlers can still read Metadata/Transform, erases the UUID
+		 * map entry, and tags the entity. The entt row and the behaviour
+		 * instance are freed at the reap, at the end of this fixed step.
+		 *
+		 * SAFE FROM ANYWHERE, including while iterating: nothing is freed here,
+		 * so no view is invalidated and no running method loses the object it
+		 * belongs to. Destroying the entity whose hook is executing is legal and
+		 * need NOT be the last statement.
+		 *
+		 * Afterwards every handle to this entity, including the caller's, reports
+		 * IsValid() == false. Destroying an already-marked entity is a silent
+		 * no-op — the state it asks for already holds, and two systems
+		 * independently deciding the same thing is dead in one step is normal
+		 * gameplay (UE takes the same early-out in UWorld::DestroyActor). An
+		 * invalid handle warns and recovers.
 		 */
 		void DestroyEntity(Entity entity);
 
-		/** UUID overload of DestroyEntity; a no-op for unknown UUIDs. */
+		/**
+		 * UUID overload of DestroyEntity; a no-op for unknown UUIDs — which
+		 * includes already-marked entities, since the mark erases the map entry.
+		 */
 		void DestroyEntity(UUID entityID);
 
 		/**
@@ -264,8 +304,34 @@ namespace Radiant {
 		const std::string& GetName() const { return m_Name; }
 
 	protected:
-		// Live registry view — never destroy entities or add/remove the iterated
-		// component types while iterating it (creation/destruction is immediate)
+		/**
+		 * THE DEFAULT VIEW for every pass gameplay or rendering can observe:
+		 * entities matching Components... that are not pending destruction.
+		 *
+		 * The exclusion lives here rather than at each call site on purpose
+		 * (playbook §4, one guard per layer, applied to iteration). Spelling it
+		 * out per view would be an O(N)-edits-per-feature rule whose failure is
+		 * silent — the next view written forgets it and quietly walks corpses,
+		 * and the code still looks correct. Reaching for the obvious name is
+		 * what makes a new pass correct.
+		 *
+		 * Still a LIVE view: destroying is safe now, but adding or removing an
+		 * iterated component type mid-iteration is not (playbook §8.8). A loop
+		 * that hands control to gameplay must snapshot ids first.
+		 */
+		template<typename... Components>
+		auto GetLiveEntitiesWith()
+		{
+			return m_Registry.view<Components...>(entt::exclude<PendingDestroyComponent>);
+		}
+
+		/**
+		 * As GetLiveEntitiesWith, but INCLUDING entities already marked for
+		 * destruction. The deliberate exception, and there are only two callers
+		 * by design: the reap, which exists to walk corpses, and ~Level, which
+		 * marks everything including what is already marked. Anything
+		 * gameplay-visible wants the other one.
+		 */
 		template<typename... Components>
 		auto GetAllEntitiesWith()
 		{
@@ -273,6 +339,63 @@ namespace Radiant {
 		}
 
 	private:
+		/**
+		 * Has this entity been marked destroyed but not yet reaped? The single
+		 * predicate behind the pending half of Entity::IsValid(), which composes
+		 * it with the registry's own validity — two separate questions that stay
+		 * separate here (RAD-97).
+		 *
+		 * Sits on the hot path: IsValid() is behind every operator bool and
+		 * every checked component accessor. A tag-pool lookup is a page index
+		 * plus one array read, and the pool carries no value array, so this is
+		 * about as cheap as asking the registry anything gets.
+		 */
+		bool IsPendingDestroy(entt::entity handle) const { return m_Registry.all_of<PendingDestroyComponent>(handle); }
+
+		/**
+		 * Is DestroyEntity currently on the stack for this entity? A SEPARATE
+		 * question from IsPendingDestroy above, and keeping the two apart is a
+		 * deliberate design decision rather than an accident (RAD-97).
+		 *
+		 * The tag says "dead" and is what IsValid() reads; this says "the mark
+		 * is running", and exists only to stop `GetOwner().Destroy()` inside a
+		 * behaviour's own OnDestroy from re-entering forever. They cannot be one
+		 * flag, because the recursion guard has to be set BEFORE OnDestroy while
+		 * the death marker has to be set AFTER it: a dying script that spawns an
+		 * effect at its own location is the ordinary case, and it needs to still
+		 * be able to read itself.
+		 *
+		 * Unreal splits the same pair for the same reason — bActorIsBeingDestroyed
+		 * is set before Destroyed() purely to "prevent recursion"
+		 * (LevelActor.cpp:908), while the flag IsValid(Object) reads is set at
+		 * the very end of DestroyActor.
+		 *
+		 * A vector scanned linearly, not a set: this is only non-empty while a
+		 * mark is executing, nesting is a call stack (so it is strictly LIFO and
+		 * usually depth 0 or 1), and at that size a scan beats hashing.
+		 */
+		bool IsMarkInProgress(entt::entity handle) const
+		{
+			return std::find(m_MarksInProgress.begin(), m_MarksInProgress.end(), handle) != m_MarksInProgress.end();
+		}
+
+		/**
+		 * THE REAP: frees every entity marked since the last one — behaviour
+		 * instance first, then the entt row — and re-sorts once at the end.
+		 * Called from exactly one place, the tail of OnFixedUpdate, which is
+		 * what makes destruction a defined moment rather than whenever a caller
+		 * happened to ask (playbook §1).
+		 *
+		 * Runs NO gameplay: OnDestroy already fired at the mark, so this only
+		 * deletes. That is why a single pass suffices — nothing here can mark
+		 * anything new, short of a behaviour destructor doing gameplay, and such
+		 * an entity would simply be reaped on the next step, invalid throughout.
+		 *
+		 * Returns how many entities it freed, which ~Level loops on; the
+		 * per-step caller ignores it.
+		 */
+		size_t ReapDestroyedEntities();
+
 		/**
 		 * What a move does to the render snapshot — an enum rather than a bool
 		 * because `WriteTransform(e, p, r, true, …)` says nothing at the call
@@ -339,11 +462,12 @@ namespace Radiant {
 		/**
 		 * Hands the physics world's contact batch to gameplay: level-wide
 		 * callbacks first (whole event), then each live side's script hook.
-		 * Both participants
-		 * are re-resolved from their UUIDs immediately before every call, because
-		 * an earlier callback in the same batch may have destroyed them.
-		 * Called from OnFixedUpdate after the move drain, so handlers read this
-		 * step's transforms.
+		 * Both participants are resolved ONCE per event and the same handles are
+		 * handed to every callback — safe because a destroy only marks, so a
+		 * handler killing a participant changes what those handles ANSWER rather
+		 * than invalidating them (RAD-97; this used to be a re-resolution before
+		 * every single call). Called from OnFixedUpdate after the move drain, so
+		 * handlers read this step's transforms.
 		 */
 		void DispatchContactEvents();
 
@@ -391,6 +515,20 @@ namespace Radiant {
 		// m_RunningScripts below is the tripwire, so that contract is enforced
 		// rather than merely written here.
 		std::vector<entt::entity> m_ScriptUpdateList;
+
+		// Entities whose DestroyEntity call is currently on the stack — the
+		// recursion guard described at IsMarkInProgress. Pushed before OnDestroy
+		// runs and popped when the mark returns, so it is empty outside a mark
+		// and never grows beyond the nesting depth of destroys-within-OnDestroy.
+		std::vector<entt::entity> m_MarksInProgress;
+
+		// The entities to free this reap, snapshotted from the PendingDestroy
+		// pool before the first one is destroyed. Same two reasons as
+		// m_ScriptUpdateList: a member so a steady state of dying entities
+		// allocates nothing, and plain ids rather than a live view because
+		// m_Registry.destroy swap-and-pops the pool being walked (playbook §8.8)
+		// — the reap must obey the rule it exists to relieve everyone else of.
+		std::vector<entt::entity> m_ReapList;
 
 		// Level-wide collision callbacks. Slot storage plus a free list, the
 		// same pool shape TimerManager uses: slots never shrink, so an index

@@ -78,11 +78,12 @@ namespace Radiant {
 		Entity CreateEntity(const std::string& name = std::string());
 
 		/**
-		 * Destroys the entity immediately — see Level::DestroyEntity for the
-		 * full contract. Safe from a script or a collision handler; destroying
-		 * the entity whose script is currently running deletes that instance,
-		 * so it must be the last statement in the handler (a wart RAD-97
-		 * removes).
+		 * Destroys the entity — see Level::DestroyEntity for the full contract.
+		 * The entity is dead to everything at once (IsValid() false, gone from
+		 * lookups, no longer simulated or drawn); its storage is freed at the end
+		 * of the fixed step. Safe from a script or a collision handler, including
+		 * on the entity whose own hook is running, with no requirement that it be
+		 * the last statement (RAD-97).
 		 */
 		void DestroyEntity(Entity entity);
 

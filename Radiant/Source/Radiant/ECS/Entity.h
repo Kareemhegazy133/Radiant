@@ -258,12 +258,19 @@ namespace Radiant {
 		void Teleport(const glm::vec3& translation, TeleportType teleportType = TeleportType::KeepVelocity);
 
 		/**
-		 * Destroys this entity immediately — a forwarder to Level::DestroyEntity
-		 * (see it for the full contract: script OnDestroy, physics teardown, and
-		 * the rule against calling it while iterating a view). Exists so gameplay
-		 * that only holds an Entity — a native script, a collision handler — can
-		 * destroy without reaching for the Level. Every handle to this entity,
-		 * including this one, dangles afterwards.
+		 * Destroys this entity — a forwarder to Level::DestroyEntity (see it for
+		 * the full contract: OnDestroy, eager physics teardown, and the deferred
+		 * reap). Exists so gameplay that only holds an Entity — a behaviour, a
+		 * collision handler — can destroy without reaching for the Level.
+		 *
+		 * SAFE FROM ANYWHERE, including on the entity whose own hook is running,
+		 * and including while a view is being iterated: nothing is freed in the
+		 * call, so no iterator and no executing method loses what it stands on
+		 * (RAD-97). It need not be the last statement.
+		 *
+		 * Every handle to this entity, including this one, reports IsValid() ==
+		 * false from this point — the entity is dead immediately even though its
+		 * storage is released at the end of the fixed step.
 		 */
 		void Destroy();
 

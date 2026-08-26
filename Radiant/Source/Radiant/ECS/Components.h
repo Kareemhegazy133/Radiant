@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <type_traits>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -18,6 +19,10 @@
 // 1) Add new component here (obviously).
 // 2) Update LevelSerializer to (de)serialize the new component.
 // 3) If it contains an asset, update GetAssetList() in Level.cpp
+// 4) Decide whether it is ENGINE-PRIVATE — engine-written runtime state that game
+//    code must never add, replace or remove — and if so specialize
+//    IsEngineComponent<T> at the bottom of this file (RAD-97). Skipping this is
+//    silent: the component simply stays writable by every consumer.
 //
 // Components are meant to be plain data: trivially copyable and serializable, no
 // owning pointers, no std::function. The one remaining violation
@@ -92,6 +97,40 @@ namespace Radiant {
 		TransformSnapshotComponent(const glm::vec3& translation, const glm::vec3& rotation)
 			: Translation(translation), Rotation(rotation) {}
 	};
+
+	/**
+	 * RUNTIME-ONLY (never serialized — deliberately absent from LevelSerializer,
+	 * like TransformSnapshotComponent above): the condemned notice. Its presence
+	 * means Level::DestroyEntity was called on this entity and the entt row has
+	 * not been freed yet (RAD-97).
+	 *
+	 * The window is at most ONE fixed step: the mark adds this tag, and
+	 * Level::ReapDestroyedEntities frees the row at the end of that step. For
+	 * the whole window Entity::IsValid() reports false and every gameplay-facing
+	 * view excludes the entity, so nothing observes it alive — what survives is
+	 * the row in memory, reachable only through a handle someone already held.
+	 *
+	 * THIS POOL IS THE REAP'S WORKLIST, which is why the marker is a tag rather
+	 * than a bit on MetadataComponent. entt packs storage in insertion order, so
+	 * iterating it yields the pending entities in mark order, and a step where
+	 * nothing died costs the reap a size() check on an empty pool. Collapsing
+	 * this into a bool would need a parallel vector beside it — a second source
+	 * of truth that can disagree — and could not participate in
+	 * entt::exclude<>, which is how Level::GetLiveEntitiesWith keeps every
+	 * gameplay pass off corpses.
+	 *
+	 * EMPTY ON PURPOSE, AND NOT `final`. entt allocates no value array for an
+	 * empty, non-final type (page_size = !is_empty_v<T> * ENTT_PACKED_PAGE), so
+	 * the tag costs no per-entity storage. A member added "just for debugging",
+	 * or a `final` that looks harmless, silently forfeits that.
+	 *
+	 * Ownership: the Level's registry owns it, like every component — no
+	 * allocation, no destructor. Engine-private (see IsEngineComponent below):
+	 * game code cannot add or remove it, because doing so would destroy an
+	 * entity without the mark's bookkeeping. Level::Copy (RAD-52) must SKIP
+	 * entities carrying it rather than copy a corpse into the new level.
+	 */
+	struct PendingDestroyComponent {};
 
 	/**
 	 * Renders the entity as a 2D quad. TextureHandle 0 means flat color;
@@ -255,5 +294,49 @@ namespace Radiant {
 		TextComponent(const std::string& text, float size = 12.0f)
 			: TextString(text), TextSize(size) {}
 	};
+
+	/**
+	 * Marks a component as ENGINE-PRIVATE: engine-written runtime state that
+	 * game code must never add, replace or remove. Entity's mutating accessors
+	 * static_assert on it (see EntityTemplates.h), so a violation is a compile
+	 * error naming the verb to use instead — not a runtime surprise (RAD-97).
+	 *
+	 * WHY A TRAIT RATHER THAN VISIBILITY. Radiant.h exports this header, and it
+	 * must: games need SpriteComponent, TransformComponent, NativeScriptComponent.
+	 * Hiding a type is not available either — Level.h is public and names
+	 * PendingDestroyComponent inside entt::exclude<> for GetLiveEntitiesWith, so
+	 * the type is reachable transitively however the files are arranged. With
+	 * Entity::AddComponent<T> a universal setter, a trait is the only place the
+	 * compiler can read the decision. UE reaches the same guarantee one level
+	 * down: AActor::bActorIsBeingDestroyed is private, readable through
+	 * IsPendingKillPending(), and writable only via FMarkActorIsBeingDestroyed —
+	 * a struct whose constructor is private, friended to UWorld alone.
+	 *
+	 * The list is hand-maintained, which is its weakness: a new runtime-only
+	 * component that forgets its specialization is silently writable. The file
+	 * header's step 4 is the reminder; RAD-30's Level-owned side tables are the
+	 * real fix, since game code cannot name a side table at all, and RAD-96
+	 * decides whether this trait survives that.
+	 *
+	 * READ ACCESS IS DELIBERATELY UNRESTRICTED. HasComponent/GetComponent/
+	 * TryGetComponent are untouched: asking whether an entity is pending
+	 * destruction is a fair question, and Entity::IsValid() already answers the
+	 * useful form of it. Only MUTATION is gated.
+	 */
+	template<typename T>
+	struct IsEngineComponent : std::false_type {};
+
+	// Written by Level::DestroyEntity, cleared by Level::ReapDestroyedEntities.
+	// Adding this by hand destroys an entity WITHOUT the mark's bookkeeping:
+	// OnDestroy never runs (so a script's level-wide collision callback is never
+	// unregistered, and the next contact calls into a freed instance), the
+	// ordered collider-then-rigidbody teardown is skipped, and the UUID map entry
+	// is orphaned. Use Entity::Destroy().
+	template<> struct IsEngineComponent<PendingDestroyComponent> : std::true_type {};
+
+	// Written and stripped every fixed step by Level::OnFixedUpdate's snapshot
+	// pass. A hand-written one is overwritten or removed within a step, so this
+	// is about honesty rather than danger: the pass owns this component.
+	template<> struct IsEngineComponent<TransformSnapshotComponent> : std::true_type {};
 
 }

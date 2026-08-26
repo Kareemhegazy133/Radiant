@@ -157,11 +157,17 @@ namespace Radiant {
 		 * OnUpdate default in particular used to log every fixed step, which is
 		 * 60 lines a second per behaviour.
 		 *
-		 * Destroying THIS entity from OnCreate or OnUpdate deletes the instance
-		 * whose method is executing, so it must be the last statement (the same
-		 * caveat OnCollisionBegin carries). RAD-97 removes this wart rather
-		 * than rewording it: once destruction is deferred to a reap point, the
-		 * method finishes normally.
+		 * DESTROYING ANY ENTITY IS SAFE FROM HERE, including this one, and needs
+		 * no positional discipline — `GetOwner().Destroy();` may be followed by
+		 * more statements and the method runs to completion (RAD-97). Destruction
+		 * marks the entity dead and defers the free to the end of the fixed step,
+		 * so the instance outlives every method that was running when it was
+		 * called. OnDestroy fires immediately, before this method resumes.
+		 *
+		 * What DOES change immediately: the entity reports IsValid() == false
+		 * from the moment you destroy it, so anything after that line reads a
+		 * dead handle. That is a reason to put the destroy last out of taste, not
+		 * out of safety.
 		 */
 		virtual void OnCreate() {}
 		virtual void OnUpdate(Timestep ts) {}
@@ -178,10 +184,10 @@ namespace Radiant {
 		 * on was deleted" arrives, one step after the deletion.
 		 *
 		 * The physics step is over by the time this runs, so anything is legal
-		 * here: destroy entities (including `other`), teleport, spawn, add or
-		 * remove components. One caveat — destroying THIS entity deletes the
-		 * instance whose method is executing, so it must be the last statement
-		 * (a wart RAD-97 removes by deferring the reap).
+		 * here: destroy entities (including `other` and this one), teleport,
+		 * spawn, add or remove components. No positional discipline is required
+		 * — destruction marks and defers the free to the end of the step, so the
+		 * instance outlives the call and the method runs to completion (RAD-97).
 		 *
 		 * Requires the collider to opt in (BoxCollider2DComponent::
 		 * EnableContactEvents, on by default; Box2D reports the contact if

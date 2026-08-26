@@ -7,9 +7,26 @@
 
 namespace Radiant {
 
+	// The engine-private gate (RAD-97). Applied to the three MUTATING accessors
+	// only — reads stay open, because "is this entity pending destruction?" is a
+	// fair question and IsValid() already answers the useful form of it.
+	//
+	// This costs the engine nothing: Level writes both gated components through
+	// m_Registry directly (the mark's emplace, the snapshot pass's
+	// emplace_or_replace/remove), never through this handle. If a legitimate
+	// engine path ever trips this, the fix is to use m_Registry — not to widen
+	// the gate.
+#define RADIANT_REJECT_ENGINE_COMPONENT(T)                                              \
+	static_assert(!IsEngineComponent<T>::value,                                         \
+		"This component is engine-private: the engine owns it and game code must not "  \
+		"add, replace or remove it. To destroy an entity use Entity::Destroy(); render " \
+		"snapshots are maintained by Level::OnFixedUpdate. See IsEngineComponent in "   \
+		"Components.h for why the type is visible but not writable.")
+
 	template<typename T, typename... Args>
 	T& Entity::AddComponent(Args&&... args)
 	{
+		RADIANT_REJECT_ENGINE_COMPONENT(T);
 		RADIANT_ASSERT(!HasComponent<T>(), "Entity already has component!");
 		T& component = m_Level->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
 		return component;
@@ -18,6 +35,7 @@ namespace Radiant {
 	template<typename T, typename... Args>
 	T& Entity::AddOrReplaceComponent(Args&&... args)
 	{
+		RADIANT_REJECT_ENGINE_COMPONENT(T);
 		T& component = m_Level->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
 		return component;
 	}
@@ -67,6 +85,8 @@ namespace Radiant {
 	template<typename T>
 	void Entity::RemoveComponent()
 	{
+		// RemoveComponentIfExists inherits the gate through this function
+		RADIANT_REJECT_ENGINE_COMPONENT(T);
 		RADIANT_ASSERT(HasComponent<T>(), "Entity does not have component!");
 		m_Level->m_Registry.remove<T>(m_EntityHandle);
 	}

@@ -8,6 +8,8 @@ Frame order: **pump + process events at frame start → fixed-step simulation (a
 - Simulation steps at a fixed rate; never pass raw frame delta into physics or gameplay-critical logic.
 - Events are enqueued by OS callbacks and processed at a single defined point at frame start (`EventQueue::ProcessEvents` in `Run()`, unconditional even while minimized); handlers never execute inside OS callbacks. Platform callbacks translate + `Push` only.
 - Rendering reads simulation state; it never mutates it. Reference: Glenn Fiedler, "Fix Your Timestep!".
+- **Three things now happen at one defined point, and the reasoning generalises** (entity reaping added RAD-97 2026-08-26): input events drain at frame start, contacts dispatch after the step, and destroyed entities are reaped at the end of the fixed step. The pattern is *record now, act at a moment nothing is standing on the result* — reach for it whenever an operation would otherwise free or mutate something a live walk may be holding.
+- **Per fixed STEP, not per frame, for anything whose window must be bounded.** A frame runs zero, one or several steps, so "once per frame" makes the window frame-rate-dependent — the exact dependence the fixed timestep exists to remove. The reap is per step so a destroyed entity is always freed within exactly one step (RAD-97).
 
 ## §2 — Ownership Contract
 
@@ -68,6 +70,8 @@ Frame order: **pump + process events at frame start → fixed-step simulation (a
 6. **Working-directory-relative paths** — break the moment the exe runs outside VS.
 7. **Copyable types holding raw resource handles** — shallow copy → double free (rule-of-5, §2).
 8. **entt view invalidation** — destroying entities or sorting the iterated pool mid-iteration. **Any loop that hands control to gameplay must not be riding a view** (landed: RAD-95 2026-08-02): snapshot the entity ids into a reusable member vector, then walk those, re-validating each. And note the *second*, distinct hazard in the same loop — a component **reference** obtained before the callback dangles if the callback emplaces into that pool. Iterator invalidation and reference invalidation need separate fixes; the snapshot cures only the first, so re-fetch the component after anything that can run gameplay.
+   **The DESTROY half is now systemic, not per-caller** (RAD-97 2026-08-26): `DestroyEntity` marks and the reap frees at one point, so destroying while iterating no longer invalidates anything and `~Level`'s mark-everything loop became safe by construction. Three consequences. (a) *Validity and existence have come apart* — a row survives until the reap, so a mid-loop re-check must ask `IsPendingDestroy` too, not merely `registry.valid()`; `entt::exclude` cannot cover an entity marked *after* the view was taken. (b) *Exclusion belongs in one place* — `Level::GetLiveEntitiesWith` bakes it in and is the default spelling, because a per-view `exclude` is O(N)-edits-per-feature whose failure is silent. (c) *The ADD half still stands unchanged* — a spawner binding a script still reallocates the pool being walked, which is why RAD-95 and RAD-97 are two stories.
+   Note also that entt **compacts** (swap-and-pop) where UE nulls the slot (`ULevel::Actors[i] = nullptr`, `World.cpp:2802`): UE can remove mid-iteration because every other index stays put. We keep the density and pay for it with this rule.
 
 ## §9 — Containers & Custom Data Structures (decided 2026-07-05)
 
