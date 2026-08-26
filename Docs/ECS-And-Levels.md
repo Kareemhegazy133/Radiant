@@ -16,7 +16,7 @@ The picture to keep: a **spreadsheet**. Entities are rows, component types are c
 
 A `Level` (`ECS/Level.h`) is the world: it privately owns an `entt::registry` (entt 3.13.2, vendored single header) and exposes entity management, the update/render loops, and serialization. The registry is **never** exposed publicly — all access goes through `Level`/`Entity` APIs.
 
-`Entity` (`ECS/Entity.h`) is a 16-byte value handle `{entt::entity, Level*}` with templated component access (`AddComponent`, `GetComponent`, `HasComponent`, …) forwarding to the registry. Entities are identified persistently by `UUID` (random 64-bit) via a `Level`-owned map `UUID → Entity`; `entt` handles are transient and never serialized.
+`Entity` (`ECS/Entity.h`) is a 16-byte value handle `{entt::entity, Level*}` with templated component access (`AddComponent`, `GetComponent`, `HasComponent`, …) forwarding to the registry, plus `GetBehaviour<T>()` — a checked query for the concrete behaviour attached to the entity, which returns `nullptr` rather than asserting and is the supported alternative to casting `NativeScriptComponent::Instance` by hand (see [Gameplay-Framework](Gameplay-Framework.md)). Entities are identified persistently by `UUID` (random 64-bit) via a `Level`-owned map `UUID → Entity`; `entt` handles are transient and never serialized.
 
 Composition in practice — this is Reaper spawning a physical object, and the whole point of ECS in five lines:
 

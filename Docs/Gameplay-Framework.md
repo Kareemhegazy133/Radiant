@@ -132,6 +132,36 @@ Both push the pose into Box2D, and **that is the half that closes the trap** the
 
 One honest limitation: `SetLocation`'s interpolation promise holds only for entities the snapshot pass classifies as movers (has physics, a camera, or a behaviour). A manager moving a plain decorative entity gets no smoothing. Stamping a snapshot to compensate would fight the same pass, which strips snapshots from non-movers every step; the real fix is the explicit mover marker planned with RAD-30.
 
+### Recovering a concrete behaviour
+
+**The problem this solves.** The engine creates your `CollisionLogger` but remembers it only as an `EntityBehaviour*` — the base-class pointer, because the engine cannot know your subclass. It can still call `OnUpdate()` on it (that is *virtual dispatch*: call whatever the real object's version is), but it cannot hand it back as the type you wrote. So game code used to take it by force:
+
+```cpp
+auto* nsc = platform.TryGetComponent<NativeScriptComponent>();
+static_cast<CollisionLogger*>(nsc->Instance)->SetDestroyOnContact(true);
+```
+
+`static_cast` is C++ for *"trust me"* — the compiler checks nothing and emits nothing. Rebind that entity and the same line reinterprets a `CameraController` as a `CollisionLogger` and writes `true` at whatever offset a `CollisionLogger` keeps its flag. If that lands on a `float` member, `2.5f` becomes `2.5000002f` and **the program keeps running**: no log, no assert, no memory tool. Weeks later the camera zoom is subtly wrong and nothing connects it to this line. Land on a pointer instead and you crash in a system that never touched this code.
+
+**The answer is a checked query on the entity:**
+
+```cpp
+if (CollisionLogger* logger = platform.GetBehaviour<CollisionLogger>())
+    logger->SetDestroyOnContact(true);
+```
+
+`Entity::GetBehaviour<T>()` asks the object what it really is before handing it over. Any class with a virtual function carries a runtime tag describing its actual type — **RTTI**, "run-time type information" — and `dynamic_cast` reads it: the real pointer if the object is a `T`, `nullptr` if it is not. A wrong guess becomes a null check instead of silent corruption. Gameplay names neither the component nor a cast.
+
+**It never asserts, because it is a query.** Four ways to get nothing, all silent: an invalid handle, no `NativeScriptComponent`, an instance not built yet (behaviours are created lazily on the first fixed step after `Bind<T>()`), or the wrong type. The invalid-handle case is the load-bearing one — `OnCollisionEnd`'s contract says the partner **may already be dead**, so `other.GetBehaviour<Door>()` on a corpse is the designed path, and a warning there would fire during correct gameplay. Contrast the physics resolvers (`Docs/Physics.md`), which *do* warn on a stale id: those callers asked for an **action** on something they believed existed, so a miss is news. This caller asked a **question**, and "no" is an answer. The only check that fires is compile-time — `T` must derive from `EntityBehaviour`.
+
+**The pointer is transient**, with the lifetime of the handle it came from: it dangles when the entity dies, when the level dies, and when the behaviour is rebound (`AddOrReplaceComponent<NativeScriptComponent>` deletes the old instance). Re-query rather than store; keep the `Entity`, or its UUID.
+
+**How Unreal does it, and where we differ.** Same shape: `AActor::FindComponentByClass<T>()` scans the owned components, asks each `IsA(TargetClass)`, and returns `nullptr` when nothing matches (`Engine/Source/Runtime/Engine/Private/Actor.cpp:3991`) — never an assert, with a `static_assert` constraining `T` in the templated half (`Actor.h:3823`). The **mechanism** differs. UE deliberately avoids `dynamic_cast`; it goes so far as to `#define` the keyword out of existence (`Templates/Casts.h:591`) and route `UObject` casts through its own reflection chain, where a type test is a 64-bit flag AND for hot types and an O(1) ancestry-array lookup for everything else (`UObject/Class.h:430`) — every class stores its full lineage as a flat array plus its depth, so "am I an X?" is an indexed load, not a walk up the parents.
+
+We do not adopt that, and the reason is precise: **UE's speed comes from `UClass`, not from `Cast`.** Every tier of it is a thin read of a runtime class object holding a flag mask, an ancestry array and a depth. Radiant has no such object — RAD-98 declined the reflection trade deliberately — so a hand-written `Radiant::Cast<T>` would be either a rename of `dynamic_cast` or the start of hand-building `UClass`: one edit per behaviour type forever, and an *exact*-type test that cannot answer "is it a `Guard` **or derived from** `Guard`". UE keeps `ExactCast` as a separate function precisely because those are different questions. The trigger that reopens this is **RAD-72**: `entt::meta` is already vendored, and it supplies the class object for free — at which point `dynamic_cast` gets *replaced*, not *reworked*, and the signature above does not change.
+
+Cost is one entity-validity check, one sparse-set lookup, and one `__RTDynamicCast` call — a real function with a loop in it, far more than the `static_cast` it replaces, which compiled to nothing. That is correctness bought with cycles, at call sites that are event-shaped rather than frame-shaped. Wanting it per frame per entity means caching the `Entity` and querying once in `OnCreate`, never caching the pointer.
+
 ### Layering
 
 ```
@@ -178,7 +208,7 @@ Every line reads in one vocabulary: level-scope off `GetLevel()`, entity-scope o
 ## Known Issues & Evolution
 
 - **One behaviour per entity (RAD-101):** `NativeScriptComponent` holds a single `Instance`, so composing behaviour is only possible by inheritance. The decision is recorded — an entity **may** carry several — and the shape of that change is a Level-owned side table holding a list, with defined update and destruction ordering.
-- **No typed retrieval (RAD-100):** recovering a concrete behaviour from an `Entity` still means reaching into `NativeScriptComponent` and hand-casting. `Entity::GetBehaviour<T>()` returning nullptr on mismatch is the planned answer.
+- **Typed retrieval reshapes under composition (RAD-100 → RAD-101):** `Entity::GetBehaviour<T>()` exists (above) and today is one component lookup plus one cast. Once an entity may carry several behaviours it becomes a linear scan over that entity's list — UE's shape exactly — and RAD-101 must define what two behaviours of the same type mean. **Reject-at-attach is the answer that keeps this doc honest**, because it is what makes "*the* behaviour of type `T`" a total phrase rather than "whichever we hit first". The transient-pointer contract also gets more load-bearing there: a sibling's actions can invalidate a stored pointer, not only the entity dying.
 - **No possession model (RAD-102):** `Pawn`/`Controller` do not exist yet. Relationship accessors for them may only be added once the relationship does.
 - **Behaviour instances are owning raw pointers in a component (RAD-30):** the known plain-data violation. Instances move to a Level-owned side table.
 - **Destroying your own entity from a hook** deletes the instance whose method is executing, so it must be the last statement. RAD-97 removes the wart by deferring the reap.
