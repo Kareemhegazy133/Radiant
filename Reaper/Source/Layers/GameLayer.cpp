@@ -7,6 +7,7 @@
 #include "CollisionLogger.h"
 #include "KinematicPlatform.h"
 #include "SpawnProbe.h"
+#include "BehaviourCompositionProbe.h"
 
 GameLayer::GameLayer()
 	: Layer("GameLayer")
@@ -57,6 +58,13 @@ void GameLayer::OnAttach()
 			else
 				GAME_WARN("CollisionLogger: no '{0}' entity in the level", name);
 		}
+
+		// RAD-101 verification scaffolding (retires with RAD-92). Proves several
+		// behaviours on one entity run in attach order, tear down in reverse, and
+		// never run after their own OnDestroy. Self-checking and step-driven, so it
+		// exercises itself on every run including headless ones — watch for one
+		// "[behaviour-probe] SUMMARY" line reporting 0 failures.
+		SpawnBehaviourCompositionProbe(*m_Level);
 
 		// Level-wide callback lines must appear BEFORE the script lines for the same event
 		// — that ordering is a guarantee gameplay may rely on, so it is part of
