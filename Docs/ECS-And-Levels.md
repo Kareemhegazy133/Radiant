@@ -16,7 +16,7 @@ The picture to keep: a **spreadsheet**. Entities are rows, component types are c
 
 A `Level` (`ECS/Level.h`) is the world: it privately owns an `entt::registry` (entt 3.13.2, vendored single header) and exposes entity management, the update/render loops, and serialization. The registry is **never** exposed publicly — all access goes through `Level`/`Entity` APIs.
 
-`Entity` (`ECS/Entity.h`) is a 16-byte value handle `{entt::entity, Level*}` with templated component access (`AddComponent`, `GetComponent`, `HasComponent`, …) forwarding to the registry, plus `GetBehaviour<T>()` — a checked query for the concrete behaviour attached to the entity, which returns `nullptr` rather than asserting and is the supported alternative to casting `NativeScriptComponent::Instance` by hand (see [Gameplay-Framework](Gameplay-Framework.md)). Entities are identified persistently by `UUID` (random 64-bit) via a `Level`-owned map `UUID → Entity`; `entt` handles are transient and never serialized.
+`Entity` (`ECS/Entity.h`) is a 16-byte value handle `{entt::entity, Level*}` with templated component access (`AddComponent`, `GetComponent`, `HasComponent`, …) forwarding to the registry, plus the behaviour family — `AddBehaviour<T>` / `GetBehaviour<T>` / `HasBehaviour<T>` / `RemoveBehaviour<T>` / `GetBehaviours()` — where the typed query returns `nullptr` rather than asserting (see [Gameplay-Framework](Gameplay-Framework.md)). Every one is templated or untyped, so the header costs one declaration however many behaviour types a game defines. Entities are identified persistently by `UUID` (random 64-bit) via a `Level`-owned map `UUID → Entity`; `entt` handles are transient and never serialized.
 
 Composition in practice — this is Reaper spawning a physical object, and the whole point of ECS in five lines:
 
@@ -49,7 +49,7 @@ The shape is Unreal's `GetPhysicsActor()` idiom adapted to an ECS, and the disti
 | `SpriteComponent` | color, texture `AssetHandle` (0 = flat color), tiling |
 | `CameraComponent` | `SceneCamera` + `Primary` + fixed-aspect flag |
 | `RigidBody2DComponent` / `BoxCollider2DComponent` | physics binding (see [Physics](Physics.md)) |
-| `NativeScriptComponent` | native script binding (below) |
+| `BehaviourComponent` | empty tag: this entity has behaviours in the Level's side table — **runtime-only, never serialized, engine-private** (below) |
 | `TextComponent` | world text — parked until the MSDF revival (RAD-47) |
 | `TransformSnapshotComponent` | previous-step transform for render interpolation — **runtime-only, never serialized** (see [Time-And-Simulation](Time-And-Simulation.md)) |
 | `PendingDestroyComponent` | empty tag: destroyed, awaiting the reap — **runtime-only, never serialized, engine-private** (above) |
@@ -94,7 +94,15 @@ Game code never writes these — the registry is private to `Level`, so views ex
 
 ### Native scripts and the gameplay framework
 
-`EntityBehaviour` (`Gameplay/EntityBehaviour.h`) is the C++ gameplay seam: subclass it, override `OnCreate/OnUpdate/OnDestroy`, and bind with `NativeScriptComponent::Bind<T>()` — the component stores factory/destroy function pointers; the Level instantiates lazily on first update. One behaviour per entity today (RAD-101 makes it several); bindings are code-only (not serialized — they must be re-bound after level load, e.g. Reaper re-binds `CameraController` to its camera entity).
+`EntityBehaviour` (`Gameplay/EntityBehaviour.h`) is the C++ gameplay seam: subclass it, override `OnCreate/OnUpdate/OnDestroy`, and attach with `Entity::AddBehaviour<T>()`. An entity carries any number of behaviours of **distinct** types, updated in attach order and torn down in reverse (see [Gameplay-Framework](Gameplay-Framework.md) for the full rules). Bindings are code-only and not serialized — they must be re-attached after level load, e.g. Reaper re-attaches `CameraController` to its camera entity.
+
+**Where the instances live (RAD-101), because this is the storage doc.** Not in a component: an `EntityBehaviour` is neither trivially copyable nor serializable, so it fails the plain-data rule. The `Level` owns them in a **side table** — `unordered_map<entt::entity, vector<Scope<EntityBehaviour>>>` — plus a maintained `vector<entt::entity>` giving the cross-entity walk order. What stays in the ECS is the empty `BehaviourComponent` tag, and it exists for exactly one reason: an `entt` view cannot consult a `std::unordered_map`, and the render-interpolation snapshot pass classifies movers by component.
+
+Three consequences worth knowing:
+
+- **The Level is the sole deleter, and only at the reap.** `DestroyEntity` and `RemoveBehaviour<T>` both only *mark*; nothing is freed until the end of the fixed step. That is what makes a behaviour destroying its own entity, or detaching itself mid-`OnUpdate`, safe.
+- **Instance addresses are stable.** An attach during the walk may reallocate the `vector`, which moves the `Scope`s but not the objects they point at — so a raw observer held across a gameplay callback survives. This is the concrete reason instances are pointed-to rather than stored by value.
+- **The tag is engine-private.** `IsEngineComponent<BehaviourComponent>` makes `AddComponent<BehaviourComponent>()` a compile error, so the "only the attach/detach path writes it" invariant is enforced rather than merely documented. Attach adds it; the reap strips it when an entity's last behaviour leaves.
 
 A behaviour reaches everything through two accessors, and nothing else:
 
@@ -133,7 +141,7 @@ A behaviour registering a level-wide collision callback **must still remove it i
 
 ## Known Issues & Evolution
 
-- **Components must become plain data (RAD-30):** `NativeScriptComponent` holds an owning raw pointer, `RigidBody2DComponent` holds a `void*` body plus two `std::function` callbacks. Shallow copies duplicate raw pointers, which blocks the `Level::Copy()` that play-in-editor requires (RAD-52). Runtime state moves to Level-owned side tables; the rule is *if it can't be memcpy'd and serialized, it doesn't belong in a component* (playbook §3).
+- **Components must become plain data (RAD-30) — half done.** `NativeScriptComponent`'s owning raw pointer is **gone** (RAD-101: instances moved to the Level-owned side table described above, leaving an empty tag). Still outstanding: `RigidBody2DComponent` holds a `void*` body plus two `std::function` callbacks. Shallow copies duplicate raw pointers, which blocks the `Level::Copy()` that play-in-editor requires (RAD-52). The rule is *if it can't be memcpy'd and serialized, it doesn't belong in a component* (playbook §3).
 - **Serialization gaps:** `IsActive` and script bindings are lost on round-trip; several nested YAML reads are unguarded against malformed files. Hardened alongside the Phase 4 asset work.
 - **No edit/play separation:** the engine has no `OnRuntimeStart/Stop` — physics and scripts run whenever the Level updates. Restored properly with play-in-editor (RAD-52).
 - **Deferred destruction landed (RAD-97, 2026-08-26)** — the three symptoms it was filed for are gone: contact dispatch resolves each participant once per event, the "last statement" caveat is deleted, and the move-drain assert now holds *because* physics teardown stayed eager. Two residual notes. An entity marked **outside** a fixed step (a cheat key, a UI action, a destroy while paused) is not reaped until the next step and never if the level is never stepped again — invalid and invisible throughout, so the cost is memory, and `~Level` collects it. And `Level::Copy()` (RAD-52, play-in-editor) must skip entities carrying the tag rather than copy a corpse into the new level.

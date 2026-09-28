@@ -76,7 +76,7 @@ GetOwner().GetPhysicsBody().ApplyForce(...)   // my physics
 GetLevel().CreateEntity("Bullet")             // the world
 ```
 
-`GetOwner()` is named for a fact, not for parity: the entity's `NativeScriptComponent` holds the instance by an owning pointer and deletes it, so the entity genuinely *owns* the behaviour in the sense [Memory-And-Reference-Counting](Memory-And-Reference-Counting.md) uses the word. UE's `UActorComponent::GetOwner()` happens to agree.
+`GetOwner()` is named for the entity's **role**, not for C++ ownership. Since RAD-101 the *Level* owns the instance — a `Scope<EntityBehaviour>` in a side table — and is its sole deleter, in the sense [Memory-And-Reference-Counting](Memory-And-Reference-Counting.md) uses the word. What the entity owns is the *relationship*: the behaviour belongs to it and dies with it. UE's `UActorComponent::GetOwner()` carries the same sense. (An earlier version of this paragraph claimed the entity held the pointer; that stopped being true when the side table landed, which is what a name tied to a mechanism rather than a relationship costs you.)
 
 **The inclusion rule — what may ever be added here.** Exactly two kinds of member:
 
@@ -87,6 +87,57 @@ And two kinds that never may:
 
 - An **entity-scope verb** (`GetLocation`, `Teleport`, `Destroy`). Those live on `Entity`. Once an entity may carry several behaviours (RAD-101), an unqualified `SetLocation()` here would claim to be *the* entity while being one of many — and would duplicate the entity's whole verb surface once per attached behaviour.
 - A **subsystem facade** (`GetPhysicsBody`, a future `GetAbilitySystem`). That set is *unbounded* — one per subsystem, forever — which is the O(N)-edits-per-feature pattern the accessor conventions exist to forbid. Reach subsystems through `GetOwner()`.
+
+### Composition — several behaviours per entity
+
+**The problem this solves.** Say the Reaper needs three things: it takes damage, it moves, and it can be interacted with. Three separate concerns, three obviously reusable pieces. With one behaviour per entity your options were: one class doing all three (then the crate also needs health, so you inherit — and six entity types later `Crate` carries movement code it never runs and changing `TakeDamage` risks four classes); or three entities glued together; or three data components plus three engine loops, which costs an engine edit per gameplay concern.
+
+None is a good answer, and the old storage forced all three. Think of the entity as a **person** and behaviours as **job cards they hold**: one job title per person means you have to invent "driver-and-first-aider", then "driver-and-first-aider-and-electrician" — you end up naming *combinations* instead of *capabilities*, and the list explodes.
+
+```cpp
+entity.AddBehaviour<Health>()->MaxHP = 50.f;   // construction is eager, so you can configure it
+entity.AddBehaviour<Movement>();
+entity.AddBehaviour<Interactable>();
+
+if (Health* h = entity.GetBehaviour<Health>())  h->Damage(10.f);
+entity.RemoveBehaviour<Movement>();             // deferred: safe to call on yourself
+```
+
+**The rules, all four of them:**
+
+| Rule | Detail |
+|---|---|
+| **Distinct types only** | A duplicate attach asserts, warns, and returns the **existing** instance |
+| **Attach order is update order** | `OnCreate` and `OnUpdate` run in attach order, per entity |
+| **Teardown is reverse** | `OnDestroy` runs LIFO, so a behaviour that found a sibling in its `OnCreate` still has it in its `OnDestroy` |
+| **Construction eager, `OnCreate` deferred** | The object exists when `AddBehaviour` returns; `OnCreate` runs at the next fixed step, because it is gameplay and gameplay runs at defined points |
+
+**Duplicates are rejected, and that is where we diverge from Unreal on purpose.** UE allows them — `FindComponentByClass` walks the set and `break`s on the first match (`Actor.cpp:3991-4008`), i.e. "you get one of them, unspecified which". That is right *for UE*, because its components are **things**: two `UStaticMeshComponent`s is a car with two doors. Ours are **logic units**, where two `Health` behaviours means two things independently own the same HP. Refusing them is what makes `GetBehaviour<T>` a *total* question — "*the* `Health`" stays a true phrase.
+
+**Self-modification is safe, and this is the part people get wrong.** A behaviour may destroy its own entity, or detach itself, from inside its own `OnUpdate`, and its method still runs to the end — because both operations **mark** and only the reap at the end of the fixed step frees anything. What you must not expect is for *siblings* to keep running after the entity is condemned: they do not, because their `OnDestroy` has already fired. Note the failure mode if that check were missing is **silent** — the memory is alive either way, so nothing would crash; only the *order* would be wrong.
+
+**No parallelism, and no data-driven attachment.** Behaviours update one at a time on the main thread. UE's component tick is a parallel task graph with declarable prerequisites (`AddTickPrerequisiteComponent`); ours is a `for` loop, deliberately — note UE stores components in a **`TSet`**, which carries no order at all, so its storage *cannot* decide tick order and a second registry has to. Ours is one ordered list doing both, which is adequate at our scale and honest about what it guarantees. Attachment is also code-only and not serialized: re-attach after level load.
+
+### Where does my state live?
+
+A behaviour is a normal C++ class, so **the default is a plain member**:
+
+```cpp
+class DashAbility : public EntityBehaviour
+{
+    float m_Cooldown = 0.f;   // just a member. This is the common case.
+};
+```
+
+Hoist state into a plain-data component only when it needs one of exactly three things:
+
+1. it survives **save/load**,
+2. it is **read by systems that do not know your class** (a UI health bar, a damage-number popup),
+3. the Phase 5 **editor** authors it.
+
+Most gameplay state needs none of them — a cooldown timer, a smoothing velocity, an internal state-machine enum. Of Reaper's behaviours today, **none** would need a paired component, so treat the paired shape as the exception or it becomes the pattern by imitation.
+
+Why the split exists at all: engines that keep data and logic in one class — Unity's `MonoBehaviour` with `[SerializeField]`, UE's `UActorComponent` with `UPROPERTY()` — can only do that because a **reflection system** enumerates their fields. Components are currently Radiant's stand-in for reflection: small, hand-registered types the serializer was explicitly taught about. RAD-104 collapses the pair for case 1; case 2 is a *coupling* problem that reflection does not solve, so shared state keeps its component.
 
 ### The named verbs, and the rule for adding one
 
@@ -137,6 +188,7 @@ One honest limitation: `SetLocation`'s interpolation promise holds only for enti
 **The problem this solves.** The engine creates your `CollisionLogger` but remembers it only as an `EntityBehaviour*` — the base-class pointer, because the engine cannot know your subclass. It can still call `OnUpdate()` on it (that is *virtual dispatch*: call whatever the real object's version is), but it cannot hand it back as the type you wrote. So game code used to take it by force:
 
 ```cpp
+// how it looked before the checked query existed (the component is gone now)
 auto* nsc = platform.TryGetComponent<NativeScriptComponent>();
 static_cast<CollisionLogger*>(nsc->Instance)->SetDestroyOnContact(true);
 ```
@@ -152,9 +204,9 @@ if (CollisionLogger* logger = platform.GetBehaviour<CollisionLogger>())
 
 `Entity::GetBehaviour<T>()` asks the object what it really is before handing it over. Any class with a virtual function carries a runtime tag describing its actual type — **RTTI**, "run-time type information" — and `dynamic_cast` reads it: the real pointer if the object is a `T`, `nullptr` if it is not. A wrong guess becomes a null check instead of silent corruption. Gameplay names neither the component nor a cast.
 
-**It never asserts, because it is a query.** Four ways to get nothing, all silent: an invalid handle, no `NativeScriptComponent`, an instance not built yet (behaviours are created lazily on the first fixed step after `Bind<T>()`), or the wrong type. The invalid-handle case is the load-bearing one — `OnCollisionEnd`'s contract says the partner **may already be dead**, so `other.GetBehaviour<Door>()` on a corpse is the designed path, and a warning there would fire during correct gameplay. Contrast the physics resolvers (`Docs/Physics.md`), which *do* warn on a stale id: those callers asked for an **action** on something they believed existed, so a miss is news. This caller asked a **question**, and "no" is an answer. The only check that fires is compile-time — `T` must derive from `EntityBehaviour`.
+**It never asserts, because it is a query.** Four ways to get nothing, all silent: an invalid handle, no behaviours at all, none of them a `T`, or a matching one that has been **detached** and is awaiting the reap (its `OnDestroy` already ran, so handing it back would be the same ordering bug as updating it). A fifth case retired with RAD-101's eager construction — "the instance is not built yet" cannot happen now that `AddBehaviour<T>()` constructs at the call site. The invalid-handle case is the load-bearing one — `OnCollisionEnd`'s contract says the partner **may already be dead**, so `other.GetBehaviour<Door>()` on a corpse is the designed path, and a warning there would fire during correct gameplay. Contrast the physics resolvers (`Docs/Physics.md`), which *do* warn on a stale id: those callers asked for an **action** on something they believed existed, so a miss is news. This caller asked a **question**, and "no" is an answer. The only check that fires is compile-time — `T` must derive from `EntityBehaviour`.
 
-**The pointer is transient**, with the lifetime of the handle it came from: it dangles when the entity dies, when the level dies, and when the behaviour is rebound (`AddOrReplaceComponent<NativeScriptComponent>` deletes the old instance). Re-query rather than store; keep the `Entity`, or its UUID.
+**The pointer is transient**, with the lifetime of the handle it came from: it dangles when the entity dies, when the level dies, and when the behaviour is detached (`RemoveBehaviour<T>` marks it; the reap frees it at the end of the step). Now that an entity may carry several, a **sibling's** actions can invalidate a stored pointer too — it is no longer only your own entity dying, which makes this contract load-bearing rather than cautionary. Re-query rather than store; keep the `Entity`, or its UUID.
 
 **How Unreal does it, and where we differ.** Same shape: `AActor::FindComponentByClass<T>()` scans the owned components, asks each `IsA(TargetClass)`, and returns `nullptr` when nothing matches (`Engine/Source/Runtime/Engine/Private/Actor.cpp:3991`) — never an assert, with a `static_assert` constraining `T` in the templated half (`Actor.h:3823`). The **mechanism** differs. UE deliberately avoids `dynamic_cast`; it goes so far as to `#define` the keyword out of existence (`Templates/Casts.h:591`) and route `UObject` casts through its own reflection chain, where a type test is a 64-bit flag AND for hot types and an O(1) ancestry-array lookup for everything else (`UObject/Class.h:430`) — every class stores its full lineage as a flat array plus its depth, so "am I an X?" is an indexed load, not a walk up the parents.
 
@@ -207,8 +259,8 @@ Every line reads in one vocabulary: level-scope off `GetLevel()`, entity-scope o
 
 ## Known Issues & Evolution
 
-- **One behaviour per entity (RAD-101):** `NativeScriptComponent` holds a single `Instance`, so composing behaviour is only possible by inheritance. The decision is recorded — an entity **may** carry several — and the shape of that change is a Level-owned side table holding a list, with defined update and destruction ordering.
-- **Typed retrieval reshapes under composition (RAD-100 → RAD-101):** `Entity::GetBehaviour<T>()` exists (above) and today is one component lookup plus one cast. Once an entity may carry several behaviours it becomes a linear scan over that entity's list — UE's shape exactly — and RAD-101 must define what two behaviours of the same type mean. **Reject-at-attach is the answer that keeps this doc honest**, because it is what makes "*the* behaviour of type `T`" a total phrase rather than "whichever we hit first". The transient-pointer contract also gets more load-bearing there: a sibling's actions can invalidate a stored pointer, not only the entity dying.
+- **~~One behaviour per entity~~ — RESOLVED (RAD-101, 2026-09-27).** An entity carries any number of behaviours of **distinct** types. See *Composition* above for the orders and the duplicate rule.
+- **~~Behaviour instances are owning raw pointers in a component~~ — RESOLVED (RAD-101).** `NativeScriptComponent` is deleted; instances live in a `Level`-owned side table as `Scope<EntityBehaviour>`, and `Components.h` now has **no** plain-data violations. This also closed RAD-30's script half.
 - **No possession model (RAD-102):** `Pawn`/`Controller` do not exist yet. Relationship accessors for them may only be added once the relationship does.
-- **Behaviour instances are owning raw pointers in a component (RAD-30):** the known plain-data violation. Instances move to a Level-owned side table.
+- **Behaviour state still needs a paired component to survive save/load (RAD-104):** a behaviour cannot describe its own fields, so anything that must persist gets hoisted into a plain-data component. See *Where does my state live?* above for when that is actually required — the answer is "less often than you think". RAD-104 collapses the pair for the save/load case.
 - **Destroying your own entity from a hook** is safe from any hook and needs no positional discipline — destruction marks the entity dead and defers the free to the end of the fixed step, so the instance outlives the method that asked (RAD-97). `OnDestroy` fires immediately, before the calling method resumes. The entity reports `IsValid() == false` from that line on, so anything after it reads a dead handle.

@@ -6,6 +6,37 @@
 
 namespace Radiant {
 
+	// Out of line for the usual reason, and note what it does NOT need: iterating
+	// Scopes and calling .get() works on an incomplete EntityBehaviour, and
+	// IsBehaviourDetached takes a reference, so this TU never includes
+	// Gameplay/EntityBehaviour.h. Reading the flag directly would have required it —
+	// and friendship this class does not have.
+	std::vector<EntityBehaviour*> Entity::GetBehaviours() const
+	{
+		std::vector<EntityBehaviour*> behaviours;
+
+		// A query: an unusable handle is an answer, not a mistake (playbook §10)
+		if (!IsValid())
+			return behaviours;
+
+		auto it = m_Level->m_Behaviours.find(m_EntityHandle);
+		if (it == m_Level->m_Behaviours.end())
+			return behaviours;
+
+		const std::vector<Scope<EntityBehaviour>>& list = it->second;
+		behaviours.reserve(list.size());
+
+		for (const Scope<EntityBehaviour>& held : list)
+		{
+			// Skipped so this agrees with GetBehaviour<T>: a detached behaviour has
+			// already had its OnDestroy and is invisible to observers until the reap
+			if (held && !m_Level->IsBehaviourDetached(*held))
+				behaviours.push_back(held.get());
+		}
+
+		return behaviours;
+	}
+
 	// Defined here, not inline in the header: PhysicsBody is returned by value,
 	// so this needs the complete type, and PhysicsBody.h includes Entity.h
 	PhysicsBody Entity::GetPhysicsBody() const

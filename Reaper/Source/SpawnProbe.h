@@ -20,9 +20,12 @@ using namespace Radiant;
  * TWO DETAILS ARE LOAD-BEARING, and a simpler probe would pass against broken
  * code:
  *
- * 1. The spawned entity gets a BOUND SCRIPT. Creating a bare entity never
- *    touches the NativeScriptComponent pool being iterated; binding one does,
- *    and that is the reallocation the snapshot exists to survive.
+ * 1. The spawned entity gets a BEHAVIOUR. Creating a bare entity touches nothing
+ *    the pass is walking; attaching one appends to the walk order and to that
+ *    entity's behaviour list, and that is the reallocation the pass must survive.
+ *    Since RAD-101 the pass bounds each loop by a count captured before it
+ *    starts, so what this spawns is visited on the NEXT step — which is exactly
+ *    the ordering the log below demonstrates.
  * 2. The spawn happens in OnUpdate, NOT in the key handler. GameLayer's cheat
  *    only sets a flag. Spawning straight from OnKeyPressed would run outside
  *    the script pass entirely and prove nothing about it.
@@ -140,9 +143,9 @@ private:
 		spawned.AddComponent<SpriteComponent>(glm::vec4{ 0.2f, 0.8f, 1.0f, 1.0f });
 		spawned.GetComponent<TransformComponent>().Translation = { -6.0f, 2.0f, 0.0f };
 
-		// THE line under test: this emplaces into the pool currently being
-		// iterated by the script pass that is running us
-		spawned.AddComponent<NativeScriptComponent>().Bind<ProbePassenger>();
+		// THE line under test: this appends to the very structure the script pass
+		// running us is walking
+		spawned.AddBehaviour<ProbePassenger>();
 
 		// Remember the UUID, never the handle: handles are transient and the
 		// entity has to survive until the next press (Entity.h's contract)

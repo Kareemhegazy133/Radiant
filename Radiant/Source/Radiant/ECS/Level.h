@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <deque>
 #include <functional>
+#include <unordered_map>
+#include <vector>
 
 namespace Radiant {
 
@@ -27,17 +29,24 @@ namespace Radiant {
 	 * LIFECYCLE CONTRACT. Creation is IMMEDIATE. Destruction is DEFERRED, in two
 	 * halves (RAD-97):
 	 *
-	 *   MARK — DestroyEntity runs OnDestroy, tears the physics body down EAGERLY,
-	 *     erases the UUID map entry, and tags the entity PendingDestroyComponent.
-	 *     From that instant the entity is dead to everything: IsValid() is false,
-	 *     lookups miss it, and every gameplay pass excludes it. Safe to call from
-	 *     anywhere — a collision handler, a script's OnUpdate, an entity on
-	 *     itself — with no "last statement" discipline.
-	 *   REAP — ReapDestroyedEntities frees the behaviour instance and the entt
+	 *   MARK — DestroyEntity runs EVERY attached behaviour's OnDestroy (reverse
+	 *     attach order — RAD-101), tears the physics body down EAGERLY, erases the
+	 *     UUID map entry, and tags the entity PendingDestroyComponent. From that
+	 *     instant the entity is dead to everything: IsValid() is false, lookups
+	 *     miss it, and every gameplay pass excludes it. Safe to call from anywhere
+	 *     — a collision handler, a script's OnUpdate, an entity on itself — with no
+	 *     "last statement" discipline.
+	 *   REAP — ReapDestroyedEntities frees every behaviour instance and the entt
 	 *     row, at ONE defined point: the end of the fixed step, after contact
 	 *     dispatch. Not end of frame, so a rendered frame never observes a
 	 *     half-destroyed entity, and so the pending window stays exactly one step
 	 *     regardless of how many steps a frame runs (playbook §1).
+	 *
+	 * The reap does two more jobs for the same reason it does this one — a walk may
+	 * be holding an index into what they touch. It erases behaviours DETACHED from
+	 * entities that are still alive (RemoveBehaviour<T> only marks, exactly as
+	 * DestroyEntity does), and it reconciles the behaviour walk order in one pass.
+	 * So it runs on every step, not only on steps where something died.
 	 *
 	 * Physics dies at the mark and not at the reap deliberately: a body surviving
 	 * to the reap would keep generating contacts for the rest of the step, so a
@@ -101,6 +110,12 @@ namespace Radiant {
 		 * signals, and their destruction touches no other Level's physics.
 		 */
 		Level(const std::string& name = "UntitledLevel", bool initialize = true);
+
+		// Defined out of line in Level.cpp, and that is REQUIRED rather than
+		// stylistic: m_PhysicsWorld and m_Behaviours both hold Scopes to
+		// forward-declared types, and unique_ptr's deleter needs the complete
+		// type wherever the destructor is compiled. Writing `= default` here
+		// breaks both with an incomplete-type error that names neither member.
 		~Level();
 
 		/**
@@ -404,6 +419,97 @@ namespace Radiant {
 		size_t ReapDestroyedEntities();
 
 		/**
+		 * Takes ownership of an already-constructed behaviour and files it: the
+		 * side table, the tag, and the walk order — all three written here and
+		 * nowhere else. That single-writer property is the whole of D3's
+		 * no-desync argument, and it is why Entity::AddBehaviour<T> constructs
+		 * the instance but does not file it: the type-specific half is templated,
+		 * the bookkeeping half must not be duplicated per type.
+		 *
+		 * Wires the instance's owning Entity before returning, so OnCreate (which
+		 * runs later, at the script pass) already has GetOwner(). Returns a
+		 * NON-OWNING observer; the Level remains the sole deleter and frees only
+		 * at the reap.
+		 */
+		EntityBehaviour* AttachBehaviour(entt::entity handle, Scope<EntityBehaviour> instance);
+
+		/**
+		 * Detach's MARK half (RAD-101 D12). Runs OnDestroy if one is owed, then
+		 * flags the instance for the reap. Frees nothing and erases nothing —
+		 * every sibling is still alive when OnDestroy runs, exactly as at the
+		 * entity mark, and the vector is not compacted because a walk may be
+		 * holding indices into it.
+		 *
+		 * Idempotent: a second detach of the same instance is a silent no-op,
+		 * matching DestroyEntity's already-condemned early-out.
+		 */
+		void DetachBehaviour(EntityBehaviour& instance);
+
+		/**
+		 * Has this behaviour been detached and not yet reaped? The single
+		 * predicate behind the skip in every dispatch loop and in the scan below,
+		 * so the rule cannot be re-implemented per caller (playbook §4).
+		 *
+		 * Non-templated and defined out of line ON PURPOSE, and the reason is a
+		 * C++ rule worth knowing: reading m_PendingRemove inside FindBehaviour<T>
+		 * would be a NON-DEPENDENT expression on Scope<EntityBehaviour>, which the
+		 * compiler checks when this header is parsed rather than when the template
+		 * is instantiated — and EntityBehaviour is only forward-declared here. The
+		 * dynamic_cast<T*> beside it is fine precisely because it IS dependent on
+		 * T. Taking the argument by reference needs no complete type; only member
+		 * access does.
+		 */
+		bool IsBehaviourDetached(const EntityBehaviour& instance) const;
+
+		/**
+		 * THE script pass: for each entity in the walk order, OnCreate for anything
+		 * not yet created, then OnUpdate — both in attach order (RAD-101 D4, D11).
+		 *
+		 * Every loop is bounded by a count taken before it starts, and liveness is
+		 * re-checked PER BEHAVIOUR rather than per entity, because gameplay running
+		 * here may attach, detach, or destroy — including the entity whose list is
+		 * mid-walk. Marked entries are skipped, never erased; the reap compacts.
+		 */
+		void UpdateBehaviours(Timestep ts);
+
+		/**
+		 * The mark half of teardown for one entity: every attached behaviour's
+		 * OnDestroy, in REVERSE insertion order, and only where one is owed
+		 * (RAD-101 D6). Deletes nothing — every sibling is still fully alive while
+		 * these run, which is what lets a dying behaviour legitimately look one up.
+		 */
+		void RunBehaviourDestroyHooks(entt::entity handle);
+
+		/**
+		 * The reap half for one entity: deletes every instance in reverse
+		 * insertion order, drops the side-table entry, and removes the entity from
+		 * the walk order. Runs no gameplay — OnDestroy already fired at the mark.
+		 */
+		void FreeBehaviours(entt::entity handle);
+
+		/**
+		 * Erases behaviours detached from entities that are still ALIVE, at the
+		 * reap. Separate from FreeBehaviours because the entity survives: only the
+		 * marked entries go, the surviving ones keep their relative order, and the
+		 * tag comes off if the entity's last behaviour just left.
+		 */
+		void CompactDetachedBehaviours();
+
+		/**
+		 * The typed scan behind Entity::GetBehaviour<T> and everything built on
+		 * it. Lives on Level rather than Entity for an access reason, not a
+		 * stylistic one: reading m_PendingRemove requires friendship with
+		 * EntityBehaviour, and Level is its only friend. Keeping the scan here
+		 * also keeps one resolution helper per layer (playbook §4) instead of
+		 * letting the skip rule get re-implemented per caller.
+		 *
+		 * Defined in EntityTemplates.h, since dynamic_cast needs the complete
+		 * EntityBehaviour that this header only forward-declares.
+		 */
+		template<typename T>
+		T* FindBehaviour(entt::entity handle) const;
+
+		/**
 		 * What a move does to the render snapshot — an enum rather than a bool
 		 * because `WriteTransform(e, p, r, true, …)` says nothing at the call
 		 * site (playbook §4: semantic flags are enums). It is also the ONLY
@@ -511,17 +617,63 @@ namespace Radiant {
 
 		std::unordered_map<UUID, Entity> m_EntityMap;
 
-		// The script set for the current fixed step, rebuilt each step before
-		// any script runs (see OnFixedUpdate's script-pass contract). A member
-		// rather than a local so the pass never allocates once capacity has
-		// settled — clear() keeps the buffer, a local vector would hit the heap
-		// 60 times a second.
+		// THE BEHAVIOUR SIDE TABLE (RAD-101). Every EntityBehaviour instance in
+		// this level lives here rather than in a component: an instance is
+		// neither trivially copyable nor serializable, so it fails the plain-data
+		// rule components must satisfy (playbook §3). What remains in the ECS is
+		// the empty BehaviourComponent tag, which exists for one reason only —
+		// an entt view cannot consult a std::unordered_map, and OnFixedUpdate's
+		// snapshot pass classifies movers by component.
 		//
-		// Being a member is what makes the pass NON-REENTRANT: re-entering
-		// OnFixedUpdate would clear() the buffer the outer walk is iterating.
-		// m_RunningScripts below is the tripwire, so that contract is enforced
-		// rather than merely written here.
-		std::vector<entt::entity> m_ScriptUpdateList;
+		// Scope, so there is exactly one owner and exactly one deleter (playbook
+		// §2): this Level. Instances are freed ONLY in ReapDestroyedEntities,
+		// never in DestroyEntity — which merely runs OnDestroy — and that split
+		// is what makes a behaviour destroying its own entity safe.
+		//
+		// The vector's order IS the update order for one entity: forward for
+		// OnCreate/OnUpdate, reverse for OnDestroy. A mid-walk attach may grow
+		// it, which moves the Scopes but NOT the objects they point at, so an
+		// EntityBehaviour* held across a gameplay callback survives the
+		// reallocation. That address stability is why instances are pointed-to
+		// rather than stored by value, and it is load-bearing for the walk.
+		std::unordered_map<entt::entity, std::vector<Scope<EntityBehaviour>>> m_Behaviours;
+
+		// The CROSS-ENTITY walk order: every entity holding at least one
+		// behaviour, in first-attach order. Maintained — appended at an entity's
+		// first attach, dropped at the reap — rather than rebuilt from a view
+		// each step, which is the shape UE's tick registry already has.
+		//
+		// A separate list rather than iterating m_Behaviours, and that is the
+		// entire reason it exists: unordered_map iteration order is unspecified
+		// and reshuffles on rehash, so a walk over it could never promise the
+		// defined order this card owes. Note it replaces something WEAKER, not
+		// stronger — today's order is the NativeScriptComponent pool's, i.e.
+		// attach order perturbed by swap-and-pop every time an entity dies,
+		// because SortEntities only ever sorts the metadata pool.
+		std::vector<entt::entity> m_BehaviourEntities;
+
+		// Entities holding at least one DETACHED behaviour awaiting compaction —
+		// recorded by DetachBehaviour, drained by the reap (RAD-101 D12). The same
+		// record-now-act-at-a-defined-point shape as m_ReapList and for the same
+		// reason (playbook §1): the walk may be holding indices into the very
+		// vector compaction would shift.
+		//
+		// A LIST rather than a per-step scan of m_BehaviourEntities, so the cost
+		// is proportional to detaches rather than to population. Duplicate entries
+		// are harmless and not filtered: two detaches on one entity in one step
+		// append twice, and the second compaction pass simply finds nothing left
+		// to remove.
+		std::vector<entt::entity> m_BehaviourCompactList;
+
+		// Set whenever an entity's whole behaviour list leaves m_Behaviours, by
+		// either route (the entity died, or its last behaviour was detached).
+		// Cleared by the one walk-order sweep in the reap.
+		//
+		// A flag rather than sweeping unconditionally, because the sweep is O(n)
+		// over behaviour-carrying entities and the overwhelmingly common step
+		// changes nothing — an unconditional scan would add a per-step cost where
+		// there was none, to tidy a list that did not move.
+		bool m_BehaviourWalkOrderDirty = false;
 
 		// Entities whose DestroyEntity call is currently on the stack — the
 		// recursion guard described at IsMarkInProgress. Pushed before OnDestroy
@@ -531,7 +683,7 @@ namespace Radiant {
 
 		// The entities to free this reap, snapshotted from the PendingDestroy
 		// pool before the first one is destroyed. Same two reasons as
-		// m_ScriptUpdateList: a member so a steady state of dying entities
+		// m_BehaviourCompactList: a member so a steady state of dying entities
 		// allocates nothing, and plain ids rather than a live view because
 		// m_Registry.destroy swap-and-pops the pool being walked (playbook §8.8)
 		// — the reap must obey the rule it exists to relieve everyone else of.
@@ -566,12 +718,12 @@ namespace Radiant {
 		// would Step the world again and clear the buffer being walked.
 		bool m_DispatchingContacts = false;
 
-		// True only while the script pass is walking m_ScriptUpdateList. The
-		// tripwire for re-entering OnFixedUpdate from gameplay: re-entry would
-		// clear() and refill the buffer the outer walk is iterating, which is
-		// iterator invalidation, not merely surprising ordering. A script
-		// cannot reach OnFixedUpdate (that is what GameplayLevel is for), so
-		// this guards the remaining path — the owner calling it re-entrantly.
+		// True only while the behaviour pass is running. The tripwire for
+		// re-entering OnFixedUpdate from gameplay: re-entry would start a second
+		// walk over m_BehaviourEntities and the same behaviour lists, double-
+		// dispatching OnUpdate and stepping physics twice in one step. A script
+		// cannot reach OnFixedUpdate (that is what GameplayLevel is for), so this
+		// guards the remaining path — the owner calling it re-entrantly.
 		bool m_RunningScripts = false;
 
 		// For Debugging Purposes

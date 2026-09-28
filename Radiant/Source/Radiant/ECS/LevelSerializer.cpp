@@ -169,17 +169,26 @@ namespace Radiant {
 			out << YAML::EndMap; // SpriteComponent
 		}
 
-		if (entity.HasComponent<NativeScriptComponent>())
-		{
-			out << YAML::Key << "NativeScriptComponent";
-			out << YAML::BeginMap; // NativeScriptComponent
-
-			// TODO: Reflection system?
-			/*auto& nativeScriptComponent = entity.GetComponent<NativeScriptComponent>();
-			out << YAML::Key << "Script Class Name" << YAML::Value << nativeScriptComponent.ScriptClass.name();*/
-
-			out << YAML::EndMap; // NativeScriptComponent
-		}
+		// BehaviourComponent is deliberately NOT written, and has no entry here at
+		// all — the NativeScriptComponent block that used to sit on this line was
+		// deleted with the component by RAD-101.
+		//
+		// The tag means "this entity has behaviours in the Level's side table".
+		// Behaviours are code-only and are never restored on load, so a tag that
+		// round-tripped would describe a state that cannot exist: an entity
+		// marked as having behaviours with an empty side table behind it. The
+		// snapshot pass would then classify it as a mover with nothing driving
+		// it. Writing an empty map "for symmetry" is worse than writing nothing,
+		// because it invites a future deserializer to restore it.
+		//
+		// The trait makes the mistake unbuildable rather than merely discouraged:
+		// BehaviourComponent is IsEngineComponent, so the AddComponent<> call a
+		// restore would need is a compile error. Being a friend of Level is
+		// permission to reach m_Registry, not a reason to bypass that decision.
+		//
+		// What DOES belong in a level file is the richer question RAD-104 owns:
+		// behaviour FIELD state, once behaviours can describe their own fields.
+		// That is per-instance data keyed to a behaviour type, not this tag.
 
 		if (entity.HasComponent<RigidBody2DComponent>())
 		{
@@ -368,12 +377,15 @@ namespace Radiant {
 					src.TilingFactor = spriteComponent["TilingFactor"].as<float>();
 			}
 
-			auto nativeScriptComponent = entity["NativeScriptComponent"];
-			if (nativeScriptComponent)
-			{
-				// TODO: Reflection system?
-				//deserializedEntity.AddComponent<NativeScriptComponent>().Bind(nativeScriptComponent["Script Class Name"].as<...>());
-			}
+			// No behaviour key is read, deliberately (RAD-101). Bindings are code-only
+			// and are re-attached after load, so there is nothing here to restore —
+			// and restoring the tag alone would mark an entity as having behaviours
+			// with an empty side table behind it.
+			//
+			// Levels saved before RAD-101 still carry an empty `NativeScriptComponent:
+			// {}` map. It is simply ignored: an unknown key is not an error, which is
+			// what makes the format tolerant of exactly this kind of change. Behaviour
+			// FIELD state is RAD-104's question.
 
 			auto rigidbody2DComponent = entity["RigidBody2DComponent"];
 			if (rigidbody2DComponent)

@@ -24,9 +24,13 @@
 //    IsEngineComponent<T> at the bottom of this file (RAD-97). Skipping this is
 //    silent: the component simply stays writable by every consumer.
 //
-// Components are meant to be plain data: trivially copyable and serializable, no
-// owning pointers, no std::function. The one remaining violation
-// (NativeScriptComponent, tracked by RAD-30) is marked — do not add new ones.
+// Components are plain data: trivially copyable and serializable, no owning
+// pointers, no std::function. There are NO remaining violations as of RAD-101,
+// which retired the last one (NativeScriptComponent, an owning raw pointer plus
+// two std::functions) by moving behaviour instances into a Level-owned side table
+// and leaving only the empty BehaviourComponent tag behind. Keep it that way: if
+// a new component cannot be memcpy'd and serialized, the thing it wants to hold
+// belongs in a side table instead.
 
 namespace Radiant {
 
@@ -170,36 +174,36 @@ namespace Radiant {
 	class EntityBehaviour;
 
 	/**
-	 * Binds a native C++ behaviour (an EntityBehaviour subclass) to the entity.
-	 * Bind<T>() stores factory/destroy callables; the Level instantiates the
-	 * behaviour lazily on the first update after binding (see EntityBehaviour
-	 * for the lifecycle contract). One behaviour per entity — RAD-101 makes it
-	 * several. Bindings are code-only — never serialized — so they must be
-	 * re-bound after level load.
+	 * Presence means "this entity has at least one behaviour" — nothing more
+	 * (RAD-101). The instances themselves live in a Level-owned side table, so
+	 * this carries no data and the component never needs to be read, only
+	 * matched.
 	 *
-	 * THIS COMPONENT IS PLUMBING; THE QUERY IS THE API (RAD-100). Gameplay
-	 * recovers a concrete behaviour with Entity::GetBehaviour<T>(), which is
-	 * checked and returns nullptr on a mismatch. Reaching Instance directly
-	 * means writing a static_cast the compiler does not verify: get the type
-	 * wrong and it reinterprets a live object rather than failing, corrupting
-	 * whatever sits at the assumed member offsets.
+	 * WHY A COMPONENT EXISTS AT ALL, when the side table's own key set already
+	 * answers the same question. Because the answer is needed inside an entt
+	 * view, and a view cannot consult a std::unordered_map: OnFixedUpdate's
+	 * snapshot pass classifies which entities might move, and "has a behaviour"
+	 * is one of its three inputs. Delete this and that classification silently
+	 * loses a third of its cases — scripted entities stop being snapshotted and
+	 * start stuttering on screen.
+	 *
+	 * DELIBERATELY EMPTY. A Count member is the tempting addition and it is the
+	 * wrong one: it duplicates state the side table already owns and can
+	 * therefore disagree with it. Presence, and nothing else, cannot desync.
+	 *
+	 * Not serialized, and that is a correctness requirement rather than an
+	 * omission — see LevelSerializer, which explains why restoring this tag
+	 * would produce an entity marked as having behaviours with none behind it.
 	 */
-	struct NativeScriptComponent
-	{
-		// Owning raw pointer — known plain-data violation; moves to a Level-owned side table (RAD-30).
-		// Read it through Entity::GetBehaviour<T>(), never by casting it yourself (see above).
-		EntityBehaviour* Instance = nullptr;
+	struct BehaviourComponent {};
 
-		std::function<EntityBehaviour* ()> InstantiateScript;
-		std::function<void(NativeScriptComponent*)> DestroyScript;
-
-		template<typename T>
-		void Bind()
-		{
-			InstantiateScript = []() { return static_cast<EntityBehaviour*>(new T()); };
-			DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
-		}
-	};
+	// The plain-data rule, enforced rather than asserted in prose (playbook §3).
+	// Level::Copy (play-in-editor, Phase 5) shallow-copies component pools, so a
+	// tag that ever stopped being trivially copyable would break it silently.
+	static_assert(std::is_trivially_copyable_v<BehaviourComponent>,
+		"BehaviourComponent must stay trivially copyable - it is a tag, and Level::Copy depends on it");
+	static_assert(std::is_empty_v<BehaviourComponent>,
+		"BehaviourComponent must stay empty - state belongs in the Level's side table, where it cannot desync");
 
 	// Physics
 
@@ -302,7 +306,7 @@ namespace Radiant {
 	 * error naming the verb to use instead — not a runtime surprise (RAD-97).
 	 *
 	 * WHY A TRAIT RATHER THAN VISIBILITY. Radiant.h exports this header, and it
-	 * must: games need SpriteComponent, TransformComponent, NativeScriptComponent.
+	 * must: games need SpriteComponent, TransformComponent, CameraComponent.
 	 * Hiding a type is not available either — Level.h is public and names
 	 * PendingDestroyComponent inside entt::exclude<> for GetLiveEntitiesWith, so
 	 * the type is reachable transitively however the files are arranged. With
@@ -314,9 +318,10 @@ namespace Radiant {
 	 *
 	 * The list is hand-maintained, which is its weakness: a new runtime-only
 	 * component that forgets its specialization is silently writable. The file
-	 * header's step 4 is the reminder; RAD-30's Level-owned side tables are the
-	 * real fix, since game code cannot name a side table at all, and RAD-96
-	 * decides whether this trait survives that.
+	 * header's step 4 is the reminder. Level-owned side tables are the real fix and
+	 * RAD-101 built the first one — game code cannot name a side table at all —
+	 * but note the tag it left behind still needs this trait, which is why the
+	 * mechanism does not retire with the pattern. RAD-96 decides its long-term fate.
 	 *
 	 * READ ACCESS IS DELIBERATELY UNRESTRICTED. HasComponent/GetComponent/
 	 * TryGetComponent are untouched: asking whether an entity is pending
@@ -338,5 +343,19 @@ namespace Radiant {
 	// pass. A hand-written one is overwritten or removed within a step, so this
 	// is about honesty rather than danger: the pass owns this component.
 	template<> struct IsEngineComponent<TransformSnapshotComponent> : std::true_type {};
+
+	// Maintained ONLY by the attach/detach path in Level, which is what makes the
+	// tag unable to disagree with the behaviour side table (RAD-101). That claim
+	// is a comment until something enforces it, and this is the enforcement: a
+	// hand-added tag would produce an entity the snapshot pass treats as a mover
+	// while the walk finds no behaviours for it — permanently wrong, blaming no
+	// one, and costing a stutter nobody can trace. Use Entity::AddBehaviour<T>().
+	//
+	// Note this also (correctly) forecloses the deserializer restoring the tag:
+	// behaviours are code-only, so a restored tag would mark an entity as having
+	// them with an empty side table behind it. Per RAD-97's rule, an engine path
+	// that legitimately needs to write a gated component uses m_Registry
+	// directly - the gate does not get widened.
+	template<> struct IsEngineComponent<BehaviourComponent> : std::true_type {};
 
 }

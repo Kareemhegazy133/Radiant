@@ -53,7 +53,7 @@ void GameLayer::OnAttach()
 		for (const char* name : { "Green Square", "Platform" })
 		{
 			if (Entity entity = m_Level->FindEntityByName(name))
-				entity.AddOrReplaceComponent<NativeScriptComponent>().Bind<CollisionLogger>();
+				entity.AddBehaviour<CollisionLogger>();
 			else
 				GAME_WARN("CollisionLogger: no '{0}' entity in the level", name);
 		}
@@ -84,7 +84,7 @@ void GameLayer::OnAttach()
 		platformTransform.Scale = { 4.0f, 0.5f, 1.0f };
 		movingPlatform.AddComponent<RigidBody2DComponent>(RigidBody2DComponent::BodyType::Kinematic);
 		movingPlatform.AddComponent<BoxCollider2DComponent>();
-		movingPlatform.AddComponent<NativeScriptComponent>().Bind<KinematicPlatform>();
+		movingPlatform.AddBehaviour<KinematicPlatform>();
 
 		// Spawned just ABOVE the platform, not exactly on it: a body created
 		// already overlapping starts the simulation resolving a penetration,
@@ -103,7 +103,7 @@ void GameLayer::OnAttach()
 	// script pass. See SpawnProbe.h for why that is the only way to test it.
 	{
 		Entity probe = m_Level->CreateEntity("SpawnProbe");
-		probe.AddComponent<NativeScriptComponent>().Bind<SpawnProbe>();
+		probe.AddBehaviour<SpawnProbe>();
 	}
 
 	FramebufferSpecification fbSpec;
@@ -464,7 +464,7 @@ void GameLayer::CreateDEBUG()
 	m_Camera = m_Level->CreateEntity("Camera");
 	m_Camera.AddComponent<CameraComponent>().Primary = true;
 	m_Camera.GetComponent<CameraComponent>().Camera.SetViewportSize(1280, 720);
-	m_Camera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+	m_Camera.AddBehaviour<CameraController>();
 }
 
 void GameLayer::LoadDEBUG()
@@ -482,6 +482,6 @@ void GameLayer::LoadDEBUG()
 		return;
 	}
 
-	m_Level->FindEntityByName("Camera").AddOrReplaceComponent<NativeScriptComponent>().Bind<CameraController>();
+	m_Level->FindEntityByName("Camera").AddBehaviour<CameraController>();
 }
 

@@ -6,6 +6,8 @@
 
 #include "Radiant/Physics/TeleportType.h"
 
+#include <vector>
+
 namespace Radiant {
 
 	class Level;
@@ -169,24 +171,30 @@ namespace Radiant {
 		 *      mistake: a collision partner may already be dead by the time you
 		 *      ask (EntityBehaviour::OnCollisionEnd's contract), so a warning
 		 *      here would fire during correct gameplay;
-		 *   2. the entity has no NativeScriptComponent — it has no behaviour at
-		 *      all, which is true of most entities;
-		 *   3. it has one, but the instance is not built yet — behaviours are
-		 *      created lazily on the first fixed step after Bind<T>(), so this
-		 *      is timing, not error;
-		 *   4. the instance exists and is not a T.
+		 *   2. the entity has no behaviour at all, which is true of most entities;
+		 *   3. it has behaviours, but none of them is a T;
+		 *   4. the matching behaviour has been detached (RemoveBehaviour<T>) and
+		 *      is awaiting the reap — its OnDestroy has already run, so handing
+		 *      it back would be the same ordering bug as calling OnUpdate after
+		 *      OnDestroy.
+		 *
+		 * A FIFTH CASE RETIRED with RAD-101's eager construction: "it has one but
+		 * the instance is not built yet" can no longer occur, because
+		 * AddBehaviour<T> constructs at the call site instead of leaving a factory
+		 * for the Level to invoke on the next step. Documenting a state that
+		 * cannot happen teaches a reader to distrust the rest of the block.
 		 *
 		 * The only check that fires is compile-time: T must derive from
 		 * EntityBehaviour.
 		 *
 		 * THE POINTER IS TRANSIENT, exactly like the handle it came from. It
 		 * dangles when the entity dies, when the Level dies, and when the
-		 * behaviour is rebound — AddOrReplaceComponent<NativeScriptComponent>
-		 * deletes the instance the old pointer names. Never store one across a
-		 * fixed step: keep the Entity (or its UUID) and ask again, which is
-		 * cheap enough to do per use. Once an entity may carry SEVERAL
-		 * behaviours (RAD-101) a sibling's actions can invalidate a stored
-		 * pointer too, so this contract only gets more load-bearing.
+		 * behaviour is detached — the reap deletes the instance the old pointer
+		 * names. Never store one across a fixed step: keep the Entity (or its
+		 * UUID) and ask again, which is cheap enough to do per use. Now that an
+		 * entity may carry SEVERAL behaviours (RAD-101), a SIBLING's actions can
+		 * invalidate a stored pointer too — it is no longer only your own entity
+		 * dying — so this contract is load-bearing rather than cautionary.
 		 *
 		 * const here constrains this handle, not the behaviour it names — the
 		 * same latitude GetPhysicsBody and GetLevel take, and for the same
@@ -199,6 +207,88 @@ namespace Radiant {
 		 */
 		template<typename T>
 		T* GetBehaviour() const;
+
+		/**
+		 * Constructs a behaviour of type T, attaches it to this entity, and
+		 * returns it so the caller can configure it immediately:
+		 *
+		 *     entity.AddBehaviour<Health>()->MaxHP = 50.f;
+		 *
+		 * CONSTRUCTION IS EAGER; OnCreate IS NOT. The object exists the moment
+		 * this returns — that is the point of returning a usable pointer — but
+		 * OnCreate is gameplay (it may spawn, destroy, or attach more) and so
+		 * still runs at the next script pass, at the one defined point. Firing it
+		 * from an arbitrary call site is exactly the re-entrancy RAD-95 and RAD-97
+		 * spent two cards confining.
+		 *
+		 * DUPLICATE TYPES ARE REJECTED (RAD-101 D5), which is where we diverge
+		 * from UE deliberately: its components are things (two meshes is a car
+		 * with two doors), ours are logic units, and refusing duplicates is what
+		 * makes GetBehaviour<T> a total question — "the T" stays a true phrase
+		 * instead of degrading to "whichever we hit first". On a duplicate this
+		 * asserts, warns, and returns the EXISTING instance, so Dist recovers
+		 * rather than running with two of something documented as singular.
+		 *
+		 * A VERB, so an unusable handle WARNS — unlike GetBehaviour, which
+		 * answers null in silence. The caller asked for an action on something it
+		 * believed existed (playbook §10).
+		 *
+		 * The returned pointer is transient on exactly GetBehaviour's terms: the
+		 * Level owns the instance and frees it at the reap. Do not store it.
+		 */
+		template<typename T, typename... Args>
+		T* AddBehaviour(Args&&... args);
+
+		/** True if a behaviour of type T is attached. Exactly GetBehaviour<T>() != nullptr. */
+		template<typename T>
+		bool HasBehaviour() const;
+
+		/**
+		 * Detaches the behaviour of type T, running its OnDestroy if one is owed.
+		 *
+		 * DEFERRED, like entity destruction and for the identical reason (D12):
+		 * this MARKS, and the reap frees at the end of the fixed step. So a
+		 * behaviour may detach ITSELF from inside its own OnUpdate — the common
+		 * case, "I am done, take me off" — and its method still runs to
+		 * completion. An immediate delete would make `this` dangle mid-call.
+		 *
+		 * From the mark onward the behaviour is gone to every observer:
+		 * GetBehaviour<T> stops finding it and no further hook fires. Detaching
+		 * something not attached is a silent no-op — a state that already holds.
+		 */
+		template<typename T>
+		void RemoveBehaviour();
+
+		/**
+		 * Every behaviour attached to this entity, in attach order — UE's
+		 * AActor::GetComponents(), and the one member of this family that is not
+		 * parameterised by type.
+		 *
+		 *     for (EntityBehaviour* b : entity.GetBehaviours())
+		 *         ...
+		 *
+		 * NON-OWNING: it yields raw observers, never the Level's Scopes — handing
+		 * back the ownership handles would hand back exactly what the Level exists
+		 * to keep (playbook §10). Detached-but-not-yet-reaped behaviours are
+		 * skipped, so this agrees with GetBehaviour<T> instead of contradicting it.
+		 *
+		 * BY VALUE, AND THAT ALLOCATES. A deliberate reversal of this card's own
+		 * earlier plan, which specified an allocation-free view: the view needs a
+		 * filtering iterator, the filter must read a private flag, and reading it
+		 * needs friendship EntityBehaviour does not grant — so the "cheap" option
+		 * costs a friend declaration and an out-of-line iterator to save an
+		 * allocation on a path nothing calls per frame. UE reaches for
+		 * TInlineComponentArray because it collects components constantly at scale;
+		 * we do not, and inventing that constraint before a caller exists is how
+		 * machinery gets built for nobody. If a hot caller appears, its measurement
+		 * is what justifies the view.
+		 *
+		 * THE POINTERS ARE TRANSIENT, exactly as GetBehaviour<T>'s are: a detach or
+		 * the entity's death frees what they name. Do not hold them across a
+		 * gameplay call. An invalid handle yields an empty vector rather than
+		 * warning — this is a query, and "none" is an answer.
+		 */
+		std::vector<EntityBehaviour*> GetBehaviours() const;
 
 		/**
 		 * Where this entity is, in world units. One component lookup — the same

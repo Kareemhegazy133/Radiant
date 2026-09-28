@@ -12,10 +12,15 @@ namespace Radiant {
 	/**
 	 * One unit of C++ gameplay behaviour attached to one entity — the root of
 	 * the gameplay hierarchy every game type subclasses. Subclass, override
-	 * OnCreate/OnUpdate/OnDestroy, and attach with
-	 * NativeScriptComponent::Bind<T>() (one behaviour per entity today —
-	 * RAD-101 makes it several; bindings are code-only and must be re-bound
-	 * after level load).
+	 * OnCreate/OnUpdate/OnDestroy, and attach with Entity::AddBehaviour<T>().
+	 *
+	 * SEVERAL PER ENTITY (RAD-101), of DISTINCT types — a second behaviour of a
+	 * type already attached is rejected, which is what makes
+	 * Entity::GetBehaviour<T>() a total question rather than "whichever we hit
+	 * first". Per entity, OnCreate and OnUpdate run in ATTACH order and OnDestroy
+	 * in reverse, so a behaviour that found a sibling during its own OnCreate
+	 * still has it during its OnDestroy. Bindings are code-only and are never
+	 * serialized, so they must be re-attached after level load.
 	 *
 	 * WHAT THIS CLASS IS, IN ONE SENTENCE (RAD-99). Entity is Radiant's
 	 * world-thing and this is Radiant's behaviour unit — the same split Unreal
@@ -79,8 +84,12 @@ namespace Radiant {
 	 * OnUpdate then runs every FIXED simulation step (with the fixed delta, not
 	 * a frame delta) while the entity's MetadataComponent is active (OnCreate
 	 * and OnDestroy run regardless of the active flag).
-	 * OnDestroy runs when the entity is destroyed; the instance is deleted by its
-	 * owning NativeScriptComponent (side-table rework tracked as RAD-30).
+	 * OnDestroy runs when the entity is destroyed, or when this behaviour alone is
+	 * detached (Entity::RemoveBehaviour<T>). Either way the instance is deleted by
+	 * the LEVEL, which owns it in a side table as a Scope<EntityBehaviour>, and
+	 * only at the reap at the end of the fixed step — never at the call. That is
+	 * what lets a behaviour destroy its own entity, or detach itself, from inside
+	 * its own OnUpdate and still run to the end of the method.
 	 *
 	 * Behaviours may spawn and destroy entities from any hook. Structural
 	 * changes take effect immediately, but the behaviour set is snapshotted at
@@ -93,8 +102,8 @@ namespace Radiant {
 		/**
 		 * LOAD-BEARING TWICE, so do not "tidy it away" if the virtual hooks
 		 * below ever move. It makes deletion through this base correct — the
-		 * owning NativeScriptComponent deletes an EntityBehaviour* that really
-		 * points at a subclass — AND it is what makes this class polymorphic,
+		 * Level's side table holds a Scope<EntityBehaviour> that really points at
+		 * a subclass — AND it is what makes this class polymorphic,
 		 * which is the precondition for the RTTI that Entity::GetBehaviour<T>()
 		 * reads. Remove it and typed retrieval stops compiling somewhere far
 		 * from here.
@@ -107,11 +116,14 @@ namespace Radiant {
 		 * components, physics (GetPhysicsBody), and every subsystem facade
 		 * added later — none of which costs this class an edit.
 		 *
-		 * Named "owner" because the entity genuinely owns this instance: the
-		 * entity's NativeScriptComponent holds it by an owning pointer and
-		 * deletes it. The name is therefore true in Radiant's own ownership
-		 * vocabulary (playbook §2) as well as matching UE's
-		 * UActorComponent::GetOwner().
+		 * Named "owner" for the entity's ROLE, not for the C++ ownership: since
+		 * RAD-101 the instance is owned by the LEVEL, in a side table keyed by this
+		 * entity, and the Level is the sole deleter (playbook §2). The entity is
+		 * still what the behaviour belongs to and what its lifetime is tied to —
+		 * destroy the entity and this instance goes with it — which is the sense
+		 * UE's UActorComponent::GetOwner() carries too. Worth stating plainly,
+		 * because the earlier version of this comment claimed the entity held the
+		 * pointer, and that stopped being true.
 		 *
 		 * Valid from OnCreate onward, never in the constructor: the Level wires
 		 * the handle AFTER construction.
@@ -199,6 +211,30 @@ namespace Radiant {
 
 	private:
 		Entity m_Entity;
+
+		// PHASE FLAGS (RAD-101). Both read "X has happened and its pair has not"
+		// — deliberately the same shape, and the same wording, as UE's
+		// UActorComponent bitfield (ActorComponent.h:349-361: "Indicates that
+		// BeginPlay has been called, but EndPlay has not yet"), because these are
+		// the same two questions.
+		//
+		// Has OnCreate run, and is an OnDestroy therefore owed? One read answers
+		// it at both teardown moments. A flag became NECESSARY when construction
+		// went eager: the old lazy path used a null Instance pointer as the
+		// not-yet-created signal, and once AddBehaviour<T> builds the object at
+		// the call site the pointer is never null, so a brand-new behaviour is
+		// indistinguishable from one that has run for an hour. Cleared after
+		// OnDestroy so the hook can never be owed twice.
+		bool m_HasCreated = false;
+
+		// Detach's half of RAD-97's mark/reap split: set by RemoveBehaviour,
+		// honoured by every dispatch loop — which SKIPS this entry rather than
+		// erasing it, so the walk's captured indices stay meaningful — and
+		// resolved by the reap, which compacts. The alternative, an immediate
+		// erase-and-delete, would reintroduce "delete this mid-method" for the
+		// ordinary case of a behaviour detaching itself.
+		bool m_PendingRemove = false;
+
 		friend class Level;
 	};
 

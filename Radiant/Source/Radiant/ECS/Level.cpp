@@ -165,17 +165,18 @@ namespace Radiant {
 				~MarkScope() { Owner.m_MarksInProgress.pop_back(); }
 			} markScope(*this, handle);
 
-			if (auto* nsc = entity.TryGetComponent<NativeScriptComponent>())
-			{
-				// Instance is created lazily on first update — it may not exist yet.
-				// The instance is NOT deleted here: that delete was the entire
-				// "last statement" wart, and it moves to the reap. What the
-				// behaviour sees is otherwise exactly what it saw before — its
-				// entity valid, its components readable, its body still alive —
-				// which is what keeps "spawn an effect where I died" working.
-				if (nsc->Instance)
-					nsc->Instance->OnDestroy();
-			}
+			// Every attached behaviour's OnDestroy, LIFO (RAD-101 D6). Nothing is
+			// deleted here: that delete was the entire "last statement" wart and it
+			// lives at the reap now. What a behaviour sees is otherwise exactly what
+			// it saw before — its entity valid, its components readable, its body
+			// still alive, and every SIBLING still alive — which is what keeps
+			// "spawn an effect where I died" working, and what lets a dying
+			// behaviour legitimately read one of its siblings.
+			//
+			// Inside the MarkScope, so GetOwner().Destroy() from any of these bodies
+			// still hits the recursion guard. With N behaviours that guard covers
+			// the whole list at once rather than one instance.
+			RunBehaviourDestroyHooks(handle);
 		}
 
 		// OnDestroy is gameplay, so it may have spawned (reallocating the pool
@@ -219,6 +220,17 @@ namespace Radiant {
 	{
 		RADIANT_PROFILE_FUNCTION();
 
+		// FIRST, and unconditionally, because it must not sit below the
+		// nothing-died early-out: detaching a behaviour from an entity that goes on
+		// living is the common case for RemoveBehaviour, and on such a step the
+		// reap list is empty. Putting this after the early return would leave every
+		// detached instance alive forever — a leak that only shows up as a slowly
+		// growing walk.
+		//
+		// Entities that died this step are handled by FreeBehaviours below instead;
+		// compacting one here first is merely redundant, never wrong.
+		CompactDetachedBehaviours();
+
 		// Snapshot to plain ids before destroying any of them: m_Registry.destroy
 		// swap-and-pops the very pool this list came from, so the reap has to obey
 		// the rule it exists to relieve every other caller of (playbook §8.8).
@@ -228,9 +240,12 @@ namespace Radiant {
 		for (entt::entity handle : GetAllEntitiesWith<PendingDestroyComponent>())
 			m_ReapList.push_back(handle);
 
-		// The common case: nothing died this step
-		if (m_ReapList.empty())
-			return 0;
+		// NOTE the early `return 0` that used to sit here is gone, and deliberately:
+		// a detach on a step where nothing DIED still has a walk order to reconcile
+		// below, and returning early skipped it — leaving the detached entity in the
+		// walk forever. The two costs the early-out protected are now guarded
+		// individually (the reap loop by m_ReapList, SortEntities by `reaped`), so
+		// the quiet step is still as cheap as it was.
 
 		// Counted rather than taken from m_ReapList.size(), and that difference is
 		// load-bearing: ~Level loops `while (ReapDestroyedEntities() > 0)`, so an
@@ -254,21 +269,13 @@ namespace Radiant {
 			// directly — these entities are, by construction, invalid, and
 			// Entity's accessors assert on that.
 			//
-			// One bespoke delete per kind of runtime side state; there is exactly
-			// one kind today. RAD-30's Level-owned side tables collapse this into
-			// a loop over registered tables, so the next kind meets that decision
-			// rather than a second copy of these lines.
-			if (auto* nsc = m_Registry.try_get<NativeScriptComponent>(handle))
-			{
-				if (nsc->Instance)
-				{
-					if (nsc->DestroyScript)
-						nsc->DestroyScript(nsc);   // nulls Instance itself (see Bind)
-					else
-						delete nsc->Instance;
-					nsc->Instance = nullptr;
-				}
-			}
+			// One call per kind of runtime side state, and there is exactly one kind
+			// today. This is where the bespoke NativeScriptComponent delete used to
+			// sit, and its comment promised this replacement to RAD-30/RAD-101; the
+			// loop over registered tables it also anticipated is still not needed,
+			// because one table is not three. It becomes a loop at the rule of
+			// three, not in advance of it.
+			FreeBehaviours(handle);
 
 			m_Registry.destroy(handle);
 			++reaped;
@@ -276,15 +283,304 @@ namespace Radiant {
 
 		m_ReapList.clear();
 
+		// THE WALK ORDER, RECONCILED IN ONE PASS — and the "once per reap rather
+		// than once per destroyed entity" rule below is exactly why it lives here.
+		// An erase inside FreeBehaviours would be an O(n) scan-and-shift per dead
+		// entity, so fifty projectiles dying in one step would be fifty of them:
+		// the same O(M·N) shape SortEntities was hoisted out of that loop to
+		// escape, rebuilt in a different container.
+		//
+		// It is also one fewer thing to keep in sync. The order is DERIVED from the
+		// table rather than maintained beside it, so an entity is in the walk
+		// exactly while it has behaviours — which covers both ways it can leave
+		// (destroyed, or its last behaviour detached) without either path having to
+		// know this list exists. erase_if preserves the relative order of the
+		// survivors, which is the whole reason the container is a vector and not a
+		// set.
+		if (m_BehaviourWalkOrderDirty)
+		{
+			std::erase_if(m_BehaviourEntities, [this](entt::entity handle)
+				{
+					return m_Behaviours.find(handle) == m_Behaviours.end();
+				});
+			m_BehaviourWalkOrderDirty = false;
+		}
+
 		// ONCE per reap rather than once per destroyed entity, which is the
-		// single largest cost this story removes: fifty projectiles dying in one
+		// single largest cost RAD-97 removed: fifty projectiles dying in one
 		// step was fifty O(n log n) sorts. Safe here and nowhere else in the
 		// window, because the comparator resolves every metadata ID through
 		// m_EntityMap and asserts on a miss — by this line no pending entity
 		// remains to be missing.
-		SortEntities();
+		//
+		// Guarded on `reaped` now that the nothing-died early-out above is gone: a
+		// step that only detached a behaviour has not moved a single entity id, so
+		// sorting would be pure cost. This keeps the quiet step exactly as cheap as
+		// the early return made it.
+		if (reaped > 0)
+			SortEntities();
 
 		return reaped;
+	}
+
+	EntityBehaviour* Level::AttachBehaviour(entt::entity handle, Scope<EntityBehaviour> instance)
+	{
+		RADIANT_ASSERT(instance, "Level::AttachBehaviour: null instance");
+		if (!instance)
+			return nullptr;
+
+		// Wired BEFORE the instance is reachable by anything, so OnCreate — which
+		// runs later, at the script pass — already has a usable GetOwner()
+		instance->m_Entity = Entity{ handle, this };
+
+		std::vector<Scope<EntityBehaviour>>& list = m_Behaviours[handle];
+
+		// The entity joins the walk order on its FIRST behaviour only. Testing the
+		// list rather than the tag keeps the table authoritative and the tag
+		// derived, which is the direction that cannot desync.
+		if (list.empty())
+		{
+			m_BehaviourEntities.push_back(handle);
+
+			// Through m_Registry, not through Entity: BehaviourComponent is
+			// IsEngineComponent, and RAD-97's rule is that an engine path which
+			// legitimately writes a gated component uses the registry rather than
+			// widening the gate. emplace_or_replace rather than emplace so a
+			// stale tag (which would mean the invariant was already broken
+			// elsewhere) cannot turn this into an entt assert.
+			m_Registry.emplace_or_replace<BehaviourComponent>(handle);
+		}
+
+		list.push_back(std::move(instance));
+		return list.back().get();
+	}
+
+	bool Level::IsBehaviourDetached(const EntityBehaviour& instance) const
+	{
+		return instance.m_PendingRemove;
+	}
+
+	void Level::DetachBehaviour(EntityBehaviour& instance)
+	{
+		// Already marked. Silent, for DestroyEntity's reason: the caller is asking
+		// for a state that already holds, and a warning here would fire during
+		// correct gameplay.
+		if (instance.m_PendingRemove)
+			return;
+
+		// Only if one is owed. A behaviour attached and detached before the walk
+		// ever reached it never ran OnCreate, and must not receive an OnDestroy
+		// for it — the pairing UE enforces with HasBeenInitialized() before
+		// calling UninitializeComponent (Actor.cpp:6350-6362).
+		if (instance.m_HasCreated)
+		{
+			instance.OnDestroy();
+			instance.m_HasCreated = false;
+		}
+
+		// LAST, and after OnDestroy rather than before: OnDestroy is gameplay and
+		// may legitimately look itself up (GetOwner().GetBehaviour<T>()), which the
+		// scan skips once this is set.
+		instance.m_PendingRemove = true;
+
+		// Recorded for the reap to erase. Not erased here for the same reason
+		// DestroyEntity does not free a row here: a walk may be holding an index
+		// into this very vector, and compaction shifts everything after the hole.
+		m_BehaviourCompactList.push_back(instance.m_Entity.m_EntityHandle);
+	}
+
+	void Level::UpdateBehaviours(Timestep ts)
+	{
+		// Captured BEFORE the walk, never re-read as `i < size()`. Gameplay may
+		// attach to a brand-new entity and append here, and such a behaviour must
+		// wait for the next step — RAD-95's existing spawn contract, which
+		// SpawnProbe already demonstrates for entities. Under the old per-step
+		// snapshot that was automatic; over a maintained list it is a choice, and
+		// the accidental spelling changes a documented contract in silence.
+		//
+		// Indexing rather than iterating, because push_back may reallocate. For the
+		// same reason nothing below caches a reference into m_BehaviourEntities.
+		const size_t entityCount = m_BehaviourEntities.size();
+
+		for (size_t ei = 0; ei < entityCount; ++ei)
+		{
+			const entt::entity handle = m_BehaviourEntities[ei];
+
+			// A live check, not bare registry validity: the row survives until the
+			// reap, so an entity destroyed by an earlier behaviour in this same
+			// pass is still present and must still be skipped (playbook §8.8)
+			if (!m_Registry.valid(handle) || IsPendingDestroy(handle))
+				continue;
+
+			auto it = m_Behaviours.find(handle);
+			if (it == m_Behaviours.end())
+				continue;
+
+			// A REFERENCE into the map, held across gameplay deliberately: an
+			// unordered_map keeps references to its mapped values valid through a
+			// rehash (only iterators die), so attaching to some OTHER entity cannot
+			// invalidate this. Attaching to THIS one may reallocate the vector's
+			// buffer, which is why each access below re-reads list[i] rather than
+			// caching a pointer into it.
+			std::vector<Scope<EntityBehaviour>>& list = it->second;
+			const size_t count = list.size();
+
+			// OnCreate first, for the whole entity, before any of its OnUpdates —
+			// the within-entity guarantee composition actually needs, since this is
+			// where siblings can see each other. Deliberately NOT a level-wide
+			// guarantee: entity A's OnCreate still follows entity B's OnUpdate when
+			// B sorts earlier, exactly as today (RAD-101 D11).
+			for (size_t i = 0; i < count; ++i)
+			{
+				EntityBehaviour* behaviour = list[i].get();
+				if (behaviour->m_PendingRemove || behaviour->m_HasCreated)
+					continue;
+
+				behaviour->OnCreate();
+				behaviour->m_HasCreated = true;
+
+				// OnCreate is gameplay and may have destroyed this very entity.
+				// Re-checked per behaviour rather than once per entity, because a
+				// sibling condemning the entity must stop the rest of ITS list too.
+				if (!m_Registry.valid(handle) || IsPendingDestroy(handle))
+					break;
+			}
+
+			if (!m_Registry.valid(handle) || IsPendingDestroy(handle))
+				continue;
+
+			// The same gate the legacy pass uses: an inactive entity's behaviours
+			// stop updating while its body keeps simulating
+			if (!m_Registry.get<MetadataComponent>(handle).IsActive)
+				continue;
+
+			for (size_t i = 0; i < count; ++i)
+			{
+				EntityBehaviour* behaviour = list[i].get();
+
+				// Skipped, never erased: compaction is the reap's job, and an erase
+				// here would shift every index after it out from under this loop
+				if (behaviour->m_PendingRemove)
+					continue;
+
+				// A behaviour attached during THIS pass has not had OnCreate yet —
+				// it waits for the next step, so it must not receive OnUpdate first
+				if (!behaviour->m_HasCreated)
+					continue;
+
+				behaviour->OnUpdate(ts);
+
+				// A sibling may have destroyed the entity, or detached itself. The
+				// entity check stops the list; the per-behaviour m_PendingRemove
+				// check above handles the detach case on the next iteration.
+				if (!m_Registry.valid(handle) || IsPendingDestroy(handle))
+					break;
+			}
+		}
+	}
+
+	void Level::RunBehaviourDestroyHooks(entt::entity handle)
+	{
+		auto it = m_Behaviours.find(handle);
+		if (it == m_Behaviours.end())
+			return;
+
+		std::vector<Scope<EntityBehaviour>>& list = it->second;
+
+		// REVERSE insertion order (RAD-101 D6): a behaviour attached later may have
+		// found an earlier one in its OnCreate, so the dependent dies before its
+		// dependency — the discipline every reader already has from stack
+		// unwinding. We are stricter than UE here, cheaply: AActor::
+		// UninitializeComponents walks a TSet and so cannot define an order at all
+		// (Actor.cpp:6350-6362); our list is ordered anyway.
+		//
+		// Indexed downward rather than with reverse iterators because OnDestroy is
+		// gameplay and may attach (appending, which can reallocate). Anything it
+		// appends is NOT visited here: it never ran OnCreate, so it is owed no
+		// OnDestroy, and the reap frees it regardless.
+		for (size_t i = list.size(); i-- > 0; )
+		{
+			EntityBehaviour* behaviour = list[i].get();
+
+			// Owed only if OnCreate actually ran. This is the pairing UE enforces
+			// with HasBeenInitialized() before calling UninitializeComponent, and
+			// it is what makes attach-then-destroy-before-the-first-step run
+			// neither hook rather than the wrong one.
+			if (!behaviour->m_HasCreated || behaviour->m_PendingRemove)
+				continue;
+
+			behaviour->OnDestroy();
+			behaviour->m_HasCreated = false;
+		}
+	}
+
+	void Level::FreeBehaviours(entt::entity handle)
+	{
+		auto it = m_Behaviours.find(handle);
+		if (it == m_Behaviours.end())
+			return;
+
+		// Reverse insertion order here too, so destructors mirror the OnDestroy
+		// order the mark already used. pop_back rather than clear() so the sequence
+		// is explicit rather than an implementation detail of vector.
+		std::vector<Scope<EntityBehaviour>>& list = it->second;
+		while (!list.empty())
+			list.pop_back();
+
+		// BY KEY, not by the iterator above, and the difference is not stylistic:
+		// pop_back ran behaviour DESTRUCTORS, and a destructor that attaches
+		// anything rehashes this map and invalidates `it`. Erasing an invalidated
+		// iterator is undefined behaviour, where one extra hash costs nothing.
+		// ~Level already contemplates exactly this actor ("something is creating
+		// entities during ~Level").
+		m_Behaviours.erase(handle);
+
+		// The walk order is deliberately NOT edited here, only flagged — see the
+		// single sweep at the tail of ReapDestroyedEntities for why.
+		m_BehaviourWalkOrderDirty = true;
+	}
+
+	void Level::CompactDetachedBehaviours()
+	{
+		if (m_BehaviourCompactList.empty())
+			return;
+
+		for (entt::entity handle : m_BehaviourCompactList)
+		{
+			auto it = m_Behaviours.find(handle);
+			if (it == m_Behaviours.end())
+				continue;   // the whole entity died this step; FreeBehaviours already took it
+
+			std::vector<Scope<EntityBehaviour>>& list = it->second;
+
+			// erase-remove, which PRESERVES the relative order of the survivors —
+			// the same requirement the walk order has, one level down
+			std::erase_if(list, [this](const Scope<EntityBehaviour>& held)
+				{
+					return held && IsBehaviourDetached(*held);
+				});
+
+			// The entity loses its tag together with its last behaviour. Missing
+			// this is how the tag outlives the table: an entity the snapshot pass
+			// still treats as a mover with nothing behind it (RAD-101 D3, D9 — the
+			// invariant the trait protects).
+			if (list.empty())
+			{
+				// By key, not by `it`: erase_if above ran behaviour destructors, and
+				// one that attaches would rehash this map. Same reasoning as
+				// FreeBehaviours.
+				m_Behaviours.erase(handle);
+				m_BehaviourWalkOrderDirty = true;
+
+				// Through m_Registry because the tag is IsEngineComponent, per
+				// RAD-97's rule that an engine path uses the registry rather than
+				// widening the gate
+				if (m_Registry.valid(handle))
+					m_Registry.remove<BehaviourComponent>(handle);
+			}
+		}
+
+		m_BehaviourCompactList.clear();
 	}
 
 	void Level::DestroyEntity(UUID entityID)
@@ -519,32 +815,53 @@ namespace Radiant {
 
 	void Level::NotifyScript(Entity entity, Entity other, ContactPhase phase)
 	{
-		auto* nsc = entity.TryGetComponent<NativeScriptComponent>();
-
-		// No script, or one not instantiated yet (instances are created lazily
-		// on the first fixed update after binding): nothing to notify
-		if (!nsc || !nsc->Instance)
-			return;
-
 		// Same gate as OnUpdate: an inactive entity's body keeps colliding, its
-		// script just stops hearing about it
+		// script just stops hearing about it. Checked before either channel so the
+		// two cannot disagree about it.
 		if (!entity.GetComponent<MetadataComponent>().IsActive)
 			return;
 
-		// The handler is allowed to destroy this very entity, and that is now
-		// simply safe: a destroy MARKS, and only the reap deletes the instance,
-		// so the object whose method is running outlives the call (RAD-97). The
-		// local this used to need — read the instance before calling, never
-		// touch it after — is gone with the hazard it dodged.
+		// THE SIDE TABLE'S FAN-OUT (RAD-101 D10). Contacts are the third dispatch
+		// site, and the one the plan originally missed: reaching a single instance
+		// here would have left a three-behaviour entity with exactly one behaviour
+		// hearing about collisions, silently and with no diagnostic.
 		//
-		// What survives is a different, unrelated hazard: `nsc` is a pointer INTO
-		// the component pool, and a handler that spawns a scripted entity can
-		// reallocate that pool. Nothing below touches nsc, which is why the calls
-		// are the last statements here.
-		if (phase == ContactPhase::Begin)
-			nsc->Instance->OnCollisionBegin(other);
-		else
-			nsc->Instance->OnCollisionEnd(other);
+		// The loop is not merely "walk the list". RAD-29 already established that
+		// gameplay runs here with the power to destroy (playbook §4: re-resolve
+		// each side immediately before its callback, because an earlier callback in
+		// the same batch may have destroyed it). This is the per-behaviour form of
+		// that same rule — one hazard, one spelling, three sites.
+		if (auto it = m_Behaviours.find(entity.m_EntityHandle); it != m_Behaviours.end())
+		{
+			std::vector<Scope<EntityBehaviour>>& list = it->second;
+			const size_t count = list.size();
+
+			for (size_t i = 0; i < count; ++i)
+			{
+				EntityBehaviour* behaviour = list[i].get();
+
+				// Detached, or attached this step and not yet created: a collision
+				// must never arrive before the behaviour's own OnCreate
+				if (behaviour->m_PendingRemove || !behaviour->m_HasCreated)
+					continue;
+
+				if (phase == ContactPhase::Begin)
+					behaviour->OnCollisionBegin(other);
+				else
+					behaviour->OnCollisionEnd(other);
+
+				// An earlier handler in THIS list may have destroyed the entity the
+				// rest of it belongs to
+				if (!entity.IsValid())
+					return;
+			}
+		}
+
+		// A handler is allowed to destroy this very entity, and that is simply safe:
+		// a destroy MARKS, and only the reap deletes the instance, so the object
+		// whose method is running outlives the call (RAD-97). The local this used to
+		// need — read the instance before calling, never touch it after — is gone
+		// with the hazard it dodged.
 	}
 
 	void Level::DispatchContactEvents()
@@ -650,7 +967,7 @@ namespace Radiant {
 		RADIANT_ASSERT(!m_DispatchingContacts, "Level::OnFixedUpdate re-entered from a collision callback");
 
 		// Re-entering from the script pass is a different failure: it would
-		// clear() and refill m_ScriptUpdateList while the outer walk holds
+		// start a second behaviour walk while the outer one holds
 		// iterators into it (RAD-95). Separate assert from the one above so the
 		// message names which of the two paths did it.
 		RADIANT_ASSERT(!m_RunningScripts, "Level::OnFixedUpdate re-entered from a script");
@@ -672,7 +989,10 @@ namespace Radiant {
 				snapshot(entityHandle);
 			for (auto entityHandle : GetLiveEntitiesWith<CameraComponent, TransformComponent>())
 				snapshot(entityHandle);
-			for (auto entityHandle : GetLiveEntitiesWith<NativeScriptComponent, TransformComponent>())
+			// The tag's one and only customer, and the reason D3 kept a component at
+			// all: a view cannot consult the side table, so "has a behaviour" has to
+			// be askable as a component.
+			for (auto entityHandle : GetLiveEntitiesWith<BehaviourComponent, TransformComponent>())
 				snapshot(entityHandle);
 
 			// An entity that STOPPED being movable must lose its snapshot, or
@@ -683,24 +1003,25 @@ namespace Radiant {
 			std::vector<entt::entity> staleSnapshots;
 			for (auto entityHandle : GetLiveEntitiesWith<TransformSnapshotComponent>())
 			{
-				if (!m_Registry.any_of<RigidBody2DComponent, CameraComponent, NativeScriptComponent>(entityHandle))
+				// Must list every mover category above, or an entity that is still
+				// a mover loses its snapshot and stops interpolating. Adding a
+				// category to the snapshot loop without adding it here is the
+				// silent failure this pairing exists to prevent.
+				if (!m_Registry.any_of<RigidBody2DComponent, CameraComponent, BehaviourComponent>(entityHandle))
 					staleSnapshots.push_back(entityHandle);
 			}
 			for (auto entityHandle : staleSnapshots)
 				m_Registry.remove<TransformSnapshotComponent>(entityHandle);
 		}
 
-		// Snapshot the script set before running any of it. Gameplay can reach
-		// CreateEntity/DestroyEntity from here (RAD-95), and a live entt view
-		// cannot survive that: binding a script to a spawned entity may
-		// reallocate the very pool being walked, and destroying an entity
-		// swap-and-pops it (playbook §8.8). Walking plain ids instead means a
-		// mutation is at worst a stale id, which the checks below detect.
-		// Rebuilt per step; RAD-30's side table replaces the rebuild with a
-		// maintained list, which is the shape UE's tick registry already has.
+		// Gameplay can reach CreateEntity/DestroyEntity/AddBehaviour from inside
+		// the pass below (RAD-95), so nothing there may ride a live entt view or
+		// an unbounded loop — UpdateBehaviours bounds every loop by a count taken
+		// before it starts and re-checks liveness per behaviour (playbook §8.8).
+		//
 		// Scoped like DispatchScope above, and for the same reason: a gameplay
-		// callback that throws must not leave the flag set and wedge every
-		// later fixed update.
+		// callback that throws must not leave the flag set and wedge every later
+		// fixed update.
 		struct ScriptPassScope
 		{
 			Level& Owner;
@@ -708,74 +1029,7 @@ namespace Radiant {
 			~ScriptPassScope() { Owner.m_RunningScripts = false; }
 		} scriptPassScope(*this);
 
-		{
-			auto scripts = GetLiveEntitiesWith<NativeScriptComponent>();
-			m_ScriptUpdateList.clear();
-			// size_hint, not size: an EXCLUDING view cannot know its exact count
-			// without walking it, so entt only offers an upper bound (the
-			// unfiltered pool). That is exactly what a reserve wants, and after
-			// the first few steps the member has settled and this reserves
-			// nothing anyway (playbook §7).
-			m_ScriptUpdateList.reserve(scripts.size_hint());
-			for (auto entityHandle : scripts)
-				m_ScriptUpdateList.push_back(entityHandle);
-		}
-
-		for (entt::entity entityHandle : m_ScriptUpdateList)
-		{
-			// An earlier script in this same pass may have destroyed this one.
-			// A LIVE check, not merely registry validity: the row survives until
-			// the reap now, so "still exists" and "still alive" have come apart,
-			// and the snapshot above cannot know about a mark made after it was
-			// taken. This is the half an entt::exclude cannot cover.
-			if (!m_Registry.valid(entityHandle) || IsPendingDestroy(entityHandle))
-				continue;
-
-			auto* nsc = m_Registry.try_get<NativeScriptComponent>(entityHandle);
-			if (!nsc)
-				continue;
-
-			if (!nsc->Instance)
-			{
-				// A component added without Bind<T>() leaves InstantiateScript
-				// empty; calling it throws std::bad_function_call
-				RADIANT_ASSERT(nsc->InstantiateScript, "NativeScriptComponent has no bound script - missing Bind<T>()?");
-				if (!nsc->InstantiateScript)
-					continue;
-
-				EntityBehaviour* instance = nsc->InstantiateScript();
-				instance->m_Entity = Entity{ entityHandle, this };
-				// Stored BEFORE OnCreate runs: a script that destroys its own
-				// entity there must be findable by DestroyEntity, or the
-				// instance leaks and its OnDestroy never runs
-				nsc->Instance = instance;
-				instance->OnCreate();
-
-				// OnCreate is gameplay, so `nsc` may no longer be usable: this
-				// entity could be gone, and spawning a scripted entity
-				// reallocates the pool nsc points into. That is REFERENCE
-				// invalidation — a different hazard from the iterator
-				// invalidation the snapshot above fixes, and not cured by it.
-				// Re-resolve rather than reuse; this is load-bearing, not
-				// defensive noise. The live check, not bare registry validity,
-				// for the same reason as the one at the top of this loop: a
-				// script may destroy its own entity from OnCreate, and the row
-				// survives that until the reap.
-				if (!m_Registry.valid(entityHandle) || IsPendingDestroy(entityHandle))
-					continue;
-
-				nsc = m_Registry.try_get<NativeScriptComponent>(entityHandle);
-				if (!nsc || !nsc->Instance)
-					continue;
-			}
-
-			// Straight from the registry: the handle is already in hand, so
-			// routing this through the script's own Entity would be a detour
-			if (!m_Registry.get<MetadataComponent>(entityHandle).IsActive)
-				continue;
-
-			nsc->Instance->OnUpdate(ts);
-		}
+		UpdateBehaviours(ts);
 
 		// A level without a world (scratch levels, or a failed world create)
 		// still runs scripts above — it just has no physics to advance

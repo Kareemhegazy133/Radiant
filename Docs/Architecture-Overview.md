@@ -15,7 +15,7 @@ Radiant/Source/Radiant/    (engine includes are namespaced: #include "Radiant/Co
 │   ├── OpenGL/    GL 4.5 backend (legacy — deleted when Vulkan reaches parity)
 │   └── Windows/   Window, input, filesystem implementations (GLFW-based)
 ├── ECS/           Level (world), Entity, components, level serialization — how the world is stored
-├── Gameplay/      EntityBehaviour, GameplayLevel, PhysicsBody — the framework games subclass
+├── Gameplay/      EntityBehaviour (several per entity), GameplayLevel, PhysicsBody — the framework games subclass
 ├── Physics/       Box2D integration
 ├── Asset/         Handle-based asset management + YAML registry
 ├── Serialization/ Stream I/O + binary asset-pack format (parked)

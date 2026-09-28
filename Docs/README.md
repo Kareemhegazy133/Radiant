@@ -14,7 +14,7 @@ Per-system architecture documentation for the Radiant engine. Written for an eng
 | [Event-System](Event-System.md) | Event types, dispatcher, propagation |
 | [Rendering](Rendering.md) | RHI abstraction, Renderer2D batching, OpenGL backend, Vulkan direction |
 | [ECS-And-Levels](ECS-And-Levels.md) | `Level`, `Entity`, components, level serialization — how the world is *stored* |
-| [Gameplay-Framework](Gameplay-Framework.md) | `EntityBehaviour`, named gameplay verbs, `GameplayLevel`, typed behaviour retrieval — how gameplay *talks* about it |
+| [Gameplay-Framework](Gameplay-Framework.md) | `EntityBehaviour`, behaviour composition, named gameplay verbs, `GameplayLevel`, typed behaviour retrieval — how gameplay *talks* about it |
 | [Physics](Physics.md) | Box2D integration, body lifecycle, transform sync |
 | [Asset-System](Asset-System.md) | Handles, registry, AssetManager, asset pack |
 | [Serialization](Serialization.md) | Stream I/O, wire format rules, binary pack format |
