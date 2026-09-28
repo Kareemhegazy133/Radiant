@@ -1,6 +1,6 @@
 ---
 name: jira
-description: Create or update Jira items (epics, stories, tech enablers, tasks, bugs) for the Radiant engine project to a AAA studio standard. Enforces issue-type taxonomy, engine-vs-game placement, phase-epic parenting, Definition of Ready/Done, dependency links, and the architecture-realignment convention. Usage - /jira <type> <summary> or /jira to be prompted.
+description: Create or update Jira items (epics, stories, tech enablers, tasks, bugs) for the Radiant engine project to a AAA studio standard. Enforces issue-type taxonomy, engine-vs-game placement, epic parenting and slice milestone labels, Definition of Ready/Done, dependency links, and the architecture-realignment convention. Usage - /jira <type> <summary> or /jira to be prompted.
 ---
 
 # Jira Item Manager — AAA Standard (Radiant)
@@ -21,8 +21,14 @@ You manage Jira items for the Radiant engine project to the standard a AAA studi
 
 Enforce these invariants on every create/update, and flag violations you notice elsewhere:
 
-1. **Every non-epic item has exactly one epic parent** (the `parent` field). No orphans. The standing parents are the phase epics: RAD-1 (Triage), RAD-2 (Simulation), RAD-3 (RHI/Vulkan), RAD-4 (Assets), RAD-5 (Editor), RAD-6 (Icebox). New epics require a real system scope (e.g. a dedicated Reaper-gameplay epic once the game grows beyond engine-proving) — no `Misc`/catch-all epics.
-2. **Epics are phase- or system-scoped with a written scope statement and exit criteria.** A phase epic **closes when its exit criteria are met**; a system epic lives as long as the system does.
+1. **Every non-epic item has exactly one epic parent** (the `parent` field). No orphans. **Phase ordering was replaced by slice ordering on 2026-09-28** (CLAUDE.md → Decision 4 replaced), so the standing parents are now:
+   - **Active:** RAD-105 (Slice Engine Capabilities), RAD-108 (Reaper — the game), RAD-3 (RHI v2 + Vulkan, running between M1 and M2)
+   - **Parked:** RAD-106 (Reaper World Layer), RAD-107 (Engine Debt)
+   - **Historical / deferred:** RAD-1 (Triage, Done), RAD-2 (Simulation, closing), RAD-4 (Assets), RAD-5 (Editor), RAD-6 (Icebox), RAD-98 (Gameplay Framework, reduced)
+
+   New epics require a real system scope — no `Misc`/catch-all epics.
+2. **Epics are slice-, system-, or phase-scoped with a written scope statement and exit criteria.** A scoped epic **closes when its exit criteria are met**; a system epic lives as long as the system does; a parking-lot epic (RAD-107) has no exit criteria by design and says so.
+2b. **Slice work carries a milestone label** (`m1`…`m5`) alongside its epic. The epic says *what kind of work*; the milestone says *when*. A slice card with no milestone label is unsequenced and therefore not Ready.
 3. **Status reflects reality.** Work that shipped is `Done`; work underway is `In Progress`; nothing delivered sits in `To Do`. An epic whose exit criteria are met gets transitioned.
 4. **Dependencies are modeled as issue links**, not only prose (see Dependency Modeling). Stale links are removed.
 5. **No item instructs a forbidden pattern.** If the architecture moved (e.g. the event queue replaced blocking dispatch), stories still prescribing the old way are realigned (see Architecture Realignment), not left to mislead.

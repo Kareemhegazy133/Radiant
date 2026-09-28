@@ -1,6 +1,6 @@
 ---
 name: review
-description: Combined code standards + principal engineer review for the Radiant engine. Analyzes uncommitted changes against project standards, architecture, ownership/lifetime safety, simulation correctness, performance, and the locked phase strategy.
+description: Combined code standards + principal engineer review for the Radiant engine. Analyzes uncommitted changes against project standards, architecture, ownership/lifetime safety, simulation correctness, performance, and the locked strategy (slice ordering as of 2026-09-28).
 ---
 
 # Radiant Unified Code Review

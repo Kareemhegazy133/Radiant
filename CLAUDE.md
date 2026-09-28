@@ -138,6 +138,7 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 # Workflow
 
 - **Sessions are disposable; artifacts are not.** Start a fresh conversation per story/task (`/plan-feature RAD-XX` is the usual opener). All durable context lives outside the chat: this file + `Docs/` + the playbook + Jira + `.claude/plans/` + Claude's persistent memory. If something decided in a session isn't recorded in one of those homes before the session ends, record it — a conversation whose loss would hurt means the record-keeping failed.
+- **`ROADMAP.md` (repo root) is the readable view of where the project is** — current milestone, next card, every slice card with its status, what's parked, what's done. **Read it first in a fresh session.** It is a view of the board, not a second source of truth: if it and Jira disagree, Jira is right and `ROADMAP.md` is stale. Update it when a card finishes, a gate passes, a merge lands, or scope changes.
 - **Tracking:** everything lives in Jira project RAD. Every non-epic issue is parented to exactly one epic.
   - **Active:** **RAD-105** (Slice Engine Capabilities — engine work the slice needs), **RAD-108** (Reaper — the game), **RAD-3** (RHI v2 + Vulkan, running between M1 and M2).
   - **Parked:** **RAD-106** (Reaper World Layer — dialogue, inventory, shops, map, classes), **RAD-107** (Engine Debt — non-blocking cleanup, pulled from as capacity allows).
