@@ -1,0 +1,449 @@
+#include "Radiant/rdpch.h"
+#include "LevelSerializer.h"
+
+#include <yaml-cpp/yaml.h>
+#include <fstream>
+
+#include "Radiant/Core/UUID.h"
+#include "Entity.h"
+#include "Components.h"
+
+#include "Radiant/Asset/AssetManager.h"
+#include "Radiant/ImGui/UI/Font.h"
+
+#include "Radiant/Utilities/YAMLSerializationHelpers.h"
+
+namespace Radiant {
+
+	static std::string RigidBody2DBodyTypeToString(RigidBody2DComponent::BodyType bodyType)
+	{
+		switch (bodyType)
+		{
+		case RigidBody2DComponent::BodyType::Static:    return "Static";
+		case RigidBody2DComponent::BodyType::Dynamic:   return "Dynamic";
+		case RigidBody2DComponent::BodyType::Kinematic: return "Kinematic";
+		}
+
+		RADIANT_ASSERT(false, "Unknown body type");
+		return {};
+	}
+
+	static RigidBody2DComponent::BodyType RigidBody2DBodyTypeFromString(const std::string& bodyTypeString)
+	{
+		if (bodyTypeString == "Static")    return RigidBody2DComponent::BodyType::Static;
+		if (bodyTypeString == "Dynamic")   return RigidBody2DComponent::BodyType::Dynamic;
+		if (bodyTypeString == "Kinematic") return RigidBody2DComponent::BodyType::Kinematic;
+
+		// A malformed BodyType in a .rdlvl is a content mistake — warn and
+		// recover to Static rather than assert (which is silent in Dist anyway)
+		RADIANT_WARN("LevelSerializer: unknown RigidBody2D body type '{}', defaulting to Static", bodyTypeString);
+		return RigidBody2DComponent::BodyType::Static;
+	}
+
+	LevelSerializer::LevelSerializer(const Ref<Level>& level)
+		: m_Level(level)
+	{
+	}
+
+	void LevelSerializer::Serialize(const std::filesystem::path& filepath)
+	{
+		YAML::Emitter out;
+		SerializeToYAML(out);
+
+		std::ofstream fout(filepath);
+		if (!fout)
+		{
+			RADIANT_WARN("LevelSerializer: failed to open '{}' for writing", filepath.string());
+			return;
+		}
+		fout << out.c_str();
+		if (!fout.good())
+			RADIANT_WARN("LevelSerializer: write to '{}' failed - level file may be truncated", filepath.string());
+	}
+
+	void LevelSerializer::SerializeToYAML(YAML::Emitter& out)
+	{
+		out << YAML::BeginMap;
+		out << YAML::Key << "Level" << YAML::Value << m_Level->GetName();
+
+		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
+
+		// Sort entities by UUID so output order is deterministic — stable file diffs.
+		// GetLiveEntitiesWith, not a raw registry view: a save issued between a
+		// mark and the reap would otherwise write entities that are already dead
+		// into the .rdlvl (RAD-97). Being a friend of Level is permission to reach
+		// the registry, not a reason to bypass the seam that keeps passes off
+		// corpses.
+		std::map<UUID, entt::entity> sortedEntityMap;
+		auto view = m_Level->GetLiveEntitiesWith<MetadataComponent>();
+		for (auto entity : view)
+			sortedEntityMap[view.get<MetadataComponent>(entity).ID] = entity;
+
+		// Serialize sorted entities
+		for (auto [id, entity] : sortedEntityMap)
+			SerializeEntity(out, { entity, m_Level.Raw() });
+
+		out << YAML::EndSeq;
+		out << YAML::EndMap;
+	}
+
+	bool LevelSerializer::SerializeToAssetPack(FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	{
+		YAML::Emitter out;
+		SerializeToYAML(out);
+
+		outInfo.Offset = stream.GetStreamPosition();
+		std::string yamlString = out.c_str();
+		stream.WriteString(yamlString);
+		outInfo.Size = stream.GetStreamPosition() - outInfo.Offset;
+		return true;
+	}
+
+	void LevelSerializer::SerializeEntity(YAML::Emitter& out, Entity entity)
+	{
+		RADIANT_ASSERT(entity.HasComponent<MetadataComponent>());
+
+		out << YAML::BeginMap; // Entity
+		out << YAML::Key << "Entity" << YAML::Value << entity.GetUUID();
+
+		if (entity.HasComponent<MetadataComponent>())
+		{
+			out << YAML::Key << "MetadataComponent";
+			out << YAML::BeginMap; // MetadataComponent
+
+			auto& tag = entity.GetComponent<MetadataComponent>().Tag;
+			out << YAML::Key << "Tag" << YAML::Value << tag;
+
+			out << YAML::EndMap; // MetadataComponent
+		}
+
+		if (entity.HasComponent<TransformComponent>())
+		{
+			out << YAML::Key << "TransformComponent";
+			out << YAML::BeginMap; // TransformComponent
+
+			auto& tc = entity.GetComponent<TransformComponent>();
+			out << YAML::Key << "Translation" << YAML::Value << tc.Translation;
+			out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
+			out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
+
+			out << YAML::EndMap; // TransformComponent
+		}
+
+		if (entity.HasComponent<CameraComponent>())
+		{
+			out << YAML::Key << "CameraComponent";
+			out << YAML::BeginMap; // CameraComponent
+
+			auto& cameraComponent = entity.GetComponent<CameraComponent>();
+			auto& camera = cameraComponent.Camera;
+
+			out << YAML::Key << "Camera" << YAML::Value;
+			out << YAML::BeginMap; // Camera
+			out << YAML::Key << "ProjectionType" << YAML::Value << (int)camera.GetProjectionType();
+			out << YAML::Key << "AspectRatio" << YAML::Value << camera.GetAspectRatio();
+			out << YAML::Key << "PerspectiveFOV" << YAML::Value << camera.GetDegPerspectiveVerticalFOV();
+			out << YAML::Key << "PerspectiveNear" << YAML::Value << camera.GetPerspectiveNearClip();
+			out << YAML::Key << "PerspectiveFar" << YAML::Value << camera.GetPerspectiveFarClip();
+			out << YAML::Key << "OrthographicSize" << YAML::Value << camera.GetOrthographicSize();
+			out << YAML::Key << "OrthographicNear" << YAML::Value << camera.GetOrthographicNearClip();
+			out << YAML::Key << "OrthographicFar" << YAML::Value << camera.GetOrthographicFarClip();
+			out << YAML::EndMap; // Camera
+
+			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
+			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
+
+			out << YAML::EndMap; // CameraComponent
+		}
+
+		if (entity.HasComponent<SpriteComponent>())
+		{
+			out << YAML::Key << "SpriteComponent";
+			out << YAML::BeginMap; // SpriteComponent
+
+			auto& spriteComponent = entity.GetComponent<SpriteComponent>();
+			out << YAML::Key << "Color" << YAML::Value << spriteComponent.Color;
+			out << YAML::Key << "TextureHandle" << YAML::Value << spriteComponent.TextureHandle;
+			out << YAML::Key << "TilingFactor" << YAML::Value << spriteComponent.TilingFactor;
+
+			out << YAML::EndMap; // SpriteComponent
+		}
+
+		// BehaviourComponent is deliberately NOT written, and has no entry here at
+		// all — the NativeScriptComponent block that used to sit on this line was
+		// deleted with the component by RAD-101.
+		//
+		// The tag means "this entity has behaviours in the Level's side table".
+		// Behaviours are code-only and are never restored on load, so a tag that
+		// round-tripped would describe a state that cannot exist: an entity
+		// marked as having behaviours with an empty side table behind it. The
+		// snapshot pass would then classify it as a mover with nothing driving
+		// it. Writing an empty map "for symmetry" is worse than writing nothing,
+		// because it invites a future deserializer to restore it.
+		//
+		// The trait makes the mistake unbuildable rather than merely discouraged:
+		// BehaviourComponent is IsEngineComponent, so the AddComponent<> call a
+		// restore would need is a compile error. Being a friend of Level is
+		// permission to reach m_Registry, not a reason to bypass that decision.
+		//
+		// What DOES belong in a level file is the richer question RAD-104 owns:
+		// behaviour FIELD state, once behaviours can describe their own fields.
+		// That is per-instance data keyed to a behaviour type, not this tag.
+
+		if (entity.HasComponent<RigidBody2DComponent>())
+		{
+			out << YAML::Key << "RigidBody2DComponent";
+			out << YAML::BeginMap; // RigidBody2DComponent
+
+			auto& rb2dComponent = entity.GetComponent<RigidBody2DComponent>();
+			out << YAML::Key << "BodyType" << YAML::Value << RigidBody2DBodyTypeToString(rb2dComponent.Type);
+			out << YAML::Key << "FixedRotation" << YAML::Value << rb2dComponent.FixedRotation;
+
+			out << YAML::EndMap; // RigidBody2DComponent
+		}
+
+		if (entity.HasComponent<BoxCollider2DComponent>())
+		{
+			out << YAML::Key << "BoxCollider2DComponent";
+			out << YAML::BeginMap; // BoxCollider2DComponent
+
+			auto& bc2dComponent = entity.GetComponent<BoxCollider2DComponent>();
+			out << YAML::Key << "Offset" << YAML::Value << bc2dComponent.Offset;
+			out << YAML::Key << "Size" << YAML::Value << bc2dComponent.Size;
+			out << YAML::Key << "Density" << YAML::Value << bc2dComponent.Density;
+			out << YAML::Key << "Friction" << YAML::Value << bc2dComponent.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << bc2dComponent.Restitution;
+			out << YAML::Key << "EnableContactEvents" << YAML::Value << bc2dComponent.EnableContactEvents;
+
+			out << YAML::EndMap; // BoxCollider2DComponent
+		}
+
+		if (entity.HasComponent<TextComponent>())
+		{
+			out << YAML::Key << "TextComponent";
+			out << YAML::BeginMap; // TextComponent
+
+			auto& textComponent = entity.GetComponent<TextComponent>();
+			out << YAML::Key << "TextString" << YAML::Value << textComponent.TextString;
+			out << YAML::Key << "FontHandle" << YAML::Value << textComponent.FontHandle;
+			out << YAML::Key << "Color" << YAML::Value << textComponent.Color;
+			out << YAML::Key << "TextSize" << YAML::Value << textComponent.TextSize;
+			out << YAML::Key << "LineSpacing" << YAML::Value << textComponent.LineSpacing;
+			out << YAML::Key << "Kerning" << YAML::Value << textComponent.Kerning;
+
+			out << YAML::EndMap; // TextComponent
+		}
+
+		out << YAML::EndMap; // Entity
+	}
+
+	bool LevelSerializer::Deserialize(const std::filesystem::path& filepath)
+	{
+		std::ifstream stream(filepath);
+		RADIANT_ASSERT(stream);
+		std::stringstream strStream;
+		strStream << stream.rdbuf();
+
+		try
+		{
+			// Result dropped — only YAML exceptions propagate as false; a parse
+			// without a "Level" key still reports success (see header note)
+			DeserializeFromYAML(strStream.str());
+		}
+		catch (const YAML::Exception& e)
+		{
+			RADIANT_ERROR("Failed to deserialize level '{0}': {1}", filepath.string(), e.what());
+			return false;
+		}
+
+		return true;
+	}
+
+	bool LevelSerializer::DeserializeFromYAML(const std::string& yamlString)
+	{
+		YAML::Node data = YAML::Load(yamlString);
+
+		if (!data["Level"])
+			return false;
+
+		std::string levelName = data["Level"].as<std::string>();
+		RADIANT_INFO("Deserializing level '{0}'", levelName);
+		m_Level->SetName(levelName);
+
+		auto entities = data["Entities"];
+		if (entities)
+			DeserializeEntities(entities, m_Level);
+
+		// Sort MetadataComponent by entity handle (which is essentially the order in which they were created)
+		// This ensures a consistent ordering when iterating MetadataComponent
+		m_Level->m_Registry.sort<MetadataComponent>([this](const auto lhs, const auto rhs)
+			{
+				auto lhsEntity = m_Level->m_EntityMap.find(lhs.ID);
+				auto rhsEntity = m_Level->m_EntityMap.find(rhs.ID);
+				// Same end()-deref hazard as Level::SortEntities — map and
+				// registry out of sync is a programmer error
+				RADIANT_ASSERT(lhsEntity != m_Level->m_EntityMap.end() && rhsEntity != m_Level->m_EntityMap.end(), "Deserialize sort: metadata ID missing from entity map");
+				// Unmapped sorts last; two unmapped entries must compare equivalent
+				// (false both ways) or the comparator breaks strict weak ordering — UB
+				if (lhsEntity == m_Level->m_EntityMap.end() || rhsEntity == m_Level->m_EntityMap.end())
+					return lhsEntity != m_Level->m_EntityMap.end() && rhsEntity == m_Level->m_EntityMap.end();
+				return static_cast<uint32_t>(lhsEntity->second) < static_cast<uint32_t>(rhsEntity->second);
+			});
+
+		return true;
+	}
+
+	bool LevelSerializer::DeserializeFromAssetPack(FileStreamReader& stream, const AssetPackFile::LevelInfo& levelInfo)
+	{
+		stream.SetStreamPosition(levelInfo.PackedOffset);
+		std::string levelYAML;
+		stream.ReadString(levelYAML);
+
+		return DeserializeFromYAML(levelYAML);
+	}
+
+	void LevelSerializer::DeserializeEntities(YAML::Node& entitiesNode, Ref<Level> level)
+	{
+		for (auto entity : entitiesNode)
+		{
+			uint64_t uuid = entity["Entity"].as<uint64_t>();
+
+			std::string name;
+			auto metadataComponent = entity["MetadataComponent"];
+			if (metadataComponent)
+			{
+				name = metadataComponent["Tag"].as<std::string>();
+			}
+
+			RADIANT_INFO("Deserialized entity with ID = {0}, name = {1}", uuid, name);
+
+			Entity deserializedEntity = level->CreateEntityWithUUID(uuid, name);
+
+			auto transformComponent = entity["TransformComponent"];
+			if (transformComponent)
+			{
+				// Entities always have transforms
+				auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+				tc.Translation = transformComponent["Translation"].as<glm::vec3>();
+				tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
+				tc.Scale = transformComponent["Scale"].as<glm::vec3>();
+			}
+
+			auto cameraComponent = entity["CameraComponent"];
+			if (cameraComponent)
+			{
+				auto& cc = deserializedEntity.AddComponent<CameraComponent>();
+
+				const auto& cameraNode = cameraComponent["Camera"];
+
+				cc.Camera = SceneCamera();
+				auto& camera = cc.Camera;
+
+				if (cameraNode.IsMap())
+				{
+					if (cameraNode["ProjectionType"])
+						camera.SetProjectionType((SceneCamera::ProjectionType)cameraNode["ProjectionType"].as<int>());
+					if(cameraNode["AspectRatio"])
+						camera.SetAspectRatio(cameraNode["AspectRatio"].as<float>());
+					if (cameraNode["PerspectiveFOV"])
+						camera.SetDegPerspectiveVerticalFOV(cameraNode["PerspectiveFOV"].as<float>());
+					if (cameraNode["PerspectiveNear"])
+						camera.SetPerspectiveNearClip(cameraNode["PerspectiveNear"].as<float>());
+					if (cameraNode["PerspectiveFar"])
+						camera.SetPerspectiveFarClip(cameraNode["PerspectiveFar"].as<float>());
+					if (cameraNode["OrthographicSize"])
+						camera.SetOrthographicSize(cameraNode["OrthographicSize"].as<float>());
+					if (cameraNode["OrthographicNear"])
+						camera.SetOrthographicNearClip(cameraNode["OrthographicNear"].as<float>());
+					if (cameraNode["OrthographicFar"])
+						camera.SetOrthographicFarClip(cameraNode["OrthographicFar"].as<float>());
+				}
+
+				cc.Primary = cameraComponent["Primary"].as<bool>();
+				cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+
+			}
+
+			auto spriteComponent = entity["SpriteComponent"];
+			if (spriteComponent)
+			{
+				auto& src = deserializedEntity.AddComponent<SpriteComponent>();
+				src.Color = spriteComponent["Color"].as<glm::vec4>();
+
+				if (spriteComponent["TextureHandle"])
+					src.TextureHandle = spriteComponent["TextureHandle"].as<AssetHandle>();
+
+				if (spriteComponent["TilingFactor"])
+					src.TilingFactor = spriteComponent["TilingFactor"].as<float>();
+			}
+
+			// No behaviour key is read, deliberately (RAD-101). Bindings are code-only
+			// and are re-attached after load, so there is nothing here to restore —
+			// and restoring the tag alone would mark an entity as having behaviours
+			// with an empty side table behind it.
+			//
+			// Levels saved before RAD-101 still carry an empty `NativeScriptComponent:
+			// {}` map. It is simply ignored: an unknown key is not an error, which is
+			// what makes the format tolerant of exactly this kind of change. Behaviour
+			// FIELD state is RAD-104's question.
+
+			auto rigidbody2DComponent = entity["RigidBody2DComponent"];
+			if (rigidbody2DComponent)
+			{
+				// Add RigidBody at end to properly invoke entt construct signal
+				auto rb2d = RigidBody2DComponent();
+				rb2d.Type = RigidBody2DBodyTypeFromString(rigidbody2DComponent["BodyType"].as<std::string>());
+				rb2d.FixedRotation = rigidbody2DComponent["FixedRotation"].as<bool>();
+				deserializedEntity.AddComponent<RigidBody2DComponent>(rb2d);
+			}
+
+			auto boxCollider2DComponent = entity["BoxCollider2DComponent"];
+			if (boxCollider2DComponent)
+			{
+				// Add BoxCollider at end to properly invoke entt construct signal
+				auto bc2d = BoxCollider2DComponent();
+				bc2d.Offset = boxCollider2DComponent["Offset"].as<glm::vec2>();
+				bc2d.Size = boxCollider2DComponent["Size"].as<glm::vec2>();
+				bc2d.Density = boxCollider2DComponent["Density"].as<float>();
+				bc2d.Friction = boxCollider2DComponent["Friction"].as<float>();
+				bc2d.Restitution = boxCollider2DComponent["Restitution"].as<float>();
+				// RestitutionThreshold is deliberately not read: the property is
+				// world-level in Box2D v3 — a stale key in old files is ignored
+				// Absent key = a file written before RAD-29. It must default TRUE
+				// (the component's own default), or every authored level would
+				// silently stop reporting collisions on the day the field landed.
+				if (auto enableContactEvents = boxCollider2DComponent["EnableContactEvents"])
+					bc2d.EnableContactEvents = enableContactEvents.as<bool>();
+				deserializedEntity.AddComponent<BoxCollider2DComponent>(bc2d);
+			}
+
+			auto textComponent = entity["TextComponent"];
+			if (textComponent)
+			{
+				auto& component = deserializedEntity.AddComponent<TextComponent>();
+				component.TextString = textComponent["TextString"].as<std::string>();
+				AssetHandle fontHandle = textComponent["FontHandle"].as<uint64_t>();
+				if (AssetManager::IsAssetHandleValid(fontHandle))
+				{
+					component.FontHandle = fontHandle;
+				}
+				else if (Ref<Font> defaultFont = Font::GetDefaultFont())
+				{
+					component.FontHandle = defaultFont->Handle;
+				}
+				else
+				{
+					// No default font either — leave handle 0 rather than deref null
+					RADIANT_WARN("LevelSerializer: font {} missing and no default font available", (uint64_t)fontHandle);
+				}
+				component.Color = textComponent["Color"].as<glm::vec4>();
+				component.TextSize = textComponent["TextSize"].as<float>();
+				component.LineSpacing = textComponent["LineSpacing"].as<float>();
+				component.Kerning = textComponent["Kerning"].as<float>();
+			}
+		}
+
+		level->SortEntities();
+	}
+
+}

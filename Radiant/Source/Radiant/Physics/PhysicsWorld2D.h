@@ -1,0 +1,354 @@
+#pragma once
+
+#include "Radiant/Core/Timestep.h"
+#include "Radiant/Core/UUID.h"
+#include "Radiant/Physics/ContactEvent.h"
+#include "Radiant/Physics/TeleportType.h"
+
+#include <glm/glm.hpp>
+
+#include <box2d/id.h>
+
+#include <string>
+#include <vector>
+
+namespace Radiant {
+
+	class Entity;
+	struct RigidBody2DComponent;
+	struct BoxCollider2DComponent;
+
+	/**
+	 * One Level's Box2D v3 world. Each instance is an independent simulation —
+	 * bodies in one world never interact with bodies in another — which is what
+	 * lets multiple Levels coexist (RAD-27). The full surface (RAD-28): entt
+	 * signals drive body/shape lifecycle, the explicit verbs (Teleport,
+	 * UpdateBoxShape) are the only ECS→Box2D writes, and Step reports results
+	 * through the move-event buffer.
+	 *
+	 * Ownership: owned by its Level via Scope<PhysicsWorld2D>, created in the
+	 * Level constructor and destroyed with the Level. Owns the underlying Box2D
+	 * world through m_WorldId; copy and move are deleted — a copied handle means
+	 * two owners and a double destroy, and nothing ever needs to move it (the
+	 * owning Scope does).
+	 *
+	 * Lifetime & threading: exists exactly as long as its Level's live phase.
+	 * Main-thread only. Never create or destroy bodies during a world step —
+	 * Box2D forbids world mutation while stepping.
+	 *
+	 * Failure semantics: if world creation fails (constructor logs ERROR and
+	 * asserts), the instance degrades to a safe no-op — CreateBody and Step
+	 * guard the null world; every other method exits through body-id validity
+	 * checks, since no body can exist without a world.
+	 *
+	 * Units: positions are world units (meters-ish, mapping to Transform
+	 * Translation.xy); angles are radians (Transform Rotation.z).
+	 *
+	 * Verb-surface convention (RAD-91): every method takes Entity BY VALUE —
+	 * it is a 16-byte value handle owning nothing, and a mutable reference
+	 * would imply a mutation none of these perform. A component reference is a
+	 * parameter only where the caller necessarily already holds one: the entt
+	 * signal handlers are handed theirs by entt, and Level::RefreshCollider
+	 * fetches the collider for its own precondition assert. Every other verb
+	 * takes Entity plus its arguments and resolves the component itself — a
+	 * gameplay call site must not need to know which component stores the
+	 * runtime id. Zero and stale runtime ids are resolved in one place per id
+	 * kind (see PhysicsWorld2D.cpp), never per verb.
+	 */
+	class PhysicsWorld2D
+	{
+	public:
+		/**
+		 * One "this body moved during the last Step" record, translated to
+		 * engine types at the module boundary — Box2D types never leave
+		 * Physics/. Position is world units; Rotation is radians.
+		 */
+		struct BodyMoveEvent
+		{
+			UUID EntityId;
+			glm::vec2 Position;
+			float Rotation;
+		};
+
+		/**
+		 * Creates the Box2D world. debugName appears in the create/destroy logs
+		 * (the paired-lifetime evidence for RAD-27's AC) — pass the owning
+		 * Level's name. Gravity defaults to the engine's historical {0, -9.8}.
+		 */
+		explicit PhysicsWorld2D(const std::string& debugName, const glm::vec2& gravity = { 0.0f, -9.8f });
+
+		/** Destroys the world and every body/shape still in it. */
+		~PhysicsWorld2D();
+
+		PhysicsWorld2D(const PhysicsWorld2D&) = delete;
+		PhysicsWorld2D& operator=(const PhysicsWorld2D&) = delete;
+		PhysicsWorld2D(PhysicsWorld2D&&) = delete;
+		PhysicsWorld2D& operator=(PhysicsWorld2D&&) = delete;
+
+		/**
+		 * Creates the entity's Box2D body from its transform (position =
+		 * Translation.xy, rotation = Rotation.z radians), stamps the entity's
+		 * UUID into the body's user data (contact resolution, RAD-29), and
+		 * stores the packed id in component.RuntimeBodyId. Invoked via the
+		 * on_construct entt signal. Must not run during a world step.
+		 */
+		void CreateBody(Entity entity, RigidBody2DComponent& component);
+
+		/**
+		 * Destroys the entity's body and zeroes RuntimeBodyId. A zero or stale
+		 * id is a no-op, never a crash. Invoked via the on_destroy entt signal.
+		 * Must not run during a world step.
+		 */
+		void DestroyBody(Entity entity, RigidBody2DComponent& component);
+
+		/**
+		 * Places the entity's body at a world pose (position in world units,
+		 * rotation in radians) and wakes it — the placement primitive both
+		 * ECS→Box2D transform pushes are built from (RAD-28 allows only these
+		 * two). Never a swept move: no collisions occur along the way.
+		 *
+		 * The wake is part of the primitive rather than the caller's job, and
+		 * that is load-bearing. Box2D's own SetTransform does not wake, so a
+		 * sleeping body placed in mid-air would hang there until touched (UE's
+		 * SetBodyTransform defaults bAutoWake true for the same reason) — and
+		 * v3 wakes a body from SetLinearVelocity only when the velocity is
+		 * NONZERO, so any caller that wants to zero velocity must have woken
+		 * the body first or the write is silently dropped on exactly the bodies
+		 * that were asleep. Folding the wake in here makes that ordering
+		 * impossible to get wrong instead of merely documented.
+		 *
+		 * SILENT BY DESIGN (playbook §4: routine, continuous verbs do not log).
+		 * This is what Level::SetLocation reaches, and gameplay may call it
+		 * every fixed step; Teleport below adds the TRACE because it is the
+		 * rare, deliberate act. Zero/stale body ids are survivable skips.
+		 */
+		void SetTransform(Entity entity, const glm::vec2& position, float rotation);
+
+		/**
+		 * A discontinuous jump: SetTransform above, plus a velocity policy, plus
+		 * the audit-trail TRACE. teleportType decides what happens to velocity
+		 * on arrival (see TeleportType); ResetVelocity zeroes linear and angular
+		 * velocity but cannot cancel forces already applied this step.
+		 *
+		 * Prefer SetTransform for continuous movement — this one logs on every
+		 * call, deliberately, because "why is it still spinning" is the question
+		 * the log gets read to answer. Call through Level::Teleport, which also
+		 * writes the ECS transform and stamps the render snapshot so the jump
+		 * does not smear across a rendered frame.
+		 */
+		void Teleport(Entity entity, const glm::vec2& position, float rotation, TeleportType teleportType);
+
+		/**
+		 * Creates the box shape on the entity's EXISTING body and stores the
+		 * packed id in component.RuntimeShapeId: half-extents = Size * transform
+		 * scale, offset relative to the body, no local rotation — the shape is
+		 * body-local and the body already carries the world rotation. Asserts if
+		 * the entity has no RigidBody2DComponent — the rigidbody must be added
+		 * first. Invoked via the on_construct entt signal. Must not run during
+		 * a world step.
+		 */
+		void CreateBoxShape(Entity entity, BoxCollider2DComponent& component);
+
+		/**
+		 * Destroys the entity's box shape and zeroes RuntimeShapeId. A zero id
+		 * is a silent no-op (shape never created, or already gone with its
+		 * body); a stale id warns and recovers — it means a lifecycle path
+		 * outside the entt signals touched the shape. Invoked via the
+		 * on_destroy entt signal. Must not run during a world step.
+		 */
+		void DestroyBoxShape(Entity entity, BoxCollider2DComponent& component);
+
+		/**
+		 * Re-applies the collider component's properties to the entity's
+		 * EXISTING shape, in place: geometry from Size * transform scale and
+		 * Offset (body-local, no rotation), then density/friction/restitution,
+		 * then one body-mass refresh — v3's shape setters deliberately leave
+		 * mass untouched. Never destroys the shape, so its contacts survive
+		 * the refresh. Call through Level::RefreshCollider after mutating
+		 * collider fields or the transform's Scale. A collider without a live
+		 * shape warns and recovers.
+		 */
+		void UpdateBoxShape(Entity entity, BoxCollider2DComponent& component);
+
+		// --- Dynamics verbs (RAD-90) -------------------------------------
+		//
+		// Every one of these: wakes the body (a sleeping body ignores forces,
+		// box2d.h:290, so a no-wake option would be a silent no-op); is a
+		// warned no-op on an entity with no rigidbody or a dead body id; and
+		// is reached from gameplay through Entity::GetPhysicsBody() rather
+		// than called directly. None of them logs — they are routine and
+		// continuous, unlike Teleport, and a per-step verb that TRACEs drowns
+		// the log at 60 Hz.
+		//
+		// WHEN THE EFFECT LANDS depends on the caller: scripts run before the
+		// step, so OnUpdate calls apply to the step about to run; collision
+		// handlers run after it, so their calls apply to the next one.
+
+		/**
+		 * Pushes the body at its centre of mass with a sustained force, in
+		 * newtons (N) — wind, thrust, a held movement key. Force accumulates
+		 * until the next step consumes it, so this must be re-applied EVERY
+		 * fixed step for as long as the push lasts; one call is one step's
+		 * worth of push. Acceleration is force / mass, so heavier bodies
+		 * respond less.
+		 *
+		 * Applied at the centre of mass, so it never induces spin. Prefer this
+		 * over a per-step impulse train: Box2D's sub-stepping solver handles a
+		 * steady force better (box2d.h:319).
+		 */
+		void ApplyForce(Entity entity, const glm::vec2& force);
+
+		/**
+		 * As ApplyForce, but applied at a point in WORLD coordinates. Off the
+		 * centre of mass this also generates torque — the body pushes and
+		 * turns, which is the whole reason to choose this overload. Force in
+		 * newtons (N), point in world units.
+		 */
+		void ApplyForceAtPoint(Entity entity, const glm::vec2& force, const glm::vec2& worldPoint);
+
+		/**
+		 * Twists the body about the z-axis with a sustained torque, in newton-
+		 * metres (N·m), without pushing it. Same per-step contract as
+		 * ApplyForce: re-apply every fixed step while the twist lasts.
+		 * Positive is counter-clockwise. No effect on a fixed-rotation body.
+		 */
+		void ApplyTorque(Entity entity, float torque);
+
+		/**
+		 * Adds an instantaneous change in momentum at the body's centre of
+		 * mass, in newton-seconds (N·s) — a jump, an explosion, a bullet hit.
+		 * Velocity changes immediately by impulse / mass, so heavier bodies
+		 * move less for the same impulse. Applied ONCE, not per step; applied
+		 * at the centre, so it never induces spin.
+		 */
+		void ApplyLinearImpulse(Entity entity, const glm::vec2& impulse);
+
+		/**
+		 * As ApplyLinearImpulse, but at a point in WORLD coordinates. Off the
+		 * centre of mass it also changes angular velocity — a hit on the
+		 * corner of a crate spins it. Impulse in newton-seconds (N·s), point
+		 * in world units.
+		 */
+		void ApplyLinearImpulseAtPoint(Entity entity, const glm::vec2& impulse, const glm::vec2& worldPoint);
+
+		/**
+		 * Adds an instantaneous change in angular momentum, in kg·m²/s —
+		 * "start spinning now". The rotational twin of ApplyLinearImpulse:
+		 * applied once, changes angular velocity immediately by impulse /
+		 * rotational inertia. No effect on a fixed-rotation body.
+		 */
+		void ApplyAngularImpulse(Entity entity, float impulse);
+
+		/**
+		 * Overwrites the body's linear velocity, in metres per second — the
+		 * blunt instrument, and the right one for a character controller or a
+		 * conveyor. It ignores mass and DISCARDS whatever the solver had
+		 * computed, so a body being set every step is no longer really being
+		 * simulated in that axis. Reach for a force or an impulse unless you
+		 * genuinely mean to be the authority on this speed.
+		 *
+		 * Note that Box2D wakes on a NONZERO velocity only, so setting {0,0}
+		 * on a sleeping body does nothing — harmless, since it is already
+		 * stopped, but it means "stop" is not a way to wake something.
+		 */
+		void SetLinearVelocity(Entity entity, const glm::vec2& velocity);
+
+		/** Overwrites angular velocity, in radians per second. Ignored on a fixed-rotation body. */
+		void SetAngularVelocity(Entity entity, float angularVelocity);
+
+		/**
+		 * The body's linear velocity in metres per second, or {0,0} when it
+		 * has no live body.
+		 *
+		 * NON-CONST deliberately (locked 2026-08-01): resolving the id CLEARS
+		 * a stale one as part of recovering from it, which a const method
+		 * cannot do. A const overload that warned without clearing would leave
+		 * the dead id in place to warn again on every subsequent call — log
+		 * spam plus a permanently broken field. `const` would be claiming this
+		 * call only observes, and it does not only observe.
+		 */
+		glm::vec2 GetLinearVelocity(Entity entity);
+
+		/** Angular velocity in radians per second, or 0. Non-const for GetLinearVelocity's reason. */
+		float GetAngularVelocity(Entity entity);
+
+		/**
+		 * Drives a KINEMATIC body toward a world pose by next step: Box2D
+		 * computes the velocity that gets it there (position and rotation) and
+		 * applies that, so the body genuinely MOVES rather than teleporting.
+		 * That distinction is the whole point — a moving platform needs a real
+		 * velocity for friction to carry its riders and for contacts to be
+		 * generated along the way. Setting the transform per step instead
+		 * gives a platform that slides out from under everything standing on
+		 * it. Position in world units, rotation in radians, fixedDelta in
+		 * seconds.
+		 *
+		 * CALL THIS EVERY FIXED STEP. Box2D sets the velocity and walks away:
+		 * a body that stops receiving targets keeps moving at its last
+		 * computed velocity forever. (UE's Chaos auto-stops via
+		 * EKinematicTargetMode::Reset; Box2D has no equivalent, and building
+		 * one needs per-body bookkeeping with no customer yet.)
+		 *
+		 * fixedDelta is a parameter rather than read from the clock so this
+		 * class stays a pure function of its inputs — constructible in a test
+		 * with no GameApplication. PhysicsBody supplies it from
+		 * Time::GetFixedDeltaTime(); never pass a frame delta (playbook §1).
+		 *
+		 * Two vendor behaviours worth knowing: a move small enough that the
+		 * resulting velocity falls below the sleep threshold is declined
+		 * entirely rather than performed slowly, and static bodies are ignored.
+		 */
+		void MoveKinematic(Entity entity, const glm::vec2& position, float rotation, float fixedDelta);
+
+		/**
+		 * Advances the simulation one FIXED step with 4 sub-steps (v3's solver
+		 * unit, replacing v2's velocity/position iteration pair), then refills
+		 * the move-event buffer (GetMoveEvents) with the bodies that moved and
+		 * the contact-event buffer (GetContactEvents) with the touches that
+		 * began or ended. Both drains copy Box2D's transient arrays into engine
+		 * types immediately, which is what lets consumers mutate the world
+		 * freely afterwards. Call with the engine's fixed delta from the
+		 * accumulator loop — never a variable frame delta (playbook §1).
+		 */
+		void Step(Timestep ts);
+
+		/**
+		 * The bodies that moved during the last Step, translated to engine
+		 * types. Valid until the next Step (the buffer is refilled in place) —
+		 * consume within the same fixed update, never cache. Sleeping and
+		 * static bodies produce no entries: readback cost scales with
+		 * activity, not population.
+		 */
+		const std::vector<BodyMoveEvent>& GetMoveEvents() const { return m_MoveEvents; }
+
+		/**
+		 * The touches that began or ended during the last Step, translated to
+		 * engine types. Valid until the next Step (the buffer is refilled in
+		 * place) — consume within the same fixed update, never cache. Begins
+		 * come before ends: a batch may hold both an End for a contact that
+		 * died and a Begin for one that replaced it, and dispatching begins
+		 * first keeps an overlap counter from transiently crossing zero.
+		 *
+		 * Only TRANSITIONS appear here — a settled stack of resting bodies
+		 * produces nothing, step after step. Shapes report only if they (or
+		 * their partner) opted in via BoxCollider2DComponent::EnableContactEvents.
+		 */
+		const std::vector<ContactEvent>& GetContactEvents() const { return m_ContactEvents; }
+
+	private:
+		// Generation handle to the Box2D world — zero-initialized is the null id
+		// (box2d/id.h). The only Box2D state this class holds.
+		b2WorldId m_WorldId = {};
+
+		// Identity for the lifecycle logs only; not used by simulation
+		std::string m_DebugName;
+
+		// Reusable move-event buffer refilled by Step — clear() keeps
+		// capacity, so steady-state refills allocate nothing
+		std::vector<BodyMoveEvent> m_MoveEvents;
+
+		// Reusable contact-event buffer, same refill contract as m_MoveEvents
+		std::vector<ContactEvent> m_ContactEvents;
+	};
+
+}

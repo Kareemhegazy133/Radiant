@@ -1,5 +1,6 @@
 # Directories
 .vs/
+.idea/
 bin/
 bin-int/
 
@@ -15,4 +16,9 @@ bin-int/
 Makefile
 
 # Exclude
-!Vendor/Binaries
+!Tools/Binaries
+# Runtime-generated UI state
+imgui.ini
+
+# Derived data (rebuildable caches)
+**/Assets/Cache/

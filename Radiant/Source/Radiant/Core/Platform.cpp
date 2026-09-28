@@ -1,0 +1,38 @@
+#include "Radiant/rdpch.h"
+#include "Platform.h"
+
+#include <ctime>
+#include <chrono>
+
+#include "spdlog/fmt/chrono.h"
+
+namespace Radiant {
+
+	uint64_t Platform::GetCurrentDateTimeU64()
+	{
+		std::string string = GetCurrentDateTimeString();
+		return std::stoull(string);
+	}
+
+	std::string Platform::GetCurrentDateTimeString()
+	{
+		std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		// std::localtime returns a pointer to shared static storage — not
+		// thread-safe; acceptable while callers stay on the main thread
+		std::tm* localTime = std::localtime(&currentTime);
+		if (!localTime)
+		{
+			RADIANT_WARN("Platform: localtime failed - timestamp falls back to zeros");
+			return "000000000000";   // same YYYYMMDDHHMM shape, stays stoull-parseable
+		}
+
+		int year = localTime->tm_year + 1900;
+		int month = localTime->tm_mon + 1;
+		int day = localTime->tm_mday;   // tm_mday is already 1-based (unlike tm_mon)
+		int hour = localTime->tm_hour;
+		int minute = localTime->tm_min;
+
+		return std::format("{}{:02}{:02}{:02}{:02}", year, month, day, hour, minute);
+		//return std::format("{:%Y%m%d%H%M}", *localTime);
+	}
+}

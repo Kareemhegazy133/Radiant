@@ -1,0 +1,30 @@
+name: Build
+
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+    branches: [dev, master]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release, Dist]
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Generate projects
+        run: ./Tools/Binaries/Premake/Windows/premake5.exe --file=Build.lua vs2022
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build ${{ matrix.configuration }}
+        run: msbuild Radiant.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m /v:m
