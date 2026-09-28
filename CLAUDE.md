@@ -31,6 +31,12 @@ Decisions locked 2026-07-04 (do not relitigate; flag if work contradicts them):
 3. **Vulkan approach:** raw Vulkan for instance/device/swapchain/sync/pipelines/descriptors + **VMA** for GPU memory + **shaderc** for GLSL→SPIR-V. No vk-bootstrap. The OpenGL backend is deleted once the Vulkan Renderer2D reaches parity.
 4. **Phase order:** 1 Triage → 2 Simulation Foundation → 3 RHI v2 + Vulkan → 4 Asset Pipeline v2 → 5 Editor. Icebox (jobs, render graph, 3D, scripting, networking) waits.
 
+**Amendment (2026-09-27) — one deliberate re-open of decision 4.** A **reflection MVP (RAD-104)** is pulled forward out of Phase 4 and slotted inside the RAD-98 Gameplay Framework work, between RAD-101 and RAD-102. Scope is narrow and fenced: field enumeration for *game-authored types only* — no build tool, no `.generated.h`, no `UClass` equivalent, and **no change to `Components.h` or the ECS**. It collapses the paired plain-data-component + behaviour shape into one self-describing class, and yields the field visitor that later drives the Phase 5 inspector. **Full reflection (RAD-72) stays in Phase 4.**
+
+Reason: RAD-98's framework is under construction *now*, and every card written before the collapse gets rewritten after it — building the actor model twice costs more than delaying Vulkan by one card. RAD-104 also owns the deferred `EntityBehaviour` → `Component` rename decision, which cannot be answered until behaviours and components merge.
+
+Two alternatives were considered and **declined** in the same session; do not relitigate them either. **Dropping entt for a `UObject`/GC substrate** — a greenfield rewrite of the core, which decision 1 forbids, and it inverts playbook §2's no-weak-references reasoning; note UE itself ships an archetype ECS (`Engine/Source/Runtime/MassEntity`, plus the `MassEntity`/`MassGameplay` plugins) precisely because `UObject`s do not scale for many simple things. **Waiting for RAD-72** — costs a rewrite of every RAD-98 card built meanwhile.
+
 Full audit (2026-07-04) is filed as Jira issues RAD-7…RAD-59 with `file:line` references — check the board before re-diagnosing a known problem.
 
 ---
