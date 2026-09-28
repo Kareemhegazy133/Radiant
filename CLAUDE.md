@@ -29,11 +29,30 @@ Decisions locked 2026-07-04 (do not relitigate; flag if work contradicts them):
 1. **Incremental re-architecture in this repo** — no greenfield rewrite. The engine must stay runnable at every milestone; **Reaper is the proving ground and must survive every change**.
 2. **2D-first, dimension-agnostic RHI** — the RHI layer never knows about "2D"; 3D later is a renderer-module addition, not a rewrite.
 3. **Vulkan approach:** raw Vulkan for instance/device/swapchain/sync/pipelines/descriptors + **VMA** for GPU memory + **shaderc** for GLSL→SPIR-V. No vk-bootstrap. The OpenGL backend is deleted once the Vulkan Renderer2D reaches parity.
-4. **Phase order:** 1 Triage → 2 Simulation Foundation → 3 RHI v2 + Vulkan → 4 Asset Pipeline v2 → 5 Editor. Icebox (jobs, render graph, 3D, scripting, networking) waits.
+4. ~~**Phase order:** 1 Triage → 2 Simulation Foundation → 3 RHI v2 + Vulkan → 4 Asset Pipeline v2 → 5 Editor.~~ **RE-OPENED AND REPLACED 2026-09-28 — see below.** Icebox (jobs, render graph, 3D, scripting, networking) no longer waits as a block; it is drawn from by the slice.
 
-**Amendment (2026-09-27) — one deliberate re-open of decision 4.** A **reflection MVP (RAD-104)** is pulled forward out of Phase 4 and slotted inside the RAD-98 Gameplay Framework work, between RAD-101 and RAD-102. Scope is narrow and fenced: field enumeration for *game-authored types only* — no build tool, no `.generated.h`, no `UClass` equivalent, and **no change to `Components.h` or the ECS**. It collapses the paired plain-data-component + behaviour shape into one self-describing class, and yields the field visitor that later drives the Phase 5 inspector. **Full reflection (RAD-72) stays in Phase 4.**
+## Decision 4 replaced (2026-09-28) — slice ordering
 
-Reason: RAD-98's framework is under construction *now*, and every card written before the collapse gets rewritten after it — building the actor model twice costs more than delaying Vulkan by one card. RAD-104 also owns the deferred `EntityBehaviour` → `Component` rename decision, which cannot be answered until behaviours and components merge.
+**The roadmap is now ordered by the Reaper vertical slice, not by engine phase.** An engine card earns its place by being something the game cannot ship without.
+
+**Why decision 4 was re-opened:** the board had no game in it. 104 issues across five horizontal phases, ~19 cards to a Vulkan triangle, ~50 to an editor, and **no card anywhere that produced something playable**. Eleven of the capabilities a playable slice needs were sitting in the Icebox behind Vulkan, the asset pipeline and the editor. The board identified *what* the engine needed correctly and *when* catastrophically wrong. Twelve weeks (Jul→Sep) produced eight consecutive ownership/lifetime plumbing cards, each validated only by a probe, with nothing visible at the end. That is also the antipattern the global CLAUDE.md rule 11 names — *"bias toward the smallest shippable vertical slice"* — and five horizontal layers is its opposite.
+
+**The new order — five milestones, each ending in a playtest gate:**
+
+| | Ends with | Epic |
+|---|---|---|
+| **M1 — "It moves"** | Run and jump in a test room, and it feels good | RAD-105 / RAD-108 |
+| **Vulkan block** | First triangle → Renderer2D parity → **OpenGL deleted** | RAD-3 |
+| **M2 — "It fights"** | Hitting a training dummy feels good | RAD-105 / RAD-108 |
+| **M3 — "It fights back"** | Three enemies, real fights, you can die | RAD-105 / RAD-108 |
+| **M4 — "It's a game"** | The full death → recover → rest → level loop | RAD-105 / RAD-108 |
+| **M5 — "It's the slice"** | The fifteen minutes, end to end | RAD-105 / RAD-108 |
+
+**The Vulkan block sits between M1 and M2 deliberately.** M1 touches no rendering at all (input, physics queries, possession, kinematic controller, camera-as-matrices), while M2–M4 are the renderer-heavy milestones (particles, game UI, tilemap batching). `RendererAPI.h` is clean but **immediate-mode shaped** — its own doc comment says *"calls execute immediately"* — so anything built against it before RHI v2 inherits that shape and gets reworked. Building the renderer-heavy milestones after RHI v2 costs nothing extra; building them before costs three reworks. Evidence recorded on RAD-3 and in the replan record.
+
+**Amendment (2026-09-27) reversing this — RAD-104's pull-forward — is itself REVERSED (2026-09-28).** RAD-104 (reflection MVP / the component + behaviour collapse) defers until **after GATE M5**, which is named as an acceptance criterion on RAD-123 so the debt has a due date. Its original justification — that RAD-98's framework was under construction and every card would be rewritten — weakened when RAD-98 was paused by this replan; only RAD-102 survives into the slice. The accepted cost is a mechanical refactor of ~15 slice behaviour classes later (a `chore`), chosen over one more invisible plumbing card before anything moves on screen. **Full reflection (RAD-72) stays in Phase 4** as always.
+
+**Game design is now a first-class input.** `Reaper/Design/GDD.md` is the source of truth for game scope — Reaper is a Hollow Knight-style metroidvania with Elden Ring's progression depth. If a Jira card contradicts it, one of the two is wrong and it gets resolved in the GDD first. Replan record: `.claude/plans/ROADMAP-REPLAN-2026-09-28.md`.
 
 Two alternatives were considered and **declined** in the same session; do not relitigate them either. **Dropping entt for a `UObject`/GC substrate** — a greenfield rewrite of the core, which decision 1 forbids, and it inverts playbook §2's no-weak-references reasoning; note UE itself ships an archetype ECS (`Engine/Source/Runtime/MassEntity`, plus the `MassEntity`/`MassGameplay` plugins) precisely because `UObject`s do not scale for many simple things. **Waiting for RAD-72** — costs a rewrite of every RAD-98 card built meanwhile.
 
@@ -55,7 +74,8 @@ Full audit (2026-07-04) is filed as Jira issues RAD-7…RAD-59 with `file:line` 
 | `Radiant/Source/Radiant/Physics/` | `PhysicsWorld2D` — per-Level Box2D v3 world; `ContactEvent` — vendor-free contact record | Phase 2 rework complete: per-Level worlds (RAD-27), sync semantics (RAD-28: explicit verbs, move-event drain), collision events (RAD-29: post-step contact drain, validity-checked dispatch to Level-wide callbacks + script hooks), verb surface (RAD-91: one id-resolution helper per id kind, `Entity` by value), dynamics verbs (RAD-90: forces/impulses/velocity/kinematic mover on the `PhysicsBody` handle in `Gameplay/`, plus `TeleportType`). Follow-up: RAD-76 query API |
 | `Radiant/Source/Radiant/Asset/` | Handle-based asset manager + YAML registry (`.rdar`) | Working; lifecycle redesign in Phase 4 |
 | `Radiant/Source/Radiant/Serialization/` | Stream I/O + binary AssetPack | AssetPack is dead code, parked for Phase 4 |
-| `Reaper/` | The game: state machine (MainMenu/Gameplay/Paused), GameLayer (Level driver), UILayer (ImGui) | Working shell |
+| `Reaper/Source/` | The game: state machine (MainMenu/Gameplay/Paused), GameLayer (Level driver), UILayer (ImGui). ~1,990 lines, roughly a third of it engine-verification probes retiring with RAD-92. Grows into the vertical slice under RAD-108 | Working shell → the slice |
+| `Reaper/Design/` | **`GDD.md` — the game's design and the source of truth for game scope.** Lives with the game, never in `Docs/`: engine docs describe how Radiant works, this describes what Reaper is, and the engine never knows about the game | Established 2026-09-28 |
 
 Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rdap` (binary asset pack — future), `.rdfa` (cached font atlas).
 
@@ -118,11 +138,17 @@ Custom asset formats: `.rdlvl` (YAML level), `.rdar` (YAML asset registry), `.rd
 # Workflow
 
 - **Sessions are disposable; artifacts are not.** Start a fresh conversation per story/task (`/plan-feature RAD-XX` is the usual opener). All durable context lives outside the chat: this file + `Docs/` + the playbook + Jira + `.claude/plans/` + Claude's persistent memory. If something decided in a session isn't recorded in one of those homes before the session ends, record it — a conversation whose loss would hurt means the record-keeping failed.
-- **Tracking:** everything lives in Jira project RAD. Phase epics: RAD-1 (Triage), RAD-2 (Simulation), RAD-3 (RHI/Vulkan), RAD-4 (Assets), RAD-5 (Editor), RAD-6 (Icebox). Every non-epic issue is parented to a phase epic. Labels: `mentorship` (user implements, Claude guides) / `chore` (Claude implements) / `audit-finding` / `milestone` / `design` / `icebox`.
+- **Tracking:** everything lives in Jira project RAD. Every non-epic issue is parented to exactly one epic.
+  - **Active:** **RAD-105** (Slice Engine Capabilities — engine work the slice needs), **RAD-108** (Reaper — the game), **RAD-3** (RHI v2 + Vulkan, running between M1 and M2).
+  - **Parked:** **RAD-106** (Reaper World Layer — dialogue, inventory, shops, map, classes), **RAD-107** (Engine Debt — non-blocking cleanup, pulled from as capacity allows).
+  - **Historical / deferred:** RAD-1 (Triage, Done), RAD-2 (Simulation, closing), RAD-4 (Assets), RAD-5 (Editor), RAD-6 (Icebox), RAD-98 (Gameplay Framework, reduced).
+  - **Engine vs game placement is the invariant that matters most:** engine capability parents to RAD-105 and **must never name a Reaper type, asset or gameplay concept**; everything under `Reaper/` parents to RAD-108. An epic says *what kind of work*, a milestone label (`m1`…`m5`) says *when*.
+  - Labels: `mentorship` (user implements, Claude guides) / `chore` (Claude implements) / `milestone` (a playtest gate) / `m1`–`m5` (slice sequencing) / `world-layer` / `audit-finding` / `design` / `icebox`.
 - **Creating/updating issues:** use the `/jira` skill — never ad-hoc `createJiraIssue` calls.
 - **Planning a story:** `/plan-feature RAD-XX` — plan file in `.claude/plans/`, posted to the issue on approval, then guided piece-by-piece implementation.
 - **Story cadence (every story, in order):** `/plan-feature RAD-XX` → guided implementation (Kareem writes core, Claude does chores/guards/logging/docs) → Kareem runs `/review` → Claude writes the **Story Implementation Report** (format in the plan-feature skill: associate-level explanation of what/why with code snippets, posted to the Jira story) → transition per Definition of Done.
-- **Merge cadence (decided 2026-08-01):** stories commit to `dev` as they finish, but `dev` merges to `master` **at phase boundaries**, not per story. So a reviewed, committed story sits in **In Review** until its phase's merge — that is the expected resting state, not a stall — and reaches **Done** when the phase lands on `master`. Keeps `master` at coherent, runnable phase milestones instead of mid-rework states.
+- **Merge cadence (revised 2026-09-28):** stories commit to `dev` as they finish; `dev` merges to `master` **at milestone boundaries** (M1…M5, and the Vulkan block's gates). A card reaches **Done** when its milestone's gate passes and the merge lands — roughly every 3–5 weeks.
+  - **The old rule (phase boundaries, decided 2026-08-01) was replaced because it lied about status.** Eight finished cards sat In Review from July to late September — work that was done read as unfinished for three months, by construction. `master` still only ever holds coherent runnable states; the states are just milestones now, which is what the original rule was actually protecting.
 - **Reviewing:** `/review` before committing engine changes.
 - **Playbook:** `.claude/references/radiant-playbook.md` holds established patterns and hard-won rules; cite it by section, keep it current via `/audit-standards`.
 - **System docs:** `Docs/` holds per-system architecture documentation (index: `Docs/README.md`). **The update contract: any change that alters a system's behavior or architecture updates that system's doc in the same change** — `/review` flags stale docs as an ERROR. `/sync-docs` pushes `Docs/` to Confluence.
